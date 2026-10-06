@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Gemba Vision | Astemo Powertrain</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+  <div class="brand"><div class="brand-mark">A</div><div><strong>ASTEMO</strong><span>POWERTRAIN</span></div></div>
+  <div class="title">GEMBA VISION</div>
+  <div class="clock"><span id="date"></span><b id="time"></b></div>
+</header>
+<div class="app">
+<nav class="sidebar">
+  <button class="nav active" data-page="home">🏠 <span>Visão Geral</span></button>
+  <button class="nav" data-page="safety">🦺 <span>Momento de Segurança</span></button>
+  <button class="nav" data-page="oee">⚙️ <span>OEE / Eficiência</span></button>
+  <button class="nav" data-page="production">📊 <span>Produção em Tempo Real</span></button>
+  <button class="nav" data-page="people">👥 <span>Absenteísmo</span></button>
+  <button class="nav" data-page="quality">🔴 <span>Qualidade / Não Qualidade</span></button>
+  <div class="side-footer">GESTÃO À VISTA<br><small>Atualização automática</small></div>
+</nav>
+<main id="content"></main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
