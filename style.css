@@ -1033,3 +1033,204 @@ td:nth-child(2){overflow-wrap:anywhere}
   .prod-area-grid{grid-template-columns:1fr}
   .chart-wrap{min-height:280px}
 }
+
+/* Scrap drill-down */
+.prod-scrap-kpi{
+  width:100%;
+  text-align:left;
+  border:1px solid var(--border);
+  cursor:pointer;
+  transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+}
+.prod-scrap-kpi:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 24px rgba(7,27,45,.10);
+  border-color:#d2dce3;
+}
+.prod-scrap-kpi .label{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.scrap-drill-icon{
+  font-size:13px;
+  color:#8a98a3;
+}
+.scrap-kpi-hint{
+  margin-top:5px;
+  font-size:9px;
+  color:#82919c;
+  font-weight:700;
+}
+body.modal-open{overflow:hidden}
+.scrap-modal{
+  position:fixed;
+  inset:0;
+  z-index:200;
+  display:none;
+}
+.scrap-modal.open{display:block}
+.scrap-modal-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(3,16,27,.58);
+  backdrop-filter:blur(3px);
+}
+.scrap-modal-panel{
+  position:absolute;
+  inset:5vh 4vw;
+  background:#f6f8fa;
+  border-radius:18px;
+  box-shadow:0 28px 80px rgba(0,0,0,.28);
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+}
+.scrap-modal-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  padding:18px 22px;
+  background:#fff;
+  border-bottom:1px solid #e3e9ed;
+}
+.scrap-modal-head span{
+  display:block;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:1px;
+  color:#8796a2;
+  margin-bottom:4px;
+}
+.scrap-modal-head h2{
+  margin:0;
+  font-size:22px;
+  color:#10283a;
+}
+.scrap-close{
+  width:38px;
+  height:38px;
+  border:1px solid #dde5ea;
+  background:#fff;
+  border-radius:10px;
+  font-size:25px;
+  line-height:1;
+  color:#405463;
+}
+.scrap-close:hover{background:#f5f7f9}
+.scrap-modal-context{
+  padding:10px 22px;
+  background:#eef3f6;
+  border-bottom:1px solid #dfe7ec;
+  font-size:10px;
+  color:#5f7280;
+  font-weight:700;
+}
+#scrapModalBody{
+  padding:18px 22px 24px;
+  overflow:auto;
+  flex:1;
+}
+.scrap-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px;
+  margin-bottom:16px;
+}
+.scrap-summary-grid>div{
+  background:#fff;
+  border:1px solid #e0e7ec;
+  border-radius:12px;
+  padding:14px;
+  box-shadow:0 4px 12px rgba(7,27,45,.04);
+}
+.scrap-summary-grid span{
+  display:block;
+  font-size:8px;
+  text-transform:uppercase;
+  letter-spacing:.5px;
+  color:#82919c;
+  margin-bottom:5px;
+}
+.scrap-summary-grid strong{
+  display:block;
+  font-size:20px;
+  color:#10283a;
+}
+.scrap-summary-grid small{
+  display:block;
+  margin-top:4px;
+  color:#71818e;
+  font-size:9px;
+}
+.scrap-table-wrap{
+  background:#fff;
+  border:1px solid #e0e7ec;
+  border-radius:12px;
+  overflow:auto;
+  box-shadow:0 4px 12px rgba(7,27,45,.04);
+}
+.scrap-detail-table{
+  min-width:980px;
+}
+.scrap-detail-table th{
+  position:sticky;
+  top:0;
+  z-index:1;
+  background:#f8fafb;
+}
+.defect-chip{
+  display:inline-block;
+  padding:5px 8px;
+  border-radius:999px;
+  background:#fff0ef;
+  color:#b53e39;
+  font-size:9px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.scrap-loading{
+  min-height:240px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  color:#526574;
+}
+.scrap-spinner{
+  width:32px;
+  height:32px;
+  border-radius:50%;
+  border:3px solid #dfe7ec;
+  border-top-color:#2374b9;
+  animation:scrap-spin .8s linear infinite;
+}
+@keyframes scrap-spin{to{transform:rotate(360deg)}}
+.scrap-empty{
+  background:#fff;
+  border:1px solid #e0e7ec;
+  border-radius:12px;
+  padding:28px;
+  text-align:center;
+  color:#657581;
+}
+.scrap-empty strong{
+  display:block;
+  color:#203746;
+  margin-bottom:7px;
+}
+.scrap-empty p{margin:0;line-height:1.5}
+.scrap-empty.error{border-color:#efd7d5;background:#fff8f7}
+@media(max-width:900px){
+  .scrap-summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .scrap-modal-panel{inset:3vh 2vw}
+}
+@media(max-width:560px){
+  .scrap-summary-grid{grid-template-columns:1fr}
+  .scrap-modal-head{padding:14px}
+  .scrap-modal-context{padding:9px 14px}
+  #scrapModalBody{padding:14px}
+}
