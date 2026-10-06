@@ -42,6 +42,15 @@ document.getElementById("oeeReset").addEventListener("click",()=>{area.value="To
 updateLines();updateOee();
 }
 const productionData=[
+{area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-05",start:"07:00",end:"08:00",plan:900,real:850},
+{area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-05",start:"08:00",end:"09:00",plan:900,real:875},
+{area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-05",start:"09:00",end:"10:00",plan:900,real:920},
+{area:"Fundição",linha:"AL2",turno:"A",date:"2026-10-05",start:"07:00",end:"08:00",plan:850,real:810},
+{area:"Fundição",linha:"AL2",turno:"A",date:"2026-10-05",start:"08:00",end:"09:00",plan:850,real:830},
+{area:"Fundição",linha:"AL3",turno:"A",date:"2026-10-05",start:"07:00",end:"08:00",plan:830,real:790},
+{area:"Fundição",linha:"AL3",turno:"A",date:"2026-10-05",start:"08:00",end:"09:00",plan:830,real:760},
+{area:"Acabamento",linha:"AC1",turno:"A",date:"2026-10-05",start:"08:00",end:"09:00",plan:780,real:790},
+{area:"Usinagem",linha:"US1",turno:"A",date:"2026-10-05",start:"08:00",end:"09:00",plan:760,real:740},
 {area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-06",start:"08:00",end:"09:00",plan:900,real:860},
 {area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-06",start:"09:00",end:"10:00",plan:900,real:920},
 {area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-06",start:"10:00",end:"11:00",plan:900,real:880},
