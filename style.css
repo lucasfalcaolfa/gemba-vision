@@ -1415,3 +1415,180 @@ body.modal-open{overflow:hidden}
 @media(max-width:900px){
   .scrap-detail-grid{grid-template-columns:1fr}
 }
+
+/* Professional reconciled stock control */
+.stock-intro{
+  display:grid;
+  grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);
+  gap:16px;
+  align-items:center;
+  background:linear-gradient(135deg,#0b2b45,#123d5c);
+  color:#fff;
+  border-radius:16px;
+  padding:20px 22px;
+  margin-bottom:16px;
+  box-shadow:0 10px 28px rgba(7,27,45,.12);
+}
+.stock-eyebrow{
+  display:block;
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:1px;
+  color:#9fc2d8;
+  margin-bottom:6px;
+}
+.stock-intro h2{margin:0 0 6px;font-size:22px}
+.stock-intro p{margin:0;color:#d1e1eb;font-size:11px;line-height:1.5}
+.stock-formula{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:7px 10px;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;
+  padding:13px 14px;
+}
+.stock-formula b{font-size:10px}
+.stock-formula span{font-size:10px;color:#d4e2ea}
+.stock-kpis{margin-bottom:16px}
+.stock-workspace-grid,
+.stock-dashboard-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  margin-bottom:16px;
+}
+.stock-entry-panel{overflow:visible}
+.stock-panel-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
+}
+.stock-panel-head span{
+  display:block;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.9px;
+  color:#82939f;
+  margin-bottom:4px;
+}
+.stock-panel-head h2{margin:0 0 4px;font-size:15px}
+.stock-panel-head p{margin:0;color:#758692;font-size:10px;line-height:1.4}
+.stock-panel-actions{align-items:center}
+.stock-form-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:11px;
+}
+.stock-form-grid label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-size:9px;
+  font-weight:800;
+  text-transform:uppercase;
+  color:#6f808c;
+}
+.stock-form-grid input,
+.stock-form-grid select{
+  width:100%;
+  height:38px;
+  border:1px solid #d8e1e7;
+  border-radius:8px;
+  background:#fbfcfd;
+  padding:0 10px;
+  color:#172635;
+  outline-color:#2374b9;
+}
+.stock-note-field{grid-column:1/-1}
+.stock-primary-btn,
+.stock-secondary-btn{
+  border:0;
+  border-radius:8px;
+  padding:10px 13px;
+  font-size:10px;
+  font-weight:800;
+}
+.stock-primary-btn{
+  background:#0c3552;
+  color:#fff;
+  justify-self:start;
+}
+.stock-primary-btn:hover{background:#124a70}
+.stock-secondary-btn{
+  background:#fff;
+  color:#27465d;
+  border:1px solid #d8e1e7;
+}
+.stock-secondary-btn:hover{border-color:#9fb5c4}
+.stock-chart-wrap{height:330px}
+.stock-position-table,
+.stock-history-table{min-width:760px}
+.stock-status{
+  display:inline-block;
+  padding:5px 8px;
+  border-radius:999px;
+  font-size:8px;
+  font-weight:800;
+}
+.stock-ok{background:#edf8f1;color:#16794a}
+.stock-zero{background:#f2f4f6;color:#6d7982}
+.stock-negative{background:#fff0ef;color:#b53d39}
+.stock-number-negative{color:#c23834;font-weight:800}
+.stock-movement-chip{
+  display:inline-block;
+  padding:5px 8px;
+  border-radius:999px;
+  background:#eef4f8;
+  color:#3a6079;
+  font-size:8px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.stock-delete-btn{
+  width:28px;
+  height:28px;
+  border:1px solid #e1e7eb;
+  border-radius:7px;
+  background:#fff;
+  color:#a34843;
+  font-size:17px;
+  line-height:1;
+}
+.stock-delete-btn:hover{background:#fff1f0}
+.stock-empty{
+  min-height:170px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  gap:6px;
+  color:#7a8a96;
+  border:1px dashed #d7e0e6;
+  border-radius:12px;
+  background:#fbfcfd;
+}
+.stock-empty strong{color:#243b4d}
+.stock-empty span{font-size:10px}
+.stock-guidance{
+  margin-top:16px;
+  padding:13px 15px;
+  border-left:4px solid #2374b9;
+  background:#eef5fb;
+  border-radius:8px;
+  color:#456275;
+  font-size:10px;
+  line-height:1.5;
+}
+@media(max-width:1100px){
+  .stock-intro{grid-template-columns:1fr}
+  .stock-workspace-grid,.stock-dashboard-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .stock-form-grid{grid-template-columns:1fr}
+  .stock-note-field{grid-column:auto}
+  .stock-formula{grid-template-columns:1fr}
+}
