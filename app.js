@@ -303,7 +303,8 @@ function production(){
     '<div class="panel"><h2>Atingimento por linha</h2><div class="chart-wrap"><canvas id="prodLineChart"></canvas></div></div>'+
     '<div class="panel"><h2>Visão executiva</h2><div id="prodExecutive"></div></div>'+
   '</div>'+
-  '<div class="panel"><h2>Todas as linhas — produção em tempo real</h2><div id="prodTable"></div><div class="footer-note">Fonte: L2L • Demanda = demand • Produção atual = actual • Produzido líquido = actual − scrap • atualização automática a cada 1 minuto.</div></div>';
+  '<div class="panel"><h2>Todas as linhas — produção em tempo real</h2><div id="prodTable"></div><div class="footer-note">Fonte: L2L • Demanda = demand • Produção atual = actual • Produzido líquido = actual − scrap • atualização automática a cada 1 minuto.</div></div>'+
+  '<div class="scrap-modal" id="scrapModal" aria-hidden="true"><div class="scrap-modal-backdrop" onclick="closeScrapDetails()"></div><section class="scrap-modal-panel" role="dialog" aria-modal="true" aria-labelledby="scrapModalTitle"><div class="scrap-modal-head"><div><span>DETALHAMENTO L2L</span><h2 id="scrapModalTitle">Scrap / Defeitos</h2></div><button type="button" class="scrap-close" onclick="closeScrapDetails()" aria-label="Fechar">×</button></div><div class="scrap-modal-context" id="scrapModalContext"></div><div id="scrapModalBody"><div class="empty-state">Carregando detalhes...</div></div></section></div>';
 }
 
 async function refreshProductionRange(){
@@ -487,6 +488,97 @@ function renderProdExecutive(areaGroups,lineGroups){
   '</div>';
 }
 
+function productionScrapCard(scrap){
+  const cls=scrap===0?"good":"warn";
+  return '<button type="button" class="card prod-scrap-kpi" onclick="openScrapDetails()" title="Clique para ver os defeitos, modelos, turnos e datas do scrap"><div class="label">Scrap <span class="scrap-drill-icon">↗</span></div><div class="value '+cls+'">'+fmt(scrap)+'</div><div class="scrap-kpi-hint">Clique para detalhar</div></button>';
+}
+
+function closeScrapDetails(){
+  const modal=document.getElementById("scrapModal");
+  if(!modal)return;
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden","true");
+  document.body.classList.remove("modal-open");
+}
+
+function scrapDateTime(value){
+  if(!value)return "-";
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return String(value);
+  return d.toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+}
+
+function resolveScrapArea(row){
+  if(row.area)return String(row.area);
+  const match=(productionRows.length?productionRows:l2lRows).find(r=>String(r.line||"")===String(row.line||""));
+  return match?.area||"";
+}
+
+function scrapSummary(rows){
+  const totalQty=rows.reduce((s,r)=>s+n(r.scrap),0);
+  const defects={};
+  rows.forEach(r=>{
+    const k=r.defect||"Sem categoria";
+    defects[k]=(defects[k]||0)+n(r.scrap);
+  });
+  const top=Object.entries(defects).sort((a,b)=>b[1]-a[1])[0];
+  return {
+    qty:totalQty,
+    events:rows.length,
+    defects:Object.keys(defects).length,
+    topDefect:top?top[0]:"-",
+    topQty:top?top[1]:0
+  };
+}
+
+async function openScrapDetails(){
+  const modal=document.getElementById("scrapModal");
+  const body=document.getElementById("scrapModalBody");
+  const ctx=document.getElementById("scrapModalContext");
+  if(!modal||!body||!ctx)return;
+
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden","false");
+  document.body.classList.add("modal-open");
+  body.innerHTML='<div class="scrap-loading"><div class="scrap-spinner"></div><strong>Consultando detalhes de scrap no L2L...</strong></div>';
+
+  const date=productionFilterState.date||todayISO();
+  ctx.textContent='Período: '+date.split("-").reverse().join("/")+' • '+productionFilterState.start+'–'+productionFilterState.end;
+
+  try{
+    let rows=await window.L2L.getScrapDetails(date,productionFilterState.start,productionFilterState.end);
+
+    rows=rows.map(r=>({...r,area:resolveScrapArea(r)})).filter(r=>
+      (productionFilterState.area==="Todas"||String(r.area)===String(productionFilterState.area)) &&
+      (productionFilterState.line==="Todas"||String(r.line)===String(productionFilterState.line)) &&
+      (productionFilterState.shift==="Todos"||normalizeShift(r.shift)===productionFilterState.shift)
+    );
+
+    rows.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+    const summary=scrapSummary(rows);
+
+    ctx.textContent='L2L • '+(productionFilterState.area==="Todas"?"Todos os setores":productionFilterState.area)+' • '+(productionFilterState.line==="Todas"?"Todas as linhas":productionFilterState.line)+' • '+date.split("-").reverse().join("/")+' • '+productionFilterState.start+'–'+productionFilterState.end;
+
+    if(!rows.length){
+      body.innerHTML='<div class="scrap-empty"><strong>Nenhum detalhe de scrap encontrado para este período.</strong><p>Se houver Scrap no resumo, mas nenhum registro aqui, a linha pode estar registrando scrap sem categoria/detalhamento. O L2L só consegue mostrar defeito, modelo e turno quando esses detalhes são gravados no Scrap Detail.</p></div>';
+      return;
+    }
+
+    body.innerHTML=
+      '<div class="scrap-summary-grid">'+
+        '<div><span>Scrap detalhado</span><strong>'+fmt(summary.qty)+'</strong></div>'+
+        '<div><span>Ocorrências</span><strong>'+fmt(summary.events)+'</strong></div>'+
+        '<div><span>Tipos de defeito</span><strong>'+fmt(summary.defects)+'</strong></div>'+
+        '<div><span>Principal defeito</span><strong>'+summary.topDefect+'</strong><small>'+fmt(summary.topQty)+' peça(s)</small></div>'+
+      '</div>'+
+      '<div class="scrap-table-wrap"><table class="scrap-detail-table"><thead><tr><th>Data / Hora</th><th>Setor</th><th>Linha</th><th>Turno</th><th>Modelo / Produto</th><th>Defeito</th><th>Qtd.</th></tr></thead><tbody>'+
+        rows.map(r=>'<tr><td>'+scrapDateTime(r.date)+'</td><td>'+(r.area||"-")+'</td><td><b>'+(r.line||"-")+'</b></td><td>'+(r.shift||"-")+'</td><td>'+(r.product||"-")+'</td><td><span class="defect-chip">'+(r.defect||"Sem categoria")+'</span></td><td><b>'+fmt(r.scrap)+'</b></td></tr>').join("")+
+      '</tbody></table></div>';
+  }catch(err){
+    body.innerHTML='<div class="scrap-empty error"><strong>Não foi possível carregar os detalhes de Scrap.</strong><p>'+(err.message||"Erro ao consultar o L2L.")+'</p></div>';
+  }
+}
+
 function renderProductionLive(){
   if(currentPage!=="production")return;
 
@@ -508,7 +600,7 @@ function renderProductionLive(){
       card("Produção atual",fmt(actual),actual>=demand&&demand>0?"good":"")+
       card("Produzido líquido",fmt(net),net>0?"good":"")+
       card("Atingimento",fmtPct(attainment),attainment>=100?"good":attainment>=95?"warn":"bad")+
-      card("Scrap",fmt(scrap),scrap===0?"good":"warn");
+      productionScrapCard(scrap);
   }
 
   const areas=document.getElementById("prodAreas");
