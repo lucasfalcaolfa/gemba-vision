@@ -66,23 +66,40 @@ module.exports = async function handler(req, res) {
     }
 
     try {
-      let scrapPayload;
-      try {
-        scrapPayload = await l2lGet("/api/1.0/scrapdetail/", {
-          site: siteCode,
-          start__gte: start,
-          start__lte: end,
-          limit: 2000,
-        });
-      } catch {
-        scrapPayload = await l2lGet("/api/1.0/scrapdetail/", { site: siteCode, limit: 2000 });
+      const toIso = (value) => {
+        const v = String(value || "").trim().replace(" ", "T");
+        return v.length === 16 ? v + ":00" : v;
+      };
+      const startIso = toIso(start);
+      const endIso = toIso(end);
+
+      // Generic L2L record APIs use the numeric Site FK (example: 240),
+      // while production reporting uses the configured site code (example: BRMNP3).
+      const dailyForSite = await l2lGet("/api/1.0/reporting/production/daily_summary_data_by_line/", {
+        site: siteCode,
+        start,
+        end,
+      });
+      const dailyRows = Array.isArray(dailyForSite?.data) ? dailyForSite.data : [];
+      const numericSite = dailyRows.find(r => r.site !== undefined && r.site !== null)?.site;
+
+      if (numericSite === undefined || numericSite === null || numericSite === "") {
+        throw new Error("Unable to resolve numeric L2L site id for Scrap Detail.");
       }
 
+      let scrapPayload = await l2lGet("/api/1.0/scrapdetail/", {
+        site: numericSite,
+        start__gte: startIso,
+        start__lte: endIso,
+        limit: 2000,
+        order_by: "-start",
+      });
+
       const lookups = await Promise.allSettled([
-        l2lGet("/api/1.0/scrapcategory/", { site: siteCode, limit: 2000 }),
-        l2lGet("/api/1.0/productcomponents/", { site: siteCode, limit: 2000 }),
-        l2lGet("/api/1.0/resourceshifts/", { site: siteCode, limit: 2000 }),
-        l2lGet("/api/1.0/lines/", { site: siteCode, limit: 2000 }),
+        l2lGet("/api/1.0/scrapcategory/", { site: numericSite, limit: 2000 }),
+        l2lGet("/api/1.0/productcomponents/", { site: numericSite, limit: 2000 }),
+        l2lGet("/api/1.0/resourceshifts/", { site: numericSite, limit: 2000 }),
+        l2lGet("/api/1.0/lines/", { site: numericSite, limit: 2000 }),
       ]);
 
       const dataOf = (result) => result.status === "fulfilled" && Array.isArray(result.value?.data) ? result.value.data : [];
