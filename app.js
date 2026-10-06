@@ -24,7 +24,7 @@ const oeeData=[
 ];
 function pct(v){return v.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"}
 function oee(){
-return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Filtre os dados reais do L2L por setor, linha, turno, dia e faixa de horário.</p></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div><div class="oee-filters oee-filters-live"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno</option><option value="2">2º Turno</option><option value="3">3º Turno</option></select></label><label>Data<input id="oeeDate" type="date"></label><label>Hora inicial<input id="oeeStart" type="time" value="00:00"></label><label>Hora final<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Comparativo de eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Modelos com melhor eficiência</h2><div id="oeeChart"></div><div class="footer-note">Ranking conforme os filtros selecionados • atualização automática a cada 1 minuto.</div></div></div>';
+return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Filtre os dados reais do L2L por setor, linha, turno, dia e faixa de horário.</p></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div><div class="oee-filters oee-filters-live"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno</option><option value="2">2º Turno</option><option value="3">3º Turno</option></select></label><label>Data<input id="oeeDate" type="date"></label><label>Hora inicial<input id="oeeStart" type="time" value="00:00"></label><label>Hora final<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div id="oeeCards" class="oee-line-cards"></div><div class="oee-overview-grid"><div class="panel"><h2 id="oeeSectorTitle">Resumo do setor</h2><div id="oeeSectorSummary"></div></div><div class="panel"><h2>Comparativo de eficiência por linha</h2><div id="oeeLineCompare"></div></div></div><div class="panel oee-model-panel"><h2>Modelos com melhor eficiência</h2><div id="oeeChart"></div><div class="footer-note">Ranking conforme os filtros selecionados • atualização automática a cada 1 minuto.</div></div>';
 }
 
 let oeeRows=[];
@@ -179,6 +179,33 @@ function initOee(){
   else renderOeeLive();
 }
 
+function metricTone(v){return v>=85?"metric-green":v>=70?"metric-yellow":"metric-red"}
+
+function semiGauge(value,label){
+  const v=Math.max(0,Math.min(100,n(value)));
+  const tone=metricTone(v);
+  return '<div class="semi-wrap"><svg class="semi-gauge" viewBox="0 0 180 105" aria-label="'+label+' '+fmtPct(v)+'"><path class="gauge-bg" pathLength="100" d="M20 90 A70 70 0 0 1 160 90"></path><path class="gauge-fg '+tone+'" pathLength="100" stroke-dasharray="'+v+' 100" d="M20 90 A70 70 0 0 1 160 90"></path><text x="90" y="53" text-anchor="middle" class="gauge-label">'+label+'</text><text x="90" y="80" text-anchor="middle" class="gauge-value '+tone+'">'+fmtPct(v)+'</text></svg></div>';
+}
+
+function miniGauge(value,label){
+  const v=Math.max(0,Math.min(100,n(value)));
+  const tone=metricTone(v);
+  const dash=Math.round(v);
+  return '<div class="mini-metric"><svg class="mini-gauge" viewBox="0 0 54 54" aria-label="'+label+' '+fmtPct(v)+'"><circle class="mini-bg" cx="27" cy="27" r="21"></circle><circle class="mini-fg '+tone+'" cx="27" cy="27" r="21" pathLength="100" stroke-dasharray="'+dash+' 100"></circle><text x="27" y="31" text-anchor="middle" class="mini-value">'+fmt(v,0)+'%</text></svg><span>'+label+'</span></div>';
+}
+
+function lineMetricCard(g){
+  return '<article class="oee-line-card"><h3>'+g.line+'</h3>'+semiGauge(g.oee,"OEE")+'<div class="mini-metrics">'+miniGauge(g.availability,"OA")+miniGauge(g.performance,"PPP")+miniGauge(g.quality,"Yield")+'</div></article>';
+}
+
+function sectorSummaryCard(rows,selectedArea){
+  const oee=avg(rows,"overall_equipment_effectiveness");
+  const oa=avg(rows,"operational_availability");
+  const ppp=avg(rows,"peff");
+  const y=avg(rows,"yield");
+  return '<div class="sector-summary-main">'+semiGauge(oee,selectedArea==="Toda a fábrica"?"OEE Geral":"OEE "+selectedArea)+'<div class="sector-mini-stack">'+miniGauge(oa,"OA")+miniGauge(ppp,"PPP")+miniGauge(y,"Yield")+'</div></div>';
+}
+
 function renderOeeLive(){
   if(currentPage!=="oee")return;
   populateOeeFilters();
@@ -191,33 +218,35 @@ function renderOeeLive(){
   const selectedShift=oeeFilterState.shift==="Todos"?"Todos os turnos":oeeFilterState.shift+"º Turno";
   const shiftNote=oeeFilterState.shift!=="Todos"&&!hasShiftDetail(source)?" • turno não detalhado pelo retorno atual do L2L":"";
 
-  const oeeValue=avg(rows,"overall_equipment_effectiveness");
-  const efficiency=avg(rows,"peff");
-  const availability=avg(rows,"operational_availability");
-  const quality=avg(rows,"yield");
-  const scrapPct=avg(rows,"scrap_percent");
-
-  const cards=document.getElementById("oeeCards");
-  if(cards){
-    cards.innerHTML=
-      card("OEE",rows.length?fmtPct(oeeValue):"—",oeeValue>=85?"good":"warn")+
-      card("Eficiência",rows.length?fmtPct(efficiency):"—",efficiency>=85?"good":"warn")+
-      card("Disponibilidade",rows.length?fmtPct(availability):"—")+
-      card("Qualidade",rows.length?fmtPct(quality):"—","good")+
-      card("Scrap %",rows.length?fmtPct(scrapPct):"—",scrapPct<=2?"good":"warn");
-  }
-
   const ctx=document.getElementById("oeeContext");
   if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+oeeFilterState.date+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s)"+shiftNote;
 
-  const table=document.getElementById("oeeTable");
-  if(table){
+  const cards=document.getElementById("oeeCards");
+  if(cards){
+    const ordered=[...groups].sort((a,b)=>b.oee-a.oee);
+    cards.innerHTML=ordered.length
+      ? ordered.map(lineMetricCard).join("")
+      : '<div class="empty-state">Nenhuma linha encontrada para os filtros selecionados.</div>';
+  }
+
+  const sectorTitle=document.getElementById("oeeSectorTitle");
+  if(sectorTitle)sectorTitle.textContent=selectedArea+" • resumo OEE";
+
+  const sector=document.getElementById("oeeSectorSummary");
+  if(sector){
+    sector.innerHTML=rows.length
+      ? sectorSummaryCard(rows,selectedArea)
+      : '<div class="empty-state">Sem dados para o setor selecionado.</div>';
+  }
+
+  const compare=document.getElementById("oeeLineCompare");
+  if(compare){
     const lineRank=[...groups].sort((a,b)=>b.performance-a.performance);
-    table.innerHTML=rankingRows(
+    compare.innerHTML=rankingRows(
       lineRank,
       g=>g.line,
       g=>g.performance,
-      g=>(g.area||"Sem setor")+" • OEE "+fmtPct(g.oee)+" • Dispon. "+fmtPct(g.availability)+" • Qualidade "+fmtPct(g.quality)
+      g=>"OEE "+fmtPct(g.oee)+" • OA "+fmtPct(g.availability)+" • Yield "+fmtPct(g.quality)
     );
   }
 
@@ -231,9 +260,10 @@ function renderOeeLive(){
           p=>p.efficiency,
           p=>(p.lineCount?p.lineCount+" linha(s)":"")+" • Produção "+fmt(p.actual)
         )
-      : '<div class="empty-state"><strong>Modelos não detalhados pelo retorno atual do L2L.</strong><br>O painel já solicita <code>show_products=1</code>; quando o L2L retornar eficiência por produto/modelo, o ranking aparecerá automaticamente.</div>';
+      : '<div class="empty-state"><strong>Modelos não detalhados pelo retorno atual do L2L.</strong><br>Quando o L2L retornar eficiência por produto/modelo, o ranking aparecerá automaticamente.</div>';
   }
 }
+
 
 const productionData=[
 {area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-05",start:"07:00",end:"08:00",plan:900,real:850},
