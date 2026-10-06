@@ -293,7 +293,8 @@ function production(){
     '<div class="filter-context" id="prodContext">🟡 L2L: carregando...</div>'+
   '</div>'+
   '<div id="prodCards" class="cards"></div>'+
-  '<div class="panel"><h2>Produção por linha — dados da API</h2><div id="prodTable"></div><div class="footer-note">Mapeamento: Demanda = demand • Produção atual = actual • Produzido líquido = actual − scrap • atualização automática a cada 1 minuto.</div></div>';
+  '<div class="panel"><h2>Visão completa por setor</h2><div id="prodAreas"></div></div>'+
+  '<div class="panel"><h2>Todas as linhas — produção em tempo real</h2><div id="prodTable"></div><div class="footer-note">Fonte: L2L • Demanda = demand • Produção atual = actual • Produzido líquido = actual − scrap • atualização automática a cada 1 minuto.</div></div>';
 }
 
 async function refreshProductionRange(){
@@ -345,12 +346,48 @@ function getFilteredProductionRows(){
   );
 }
 
+function groupedProductionByArea(rows){
+  const map={};
+  rows.forEach(r=>{
+    const key=r.area||"Sem setor";
+    if(!map[key])map[key]={area:key,demand:0,actual:0,scrap:0,lines:new Set()};
+    map[key].demand+=n(r.demand);
+    map[key].actual+=n(r.actual);
+    map[key].scrap+=n(r.scrap);
+    if(r.line)map[key].lines.add(r.line);
+  });
+  return Object.values(map).map(x=>({
+    area:x.area,
+    demand:x.demand,
+    actual:x.actual,
+    scrap:x.scrap,
+    net:Math.max(0,x.actual-x.scrap),
+    attainment:x.demand?x.actual/x.demand*100:0,
+    lineCount:x.lines.size
+  })).sort((a,b)=>a.area.localeCompare(b.area));
+}
+
+function productionAreaCard(a){
+  const cls=a.attainment>=100?"good":a.attainment>=95?"warn":"bad";
+  return '<article class="prod-area-card">'+
+    '<div class="prod-area-head"><div><span>SETOR</span><h3>'+a.area+'</h3></div><strong class="'+cls+'">'+fmtPct(a.attainment)+'</strong></div>'+
+    '<div class="prod-area-grid">'+
+      '<div><span>Demanda</span><b>'+fmt(a.demand)+'</b></div>'+
+      '<div><span>Produção atual</span><b>'+fmt(a.actual)+'</b></div>'+
+      '<div><span>Produzido líquido</span><b>'+fmt(a.net)+'</b></div>'+
+      '<div><span>Scrap</span><b>'+fmt(a.scrap)+'</b></div>'+
+    '</div>'+
+    '<div class="prod-area-foot">'+a.lineCount+' linha(s) no L2L</div>'+
+  '</article>';
+}
+
 function renderProductionLive(){
   if(currentPage!=="production")return;
 
   populateProductionFilters();
   const rows=getFilteredProductionRows();
   const groups=groupedByLine(rows);
+  const areaGroups=groupedProductionByArea(rows);
 
   const demand=total(rows,"demand");
   const actual=total(rows,"actual");
@@ -368,6 +405,13 @@ function renderProductionLive(){
       card("Scrap",fmt(scrap),scrap===0?"good":"warn");
   }
 
+  const areas=document.getElementById("prodAreas");
+  if(areas){
+    areas.innerHTML=areaGroups.length
+      ? '<div class="prod-area-cards">'+areaGroups.map(productionAreaCard).join("")+'</div>'
+      : '<div class="empty-state">Nenhum setor retornado pelo L2L.</div>';
+  }
+
   const selectedArea=productionFilterState.area==="Todas"?"Toda a fábrica":productionFilterState.area;
   const selectedLine=productionFilterState.line==="Todas"?"Todas as linhas":productionFilterState.line;
   const selectedShift=productionFilterState.shift==="Todos"?"Todos os turnos":productionFilterState.shift+"º Turno";
@@ -376,9 +420,10 @@ function renderProductionLive(){
 
   const table=document.getElementById("prodTable");
   if(table){
-    table.innerHTML=groups.length
+    const allGroups=[...groups].sort((a,b)=>(a.area||"").localeCompare(b.area||"")||a.line.localeCompare(b.line));
+    table.innerHTML=allGroups.length
       ? '<div class="table-scroll"><table><tr><th>Setor</th><th>Linha</th><th>Demanda</th><th>Produção atual</th><th>Produzido líquido</th><th>Scrap</th><th>Atingimento</th><th>Status</th></tr>'+
-        groups.map(g=>{
+        allGroups.map(g=>{
           const netLine=Math.max(0,g.actual-g.scrap);
           const pct=g.demand?g.actual/g.demand*100:0;
           return '<tr><td>'+g.area+'</td><td><b>'+g.line+'</b></td><td>'+fmt(g.demand)+'</td><td><b>'+fmt(g.actual)+'</b></td><td>'+fmt(netLine)+'</td><td>'+fmt(g.scrap)+'</td><td>'+fmtPct(pct)+'</td><td>'+(pct>=100?"🟢":pct>=95?"🟡":"🔴")+'</td></tr>';
