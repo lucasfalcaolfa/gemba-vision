@@ -339,3 +339,120 @@ td:nth-child(2){overflow-wrap:anywhere}
 @media(max-width:640px){
   .line-gauge-grid{grid-template-columns:1fr}
 }
+
+/* Reference-style OEE cards */
+.line-gauge-grid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(210px,1fr));
+  gap:14px;
+  margin-bottom:18px;
+}
+.ref-oee-card{
+  background:#fff;
+  border:1px solid #e1e5e8;
+  border-radius:9px;
+  padding:12px 10px 14px;
+  min-width:0;
+  box-shadow:0 2px 8px rgba(0,0,0,.03);
+}
+.ref-card-title{
+  font-family:Georgia,"Times New Roman",serif;
+  font-size:17px;
+  font-weight:700;
+  line-height:1.05;
+  color:#555;
+  text-transform:uppercase;
+  min-height:40px;
+  padding:0 0 2px;
+}
+.ref-main-gauge{
+  display:flex;
+  justify-content:center;
+  margin-top:2px;
+}
+.ref-main-gauge svg{
+  width:100%;
+  max-width:210px;
+  height:auto;
+  overflow:visible;
+}
+.ref-gauge-track,.ref-gauge-value{
+  fill:none;
+  stroke-width:9;
+  stroke-linecap:round;
+}
+.ref-gauge-track{stroke:#4f5052}
+.ref-gauge-value{transition:stroke-dasharray .25s ease}
+.ref-gauge-label{
+  font-size:16px;
+  font-weight:800;
+  fill:#1f2933;
+}
+.ref-gauge-number{
+  font-size:24px;
+  font-weight:800;
+}
+.ref-gauge-delta{
+  font-size:10px;
+  font-weight:800;
+}
+.ref-metrics{
+  display:flex;
+  flex-direction:column;
+  gap:9px;
+  margin-top:-2px;
+}
+.ref-metric-row{
+  display:grid;
+  grid-template-columns:52px minmax(48px,1fr) auto;
+  align-items:center;
+  gap:8px;
+}
+.ref-metric-row strong{
+  font-size:12px;
+  color:#172635;
+}
+.ref-mini-circle{
+  --pct:0;
+  width:48px;
+  height:48px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  position:relative;
+  background:conic-gradient(currentColor calc(var(--pct)*1%),#dfe5e9 0);
+}
+.ref-mini-circle::after{
+  content:"";
+  position:absolute;
+  inset:5px;
+  border-radius:50%;
+  background:#fff;
+}
+.ref-mini-circle span{
+  position:relative;
+  z-index:1;
+  font-size:10px;
+  font-weight:800;
+  color:#253342;
+}
+.metric-delta{
+  font-size:10px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.delta-up{fill:#17a95d;color:#17a95d}
+.delta-down{fill:#ef5350;color:#ef5350}
+.delta-flat{fill:#7d858c;color:#7d858c}
+.gauge-green{stroke:#20a95a;fill:#20a95a;color:#20a95a}
+.gauge-yellow{stroke:#efbd32;fill:#efbd32;color:#efbd32}
+.gauge-red{stroke:#ef5350;fill:#ef5350;color:#ef5350}
+@media(max-width:1400px){
+  .line-gauge-grid{grid-template-columns:repeat(3,minmax(210px,1fr))}
+}
+@media(max-width:1050px){
+  .line-gauge-grid{grid-template-columns:repeat(2,minmax(210px,1fr))}
+}
+@media(max-width:650px){
+  .line-gauge-grid{grid-template-columns:1fr}
+}
