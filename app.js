@@ -24,7 +24,7 @@ const oeeData=[
 ];
 function pct(v){return v.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"}
 function oee(){
-return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de análise</h2><p>Selecione uma combinação ou mantenha “Toda a fábrica” para a visão consolidada.</p></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div><div class="oee-filters"><label>Área<select id="oeeArea"><option value="Todas">Toda a fábrica</option><option>Fundição</option><option>Acabamento</option><option>Usinagem</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeTurno"><option value="Todos">Todos os turnos</option><option>A</option><option>B</option><option>C</option></select></label><label>Data<input id="oeeDate" type="date"></label><label>De<input id="oeeStart" type="time" value="00:00"></label><label>Até<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">Visão consolidada • Todas as áreas, linhas e turnos</div></div><div class="cards" id="oeeCards"></div><div class="section-grid"><div class="panel"><h2>OEE por linha</h2><div id="oeeTable"></div></div><div class="panel"><h2>Comparativo de OEE</h2><div class="chart" id="oeeChart"></div><div class="footer-note">Meta de referência: 85% • Dados ilustrativos para demonstração.</div></div></div><div class="footer-note">Importante: os números exibidos nesta versão são demonstrativos. A conexão com dados reais do L2L ainda será implementada.</div>';
+return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de análise</h2><p>Selecione uma combinação ou mantenha “Toda a fábrica” para a visão consolidada.</p></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div><div class="oee-filters"><label>Área<select id="oeeArea"><option value="Todas">Toda a fábrica</option><option>Fundição</option><option>Acabamento</option><option>Usinagem</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeTurno"><option value="Todos">Todos os turnos</option><option>A</option><option>B</option><option>C</option></select></label><label>Data<input id="oeeDate" type="date"></label><label>De<input id="oeeStart" type="time" value="00:00"></label><label>Até<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">Visão consolidada • Todas as áreas, linhas e turnos</div></div><div class="cards" id="oeeCards"></div><div class="section-grid"><div class="panel"><h2>OEE por linha</h2><div id="oeeTable"></div></div><div class="panel"><h2>Comparativo de OEE</h2><div class="chart" id="oeeChart"></div><div class="footer-note">Meta de referência: 85% • Dados reais do L2L.</div></div></div><div class="footer-note">Dados reais do L2L • atualização automática a cada 1 minuto.</div>';
 }
 function updateOee(){
 const area=document.getElementById("oeeArea").value, linha=document.getElementById("oeeLinha").value, turno=document.getElementById("oeeTurno").value, date=document.getElementById("oeeDate").value, start=document.getElementById("oeeStart").value, end=document.getElementById("oeeEnd").value;
@@ -61,7 +61,7 @@ const productionData=[
 {area:"Acabamento",linha:"AC1",turno:"A",date:"2026-10-06",start:"08:00",end:"09:00",plan:780,real:790},
 {area:"Usinagem",linha:"US1",turno:"A",date:"2026-10-06",start:"08:00",end:"09:00",plan:760,real:740}
 ];
-function production(){return '<div class="panel"><div class="oee-filter-panel"><div class="oee-filters"><label>Área<select id="prodArea"><option value="Todas">Toda a fábrica</option><option>Fundição</option><option>Acabamento</option><option>Usinagem</option></select></label><label>Linha<select id="prodLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="prodTurno"><option value="Todos">Todos os turnos</option><option>A</option><option>B</option><option>C</option></select></label><label>Data<input id="prodDate" type="date"></label><label>De<input id="prodStart" type="time" value="00:00"></label><label>Até<input id="prodEnd" type="time" value="23:59"></label></div><div class="filter-actions"><button class="filter-reset" id="prodReset">↺ Limpar filtros</button></div><div class="filter-context" id="prodContext"></div></div></div><div id="prodCards" class="cards"></div><div class="panel"><h2>Controle de produção — análise detalhada</h2><div id="prodTable"></div><div class="footer-note">Dados demonstrativos nesta primeira versão. A estrutura está preparada para receber os dados reais do L2L.</div></div>'}
+function production(){return '<div class="panel"><div class="oee-filter-panel"><div class="oee-filters"><label>Área<select id="prodArea"><option value="Todas">Toda a fábrica</option><option>Fundição</option><option>Acabamento</option><option>Usinagem</option></select></label><label>Linha<select id="prodLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="prodTurno"><option value="Todos">Todos os turnos</option><option>A</option><option>B</option><option>C</option></select></label><label>Data<input id="prodDate" type="date"></label><label>De<input id="prodStart" type="time" value="00:00"></label><label>Até<input id="prodEnd" type="time" value="23:59"></label></div><div class="filter-actions"><button class="filter-reset" id="prodReset">↺ Limpar filtros</button></div><div class="filter-context" id="prodContext"></div></div></div><div id="prodCards" class="cards"></div><div class="panel"><h2>Controle de produção — análise detalhada</h2><div id="prodTable"></div><div class="footer-note">Dados reais do L2L • atualização automática a cada 1 minuto.</div></div>'}
 function updateProduction(){const area=document.getElementById("prodArea").value,linha=document.getElementById("prodLinha").value,turno=document.getElementById("prodTurno").value,date=document.getElementById("prodDate").value,start=document.getElementById("prodStart").value,end=document.getElementById("prodEnd").value;let rows=productionData.filter(x=>(area==="Todas"||x.area===area)&&(linha==="Todas"||x.linha===linha)&&(turno==="Todos"||x.turno===turno)&&(!date||x.date===date)&&x.end>start&&x.start<end);const plan=rows.reduce((a,x)=>a+x.plan,0),real=rows.reduce((a,x)=>a+x.real,0),saldo=real-plan,ating=plan?real/plan*100:0,ritmo=rows.length?real/rows.length:0;document.getElementById("prodCards").innerHTML=card("Plano",plan.toLocaleString("pt-BR"))+card("Realizado",real.toLocaleString("pt-BR"))+card("Saldo",(saldo>=0?"+":"")+saldo.toLocaleString("pt-BR"),saldo>=0?"good":"bad")+card("Atingimento",ating.toFixed(1)+"%",ating>=100?"good":ating>=95?"warn":"bad")+card("Ritmo/h",Math.round(ritmo).toLocaleString("pt-BR"),"good");document.getElementById("prodContext").textContent=(area==="Todas"?"Toda a fábrica":area)+" • "+(linha==="Todas"?"Todas as linhas":linha)+" • "+(turno==="Todos"?"Todos os turnos":"Turno "+turno)+" • "+(date?date.split("-").reverse().join("/"):"Todas as datas")+" • "+start+" → "+end+" • "+rows.length+" registro(s)";document.getElementById("prodTable").innerHTML=rows.length?'<table><tr><th>Área</th><th>Linha</th><th>Turno</th><th>Período</th><th>Plano</th><th>Realizado</th><th>Saldo</th><th>Ating.</th><th>Status</th></tr>'+rows.map(x=>{const s=x.real-x.plan,p=x.real/x.plan*100;return '<tr><td>'+x.area+'</td><td><b>'+x.linha+'</b></td><td>'+x.turno+'</td><td>'+x.start+'–'+x.end+'</td><td>'+x.plan.toLocaleString("pt-BR")+'</td><td>'+x.real.toLocaleString("pt-BR")+'</td><td>'+(s>=0?"+":"")+s.toLocaleString("pt-BR")+'</td><td>'+p.toFixed(1)+'%</td><td>'+(p>=100?"🟢":p>=95?"🟡":"🔴")+'</td></tr>'}).join("")+'</table>':'<div class="empty-state">Nenhum registro encontrado para os filtros selecionados.</div>'}
 function initProduction(){const area=document.getElementById("prodArea"),linha=document.getElementById("prodLinha"),turno=document.getElementById("prodTurno"),date=document.getElementById("prodDate"),start=document.getElementById("prodStart"),end=document.getElementById("prodEnd");function updateLines(){const a=area.value;linha.innerHTML='<option value="Todas">Todas as linhas</option>'+[...new Set(productionData.filter(x=>a==="Todas"||x.area===a).map(x=>x.linha))].map(x=>'<option>'+x+'</option>').join("")}area.addEventListener("change",()=>{updateLines();updateProduction()});[linha,turno,date,start,end].forEach(x=>x.addEventListener("change",updateProduction));document.getElementById("prodReset").addEventListener("click",()=>{area.value="Todas";turno.value="Todos";date.value="";start.value="00:00";end.value="23:59";updateLines();linha.value="Todas";updateProduction()});updateLines();updateProduction()}
 const stockData=[
@@ -75,7 +75,116 @@ function updateStock(){const totalI=stockData.reduce((a,x)=>a+x.inacabado,0),tot
 function initStock(){updateStock()}
 function people(){return '<div class="cards">'+card("Absenteísmo","3,2%","warn")+card("Presentes","94,8%","good")+card("Faltas","11","bad")+card("Afastamentos","4","warn")+card("Efetivo","342")+'</div><div class="panel"><h2>Absenteísmo por área</h2><table><tr><th>Área</th><th>Efetivo</th><th>Ausentes</th><th>%</th><th>Indicador</th></tr><tr><td>Fundição</td><td>120</td><td>4</td><td>3,3%</td><td><div class="bar"><i style="width:33%"></i></div></td></tr><tr><td>Injeção</td><td>85</td><td>2</td><td>2,4%</td><td><div class="bar"><i style="width:24%"></i></div></td></tr><tr><td>Usinagem</td><td>110</td><td>5</td><td>4,5%</td><td><div class="bar"><i style="width:45%"></i></div></td></tr></table></div>'}
 function quality(){return '<div class="cards">'+card("Qualidade","98,5%","good")+card("Scrap","1,5%","good")+card("Retrabalho","2,1%","warn")+card("PPM","185","warn")+card("NQ","R$ 12,4 mil","bad")+'</div><div class="section-grid"><div class="panel"><h2>Pareto de defeitos</h2><table><tr><th>Defeito</th><th>%</th><th>Representação</th></tr><tr><td>Porosidade</td><td>38%</td><td><div class="bar"><i style="width:38%"></i></div></td></tr><tr><td>Rebarba</td><td>21%</td><td><div class="bar"><i style="width:21%"></i></div></td></tr><tr><td>Trinca</td><td>15%</td><td><div class="bar"><i style="width:15%"></i></div></td></tr><tr><td>Dimensional</td><td>12%</td><td><div class="bar"><i style="width:12%"></i></div></td></tr></table></div><div class="panel"><h2>Não qualidade por processo</h2><div class="kpis"><div class="mini"><div class="label">Injeção</div><strong>42%</strong></div><div class="mini"><div class="label">Acabamento</div><strong>31%</strong></div><div class="mini"><div class="label">Usinagem</div><strong>18%</strong></div></div></div></div>'}
-function render(page){document.getElementById("content").innerHTML=shell(pages[page]);if(page==="oee")initOee();if(page==="production")initProduction();if(page==="stock")initStock()}
+let currentPage="home";
+let l2lRows=[];
+let l2lLastUpdate=null;
+let l2lError="";
+
+function n(v){const x=Number(v);return Number.isFinite(x)?x:0}
+function avg(rows,key){return rows.length?rows.reduce((s,r)=>s+n(r[key]),0)/rows.length:0}
+function total(rows,key){return rows.reduce((s,r)=>s+n(r[key]),0)}
+function fmt(v,d=0){return n(v).toLocaleString("pt-BR",{minimumFractionDigits:d,maximumFractionDigits:d})}
+function fmtPct(v){return fmt(v,1)+"%"}
+function todayISO(){return new Date().toISOString().slice(0,10)}
+
+async function refreshL2L(){
+  try{
+    l2lRows=await window.L2L.getDaily(todayISO());
+    l2lLastUpdate=new Date();
+    l2lError="";
+    applyLiveData(currentPage);
+  }catch(err){
+    l2lError=err.message||"Falha ao consultar L2L";
+    applyLiveData(currentPage);
+  }
+}
+
+function liveStamp(){
+  if(l2lError)return "🔴 L2L: "+l2lError;
+  if(!l2lLastUpdate)return "🟡 L2L: carregando...";
+  return "🟢 L2L atualizado às "+l2lLastUpdate.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+
+function groupedByLine(rows){
+  const map={};
+  rows.forEach(r=>{
+    const key=r.line||"Sem linha";
+    if(!map[key])map[key]={line:key,area:r.area||"",demand:0,actual:0,scrap:0,oee:[],availability:[],performance:[],quality:[]};
+    const g=map[key];
+    g.demand+=n(r.demand);g.actual+=n(r.actual);g.scrap+=n(r.scrap);
+    if(r.overall_equipment_effectiveness!==null&&r.overall_equipment_effectiveness!==undefined)g.oee.push(n(r.overall_equipment_effectiveness));
+    if(r.operational_availability!==null&&r.operational_availability!==undefined)g.availability.push(n(r.operational_availability));
+    if(r.peff!==null&&r.peff!==undefined)g.performance.push(n(r.peff));
+    if(r.yield!==null&&r.yield!==undefined)g.quality.push(n(r.yield));
+  });
+  return Object.values(map).map(g=>({
+    ...g,
+    oee:g.oee.length?g.oee.reduce((a,b)=>a+b,0)/g.oee.length:0,
+    availability:g.availability.length?g.availability.reduce((a,b)=>a+b,0)/g.availability.length:0,
+    performance:g.performance.length?g.performance.reduce((a,b)=>a+b,0)/g.performance.length:0,
+    quality:g.quality.length?g.quality.reduce((a,b)=>a+b,0)/g.quality.length:0
+  })).sort((a,b)=>a.line.localeCompare(b.line));
+}
+
+function applyLiveData(page){
+  const refresh=document.querySelector(".refresh");
+  if(refresh)refresh.textContent=liveStamp();
+
+  if(page==="home"){
+    const groups=groupedByLine(l2lRows);
+    const demand=total(l2lRows,"demand"),actual=total(l2lRows,"actual"),scrap=total(l2lRows,"scrap");
+    const oeeAvg=avg(l2lRows,"overall_equipment_effectiveness"), perf=avg(l2lRows,"peff"), qual=avg(l2lRows,"yield");
+    const cards=document.querySelectorAll(".cards .card .value");
+    if(cards[0])cards[0].textContent=fmtPct(oeeAvg);
+    if(cards[1])cards[1].textContent=fmtPct(perf);
+    if(cards[2])cards[2].textContent=fmt(actual);
+    if(cards[3])cards[3].textContent=fmtPct(qual);
+    const table=document.querySelector(".section-grid .panel table");
+    if(table){
+      table.innerHTML='<tr><th>Linha</th><th>Plano</th><th>Real</th><th>Ating.</th><th>Status</th></tr>'+
+      groups.slice(0,12).map(g=>{const p=g.demand?g.actual/g.demand*100:0;return '<tr><td>'+g.line+'</td><td>'+fmt(g.demand)+'</td><td>'+fmt(g.actual)+'</td><td>'+fmtPct(p)+'</td><td><span class="status"><span class="dot '+(p>=100?"green":p>=95?"yellow":"red")+'"></span>'+(p>=100?"OK":p>=95?"Atenção":"Crítico")+'</span></td></tr>'}).join("");
+    }
+  }
+
+  if(page==="production"){
+    const groups=groupedByLine(l2lRows);
+    const plan=total(l2lRows,"demand"),real=total(l2lRows,"actual"),saldo=real-plan,ating=plan?real/plan*100:0;
+    const cards=document.getElementById("prodCards");
+    if(cards)cards.innerHTML=card("Plano",fmt(plan))+card("Realizado",fmt(real))+card("Saldo",(saldo>=0?"+":"")+fmt(saldo),saldo>=0?"good":"bad")+card("Atingimento",fmtPct(ating),ating>=100?"good":ating>=95?"warn":"bad")+card("Scrap",fmt(total(l2lRows,"scrap")),total(l2lRows,"scrap")===0?"good":"warn");
+    const ctx=document.getElementById("prodContext");if(ctx)ctx.textContent=liveStamp()+" • "+groups.length+" linha(s)";
+    const table=document.getElementById("prodTable");
+    if(table)table.innerHTML='<table><tr><th>Área</th><th>Linha</th><th>Plano</th><th>Realizado</th><th>Scrap</th><th>Saldo</th><th>Ating.</th><th>Status</th></tr>'+
+      groups.map(g=>{const s=g.actual-g.demand,p=g.demand?g.actual/g.demand*100:0;return '<tr><td>'+g.area+'</td><td><b>'+g.line+'</b></td><td>'+fmt(g.demand)+'</td><td>'+fmt(g.actual)+'</td><td>'+fmt(g.scrap)+'</td><td>'+(s>=0?"+":"")+fmt(s)+'</td><td>'+fmtPct(p)+'</td><td>'+(p>=100?"🟢":p>=95?"🟡":"🔴")+'</td></tr>'}).join("")+'</table>';
+  }
+
+  if(page==="oee"){
+    const groups=groupedByLine(l2lRows);
+    const cards=document.getElementById("oeeCards");
+    if(cards)cards.innerHTML=card("OEE",fmtPct(avg(l2lRows,"overall_equipment_effectiveness")),avg(l2lRows,"overall_equipment_effectiveness")>=85?"good":"warn")+card("Disponibilidade",fmtPct(avg(l2lRows,"operational_availability")))+card("Performance",fmtPct(avg(l2lRows,"peff")))+card("Qualidade",fmtPct(avg(l2lRows,"yield")),"good")+card("Scrap %",fmtPct(avg(l2lRows,"scrap_percent")),avg(l2lRows,"scrap_percent")<=2?"good":"warn");
+    const ctx=document.getElementById("oeeContext");if(ctx)ctx.textContent=liveStamp()+" • "+groups.length+" linha(s)";
+    const table=document.getElementById("oeeTable");
+    if(table)table.innerHTML='<table><tr><th>Área</th><th>Linha</th><th>OEE</th><th>Dispon.</th><th>Performance</th><th>Qualidade</th><th>Status</th></tr>'+
+      groups.map(g=>'<tr><td>'+g.area+'</td><td>'+g.line+'</td><td><b>'+fmtPct(g.oee)+'</b></td><td>'+fmtPct(g.availability)+'</td><td>'+fmtPct(g.performance)+'</td><td>'+fmtPct(g.quality)+'</td><td><span class="status"><span class="dot '+(g.oee>=85?"green":"red")+'"></span>'+(g.oee>=85?"Meta atingida":"Abaixo da meta")+'</span></td></tr>').join("")+'</table>';
+    const chart=document.getElementById("oeeChart");
+    if(chart)chart.innerHTML=groups.slice(0,12).map(g=>'<div class="col"><i style="--h:'+Math.max(0,Math.min(100,g.oee))+'%"></i>'+g.line+'<br><b>'+fmtPct(g.oee)+'</b></div>').join("");
+  }
+
+  if(page==="quality"){
+    const cards=document.querySelectorAll(".cards .card .value");
+    const quality=avg(l2lRows,"yield"),scrapPct=avg(l2lRows,"scrap_percent"),reject=avg(l2lRows,"reject_percent"),scrap=total(l2lRows,"scrap");
+    if(cards[0])cards[0].textContent=fmtPct(quality);
+    if(cards[1])cards[1].textContent=fmtPct(scrapPct);
+    if(cards[2])cards[2].textContent=fmt(scrap);
+    if(cards[3])cards[3].textContent=fmtPct(reject);
+  }
+}
+
+function render(page){
+  currentPage=page;
+  document.getElementById("content").innerHTML=shell(pages[page]);
+  if(page==="stock")initStock();
+  applyLiveData(page);
+}
 document.querySelectorAll(".nav").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));b.classList.add("active");render(b.dataset.page)}));
 function tick(){const d=new Date();document.getElementById("date").textContent=d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});document.getElementById("time").textContent=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
-render("home");tick();setInterval(tick,1000);
+render("home");tick();setInterval(tick,1000);refreshL2L();setInterval(refreshL2L,60000);
