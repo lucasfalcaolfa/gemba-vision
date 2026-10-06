@@ -186,20 +186,27 @@ function gaugeTone(value){
   return "gauge-red";
 }
 
-function mainGauge(value,label){
-  const v=Math.max(0,Math.min(100,n(value)));
-  const tone=gaugeTone(v);
-  return '<div class="speedometer"><svg viewBox="0 0 200 120" role="img" aria-label="'+label+' '+fmtPct(v)+'"><path class="speedometer-track" d="M20 100 A80 80 0 0 1 180 100" pathLength="100"></path><path class="speedometer-value '+tone+'" d="M20 100 A80 80 0 0 1 180 100" pathLength="100" stroke-dasharray="'+v+' 100"></path><text x="100" y="58" text-anchor="middle" class="speedometer-label">'+label+'</text><text x="100" y="88" text-anchor="middle" class="speedometer-number '+tone+'">'+fmtPct(v)+'</text></svg></div>';
+function deltaMarkup(value,target=85){
+  const diff=n(value)-target;
+  const cls=diff>0?"delta-up":diff<0?"delta-down":"delta-flat";
+  const arrow=diff>0?"▲":diff<0?"▼":"—";
+  return '<span class="metric-delta '+cls+'" title="Diferença em relação à referência de '+target+'%">'+arrow+Math.abs(diff).toFixed(0)+'%</span>';
 }
 
-function miniMetric(value,label){
+function mainGauge(value){
   const v=Math.max(0,Math.min(100,n(value)));
   const tone=gaugeTone(v);
-  return '<div class="line-mini-metric"><div class="line-mini-circle '+tone+'" style="--pct:'+v+'"><span>'+fmt(v,0)+'%</span></div><strong>'+label+'</strong></div>';
+  return '<div class="ref-main-gauge"><svg viewBox="0 0 220 138" role="img" aria-label="OEE '+fmtPct(v)+'"><path class="ref-gauge-track" d="M25 112 A85 85 0 0 1 195 112" pathLength="100"></path><path class="ref-gauge-value '+tone+'" d="M25 112 A85 85 0 0 1 195 112" pathLength="100" stroke-dasharray="'+v+' 100"></path><text x="110" y="62" text-anchor="middle" class="ref-gauge-label">OEE</text><text x="110" y="88" text-anchor="middle" class="ref-gauge-delta '+(n(v)>=85?"delta-up":"delta-down")+'">'+(n(v)>=85?"▲":"▼")+Math.abs(n(v)-85).toFixed(0)+'%</text><text x="110" y="116" text-anchor="middle" class="ref-gauge-number '+tone+'">'+fmt(v,0)+'%</text></svg></div>';
+}
+
+function miniMetric(value,label,target=85){
+  const v=Math.max(0,Math.min(100,n(value)));
+  const tone=gaugeTone(v);
+  return '<div class="ref-metric-row"><div class="ref-mini-circle '+tone+'" style="--pct:'+v+'"><span>'+fmt(v,0)+'%</span></div><strong>'+label+'</strong>'+deltaMarkup(v,target)+'</div>';
 }
 
 function lineGaugeCard(g){
-  return '<article class="line-gauge-card"><div class="line-gauge-title">'+g.line+'</div>'+mainGauge(g.performance,"Eficiência")+'<div class="line-mini-grid">'+miniMetric(g.availability,"OA")+miniMetric(g.oee,"OEE")+miniMetric(g.quality,"Yield")+'</div></article>';
+  return '<article class="ref-oee-card"><div class="ref-card-title">'+g.line+'</div>'+mainGauge(g.oee)+'<div class="ref-metrics">'+miniMetric(g.availability,"OA",85)+miniMetric(g.performance,"PPP",85)+miniMetric(g.quality,"Yield",85)+'</div></article>';
 }
 
 function renderOeeLive(){
