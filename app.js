@@ -769,14 +769,128 @@ function initProduction(){
   else renderProductionLive();
 }
 
-const stockData=[
-{modelo:"Case-Joint",inacabado:1850,acabado:920},
-{modelo:"INJP1",inacabado:1320,acabado:680},
-{modelo:"INJP2",inacabado:980,acabado:540},
-{modelo:"Outros",inacabado:760,acabado:410}
-];
-function stock(){return '<div class="panel"><div class="filter-context">Controle físico do estoque da Fundição • visão por modelo</div></div><div class="panel"><h2>Estoque da Fundição — Inacabado</h2><p class="stock-rule">Entradas da Fundição − consumo/saída para Acabamento</p><div id="stockInacabado"></div></div><div class="panel"><h2>Estoque da Fundição — Acabado</h2><p class="stock-rule">Produção do Acabamento − saída/envio para Usinagem</p><div id="stockAcabado"></div></div><div class="panel"><h2>Resumo do Estoque</h2><div id="stockResumo"></div><div class="footer-note">Dados demonstrativos nesta primeira versão. A estrutura está preparada para receber os dados reais do L2L/Excel.</div></div>'}
-function updateStock(){const totalI=stockData.reduce((a,x)=>a+x.inacabado,0),totalA=stockData.reduce((a,x)=>a+x.acabado,0);const table=(field)=>'<table><tr><th>Modelo</th><th>Quantidade</th><th>Status</th></tr>'+stockData.map(x=>'<tr><td><b>'+x.modelo+'</b></td><td>'+x[field].toLocaleString("pt-BR")+'</td><td>'+(x[field]>1000?"🟢":x[field]>500?"🟡":"🔴")+'</td></tr>').join("")+'<tr><th>Total</th><th>'+stockData.reduce((a,x)=>a+x[field],0).toLocaleString("pt-BR")+'</th><th></th></tr></table>';document.getElementById("stockInacabado").innerHTML=table("inacabado");document.getElementById("stockAcabado").innerHTML=table("acabado");document.getElementById("stockResumo").innerHTML='<table><tr><th>Indicador</th><th>Quantidade</th></tr><tr><td>Estoque Inacabado</td><td><b>'+totalI.toLocaleString("pt-BR")+'</b></td></tr><tr><td>Estoque Acabado</td><td><b>'+totalA.toLocaleString("pt-BR")+'</b></td></tr><tr><th>Estoque Total</th><th>'+(totalI+totalA).toLocaleString("pt-BR")+'</th></tr></table>'}
+const STOCK_STAGE={
+  foundry:/^(FND)(?!.*ACAB)/i,
+  finishing:/ACAB/i,
+  downstream:/(USI|USIN|MACH|MECAN)/i
+};
+
+function stock(){
+  return '<div class="panel stock-live-head">'+
+    '<div><h2>Estoque calculado com dados do L2L</h2><p>Posição operacional do dia baseada no fluxo real de produção entre Fundição, Acabamento e processo seguinte.</p></div>'+
+    '<div class="stock-live-badge" id="stockLiveStatus">🟡 L2L: carregando...</div>'+
+  '</div>'+
+  '<div class="cards" id="stockCards"></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>WIP / INACABADO</span><h2>Estoque da Fundição — Inacabado</h2><p>Produção da Fundição − consumo registrado no Acabamento.</p></div></div><div id="stockInacabado"></div></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>PRODUTO ACABADO</span><h2>Estoque da Fundição — Acabado</h2><p>Produção do Acabamento − consumo/saída identificada no processo seguinte.</p></div></div><div id="stockAcabado"></div></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>CONSOLIDADO</span><h2>Resumo do Estoque</h2><p>Resumo do saldo operacional calculado com os registros atuais do L2L.</p></div></div><div id="stockResumo"></div></div>'+
+  '<div class="stock-calculation-note"><strong>Importante:</strong> este painel usa movimentos de produção do L2L. Ele representa um <b>saldo operacional calculado do período</b>. Para transformar esse valor em estoque físico oficial, é necessário existir um saldo inicial/contagem física de partida.</div>';
+}
+
+function stockStage(area){
+  const a=String(area||"").toUpperCase();
+  if(STOCK_STAGE.finishing.test(a))return "finishing";
+  if(STOCK_STAGE.foundry.test(a))return "foundry";
+  if(STOCK_STAGE.downstream.test(a))return "downstream";
+  return "";
+}
+
+function stockProductRows(row){
+  let products=row.products;
+  let list=[];
+  if(Array.isArray(products))list=products;
+  else if(products&&typeof products==="object")list=Object.values(products);
+
+  const normalized=list.filter(x=>x&&typeof x==="object").map(p=>({
+    model:String(p.product_name??p.product??p.name??p.model??p.product_code??p.part_number??p.description??"").trim(),
+    qty:n(p.actual??p.production_actual??p.quantity??p.qty??0)
+  })).filter(x=>x.model);
+
+  if(normalized.length)return normalized;
+  return [{model:"GERAL",qty:n(row.actual)}];
+}
+
+function calculateL2LStock(rows){
+  const flow={};
+  rows.forEach(row=>{
+    const stage=stockStage(row.area);
+    if(!stage)return;
+    stockProductRows(row).forEach(p=>{
+      const model=p.model||"GERAL";
+      if(!flow[model])flow[model]={model,foundry:0,finishing:0,downstream:0};
+      flow[model][stage]+=n(p.qty);
+    });
+  });
+
+  return Object.values(flow).map(x=>({
+    ...x,
+    inacabado:Math.max(0,x.foundry-x.finishing),
+    acabado:Math.max(0,x.finishing-x.downstream),
+    hasDownstream:x.downstream>0
+  })).sort((a,b)=>a.model.localeCompare(b.model));
+}
+
+function stockQtyStatus(qty){
+  if(qty<=0)return '<span class="stock-live-status zero">Sem saldo</span>';
+  return '<span class="stock-live-status ok">Disponível</span>';
+}
+
+function renderStockTable(rows,type){
+  if(!rows.length)return '<div class="empty-state">Nenhum fluxo de produção compatível foi retornado pelo L2L para este período.</div>';
+  const isWip=type==="inacabado";
+  const qtyKey=isWip?"inacabado":"acabado";
+  return '<div class="table-scroll"><table class="stock-live-table"><thead><tr><th>Modelo</th>'+
+    (isWip?'<th>Produção Fundição</th><th>Consumido no Acabamento</th>':'<th>Produção Acabamento</th><th>Saída processo seguinte</th>')+
+    '<th>Saldo calculado</th><th>Status</th></tr></thead><tbody>'+
+    rows.map(x=>'<tr><td><b>'+stockEsc(x.model)+'</b></td>'+
+      (isWip?'<td>'+fmt(x.foundry)+'</td><td>'+fmt(x.finishing)+'</td>':'<td>'+fmt(x.finishing)+'</td><td>'+fmt(x.downstream)+'</td>')+
+      '<td><b>'+fmt(x[qtyKey])+'</b></td><td>'+stockQtyStatus(x[qtyKey])+'</td></tr>').join("")+
+    '</tbody></table></div>';
+}
+
+function stockEsc(value){
+  return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+}
+
+function updateStock(){
+  const position=calculateL2LStock(l2lRows);
+  const totalI=position.reduce((s,x)=>s+x.inacabado,0);
+  const totalA=position.reduce((s,x)=>s+x.acabado,0);
+  const foundry=position.reduce((s,x)=>s+x.foundry,0);
+  const finishing=position.reduce((s,x)=>s+x.finishing,0);
+  const downstream=position.reduce((s,x)=>s+x.downstream,0);
+
+  const status=document.getElementById("stockLiveStatus");
+  if(status)status.textContent=liveStamp();
+
+  const cards=document.getElementById("stockCards");
+  if(cards)cards.innerHTML=
+    card("Inacabado calculado",fmt(totalI),totalI>0?"warn":"")+
+    card("Acabado calculado",fmt(totalA),totalA>0?"good":"")+
+    card("Produção Fundição",fmt(foundry))+
+    card("Produção Acabamento",fmt(finishing))+
+    card("Saída identificada",fmt(downstream));
+
+  const inc=document.getElementById("stockInacabado");
+  if(inc)inc.innerHTML=renderStockTable(position.filter(x=>x.foundry||x.finishing),"inacabado");
+
+  const acab=document.getElementById("stockAcabado");
+  if(acab)acab.innerHTML=renderStockTable(position.filter(x=>x.finishing||x.downstream),"acabado");
+
+  const resumo=document.getElementById("stockResumo");
+  if(resumo){
+    const downstreamKnown=downstream>0;
+    resumo.innerHTML=
+      '<div class="stock-summary-grid">'+
+        '<div><span>Inacabado calculado</span><strong>'+fmt(totalI)+'</strong><small>Fundição − Acabamento</small></div>'+
+        '<div><span>Acabado calculado</span><strong>'+fmt(totalA)+'</strong><small>Acabamento − processo seguinte</small></div>'+
+        '<div><span>Total calculado</span><strong>'+fmt(totalI+totalA)+'</strong><small>Saldo operacional do período</small></div>'+
+        '<div><span>Modelos identificados</span><strong>'+fmt(position.length)+'</strong><small>'+(position.some(x=>x.model!=="GERAL")?"Detalhe de produto disponível":"L2L sem detalhe de produto")+'</small></div>'+
+      '</div>'+
+      (!downstreamKnown?'<div class="stock-warning">⚠️ O L2L não retornou consumo/saída do processo seguinte neste período. Por isso, o valor de Acabado representa a produção do Acabamento ainda não compensada por uma saída identificada.</div>':'');
+  }
+}
+
 function initStock(){updateStock()}
 function people(){return '<div class="cards">'+card("Absenteísmo","3,2%","warn")+card("Presentes","94,8%","good")+card("Faltas","11","bad")+card("Afastamentos","4","warn")+card("Efetivo","342")+'</div><div class="panel"><h2>Absenteísmo por área</h2><table><tr><th>Área</th><th>Efetivo</th><th>Ausentes</th><th>%</th><th>Indicador</th></tr><tr><td>Fundição</td><td>120</td><td>4</td><td>3,3%</td><td><div class="bar"><i style="width:33%"></i></div></td></tr><tr><td>Injeção</td><td>85</td><td>2</td><td>2,4%</td><td><div class="bar"><i style="width:24%"></i></div></td></tr><tr><td>Usinagem</td><td>110</td><td>5</td><td>4,5%</td><td><div class="bar"><i style="width:45%"></i></div></td></tr></table></div>'}
 function quality(){return '<div class="cards">'+card("Qualidade","98,5%","good")+card("Scrap","1,5%","good")+card("Retrabalho","2,1%","warn")+card("PPM","185","warn")+card("NQ","R$ 12,4 mil","bad")+'</div><div class="section-grid"><div class="panel"><h2>Pareto de defeitos</h2><table><tr><th>Defeito</th><th>%</th><th>Representação</th></tr><tr><td>Porosidade</td><td>38%</td><td><div class="bar"><i style="width:38%"></i></div></td></tr><tr><td>Rebarba</td><td>21%</td><td><div class="bar"><i style="width:21%"></i></div></td></tr><tr><td>Trinca</td><td>15%</td><td><div class="bar"><i style="width:15%"></i></div></td></tr><tr><td>Dimensional</td><td>12%</td><td><div class="bar"><i style="width:12%"></i></div></td></tr></table></div><div class="panel"><h2>Não qualidade por processo</h2><div class="kpis"><div class="mini"><div class="label">Injeção</div><strong>42%</strong></div><div class="mini"><div class="label">Acabamento</div><strong>31%</strong></div><div class="mini"><div class="label">Usinagem</div><strong>18%</strong></div></div></div></div>'}
@@ -907,6 +1021,8 @@ function applyLiveData(page){
   if(page==="production")renderProductionLive();
 
   if(page==="oee")renderOeeLive();
+
+  if(page==="stock")updateStock();
 
   if(page==="quality"){
     const cards=document.querySelectorAll(".cards .card .value");
