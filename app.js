@@ -277,11 +277,13 @@ function renderOeeLive(){
 
 let productionRows=[];
 let productionLoading=false;
+let prodSectorChartInstance=null;
+let prodLineChartInstance=null;
 const productionFilterState={area:"Todas",line:"Todas",shift:"Todos",date:"",start:"00:00",end:"23:59"};
 
 function production(){
   return '<div class="panel oee-filter-panel">'+
-    '<div class="oee-filter-head"><div><h2>Filtros de produção</h2><p>Dados reais do L2L para demanda, produção atual e produzido líquido.</p></div><button class="filter-reset" id="prodReset">↺ Limpar filtros</button></div>'+
+    '<div class="oee-filter-head"><div><h2>Filtros de produção</h2><p>Dados reais do L2L para demanda, produção atual e produzido líquido, com atualização automática a cada 1 minuto.</p></div><button class="filter-reset" id="prodReset">↺ Limpar filtros</button></div>'+
     '<div class="oee-filters oee-filters-live">'+
       '<label>Setor<select id="prodArea"><option value="Todas">Toda a fábrica</option></select></label>'+
       '<label>Linha<select id="prodLinha"><option value="Todas">Todas as linhas</option></select></label>'+
@@ -293,7 +295,14 @@ function production(){
     '<div class="filter-context" id="prodContext">🟡 L2L: carregando...</div>'+
   '</div>'+
   '<div id="prodCards" class="cards"></div>'+
-  '<div class="panel"><h2>Visão completa por setor</h2><div id="prodAreas"></div></div>'+
+  '<div class="prod-dashboard-grid">'+
+    '<div class="panel"><h2>Resumo por setor</h2><div id="prodAreas"></div></div>'+
+    '<div class="panel"><h2>Demanda x Produção Atual por setor</h2><div class="chart-wrap"><canvas id="prodSectorChart"></canvas></div></div>'+
+  '</div>'+
+  '<div class="prod-dashboard-grid">'+
+    '<div class="panel"><h2>Atingimento por linha</h2><div class="chart-wrap"><canvas id="prodLineChart"></canvas></div></div>'+
+    '<div class="panel"><h2>Visão executiva</h2><div id="prodExecutive"></div></div>'+
+  '</div>'+
   '<div class="panel"><h2>Todas as linhas — produção em tempo real</h2><div id="prodTable"></div><div class="footer-note">Fonte: L2L • Demanda = demand • Produção atual = actual • Produzido líquido = actual − scrap • atualização automática a cada 1 minuto.</div></div>';
 }
 
@@ -381,6 +390,103 @@ function productionAreaCard(a){
   '</article>';
 }
 
+function destroyProdCharts(){
+  if(prodSectorChartInstance){
+    prodSectorChartInstance.destroy();
+    prodSectorChartInstance=null;
+  }
+  if(prodLineChartInstance){
+    prodLineChartInstance.destroy();
+    prodLineChartInstance=null;
+  }
+}
+
+function renderProdSectorChart(areaGroups){
+  const canvas=document.getElementById("prodSectorChart");
+  if(!canvas||!window.Chart)return;
+  if(prodSectorChartInstance)prodSectorChartInstance.destroy();
+
+  prodSectorChartInstance=new Chart(canvas,{
+    type:"bar",
+    data:{
+      labels:areaGroups.map(a=>a.area),
+      datasets:[
+        {label:"Demanda",data:areaGroups.map(a=>a.demand),borderWidth:1},
+        {label:"Produção atual",data:areaGroups.map(a=>a.actual),borderWidth:1}
+      ]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:"index",intersect:false},
+      plugins:{
+        legend:{position:"top"},
+        tooltip:{callbacks:{label:(ctx)=>ctx.dataset.label+": "+Number(ctx.raw||0).toLocaleString("pt-BR")}}
+      },
+      scales:{
+        x:{grid:{display:false}},
+        y:{beginAtZero:true,ticks:{callback:v=>Number(v).toLocaleString("pt-BR")}}
+      }
+    }
+  });
+}
+
+function renderProdLineChart(lineGroups){
+  const canvas=document.getElementById("prodLineChart");
+  if(!canvas||!window.Chart)return;
+  if(prodLineChartInstance)prodLineChartInstance.destroy();
+
+  const topLines=[...lineGroups].sort((a,b)=>b.actual-a.actual).slice(0,15);
+
+  prodLineChartInstance=new Chart(canvas,{
+    type:"bar",
+    data:{
+      labels:topLines.map(x=>x.line),
+      datasets:[{
+        label:"Atingimento %",
+        data:topLines.map(x=>x.demand?x.actual/x.demand*100:0),
+        borderWidth:1
+      }]
+    },
+    options:{
+      indexAxis:"y",
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{label:(ctx)=>"Atingimento: "+Number(ctx.raw||0).toLocaleString("pt-BR",{maximumFractionDigits:1})+"%"}}
+      },
+      scales:{
+        y:{grid:{display:false}},
+        x:{beginAtZero:true,suggestedMax:120,ticks:{callback:v=>v+"%"}}
+      }
+    }
+  });
+}
+
+function renderProdExecutive(areaGroups,lineGroups){
+  const targetAreas=areaGroups.filter(a=>a.attainment>=100).length;
+  const watchAreas=areaGroups.filter(a=>a.attainment>=95&&a.attainment<100).length;
+  const criticalAreas=areaGroups.filter(a=>a.attainment<95).length;
+
+  const sortedBest=[...lineGroups].sort((a,b)=>(b.demand?b.actual/b.demand:0)-(a.demand?a.actual/a.demand:0));
+  const sortedWorst=[...lineGroups].sort((a,b)=>(a.demand?a.actual/a.demand:0)-(b.demand?b.actual/b.demand:0));
+  const bestLine=sortedBest[0];
+  const worstLine=sortedWorst[0];
+
+  const box=document.getElementById("prodExecutive");
+  if(!box)return;
+
+  box.innerHTML='<div class="prod-exec-grid">'+
+    '<div class="mini"><div class="label">Setores na meta</div><strong>'+targetAreas+'</strong></div>'+
+    '<div class="mini"><div class="label">Setores em atenção</div><strong>'+watchAreas+'</strong></div>'+
+    '<div class="mini"><div class="label">Setores críticos</div><strong>'+criticalAreas+'</strong></div>'+
+    '<div class="mini"><div class="label">Melhor linha</div><strong>'+(bestLine?bestLine.line:"-")+'</strong></div>'+
+    '<div class="mini"><div class="label">Linha crítica</div><strong>'+(worstLine?worstLine.line:"-")+'</strong></div>'+
+    '<div class="mini"><div class="label">Linhas monitoradas</div><strong>'+lineGroups.length+'</strong></div>'+
+  '</div>';
+}
+
 function renderProductionLive(){
   if(currentPage!=="production")return;
 
@@ -411,6 +517,10 @@ function renderProductionLive(){
       ? '<div class="prod-area-cards">'+areaGroups.map(productionAreaCard).join("")+'</div>'
       : '<div class="empty-state">Nenhum setor retornado pelo L2L.</div>';
   }
+
+  renderProdSectorChart(areaGroups);
+  renderProdLineChart(groups);
+  renderProdExecutive(areaGroups,groups);
 
   const selectedArea=productionFilterState.area==="Todas"?"Toda a fábrica":productionFilterState.area;
   const selectedLine=productionFilterState.line==="Todas"?"Todas as linhas":productionFilterState.line;
@@ -650,6 +760,7 @@ function applyLiveData(page){
 }
 
 function render(page){
+  if(currentPage==="production"&&page!=="production")destroyProdCharts();
   currentPage=page;
   document.getElementById("content").innerHTML=shell(pages[page]);
   if(page==="stock")initStock();
