@@ -24,7 +24,7 @@ const oeeData=[
 ];
 function pct(v){return v.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"}
 function oee(){
-return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Filtre os dados reais do L2L por setor, linha, turno, dia e faixa de horário.</p></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div><div class="oee-filters oee-filters-live"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno</option><option value="2">2º Turno</option><option value="3">3º Turno</option></select></label><label>Data<input id="oeeDate" type="date"></label><label>Hora inicial<input id="oeeStart" type="time" value="00:00"></label><label>Hora final<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Comparativo de eficiência</h2><div class="chart" id="oeeChart"></div><div class="footer-note">Meta de referência: 85% • atualização automática a cada 1 minuto.</div></div></div>';
+return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Filtre os dados reais do L2L por setor, linha, turno, dia e faixa de horário.</p></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div><div class="oee-filters oee-filters-live"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno</option><option value="2">2º Turno</option><option value="3">3º Turno</option></select></label><label>Data<input id="oeeDate" type="date"></label><label>Hora inicial<input id="oeeStart" type="time" value="00:00"></label><label>Hora final<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Comparativo de eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Modelos com melhor eficiência</h2><div id="oeeChart"></div><div class="footer-note">Ranking conforme os filtros selecionados • atualização automática a cada 1 minuto.</div></div></div>';
 }
 
 let oeeRows=[];
@@ -212,18 +212,26 @@ function renderOeeLive(){
 
   const table=document.getElementById("oeeTable");
   if(table){
-    table.innerHTML=groups.length
-      ? '<div class="table-scroll"><table><tr><th>Setor</th><th>Linha</th><th>OEE</th><th>Eficiência</th><th>Dispon.</th><th>Qualidade</th><th>Status</th></tr>'+
-        groups.map(g=>'<tr><td>'+g.area+'</td><td><b>'+g.line+'</b></td><td>'+fmtPct(g.oee)+'</td><td><b>'+fmtPct(g.performance)+'</b></td><td>'+fmtPct(g.availability)+'</td><td>'+fmtPct(g.quality)+'</td><td><span class="status"><span class="dot '+(g.performance>=85?"green":"red")+'"></span>'+(g.performance>=85?"Meta atingida":"Abaixo da meta")+'</span></td></tr>').join("")+
-        '</table></div>'
-      : '<div class="empty-state">Nenhum dado encontrado para os filtros selecionados.</div>';
+    const lineRank=[...groups].sort((a,b)=>b.performance-a.performance);
+    table.innerHTML=rankingRows(
+      lineRank,
+      g=>g.line,
+      g=>g.performance,
+      g=>(g.area||"Sem setor")+" • OEE "+fmtPct(g.oee)+" • Dispon. "+fmtPct(g.availability)+" • Qualidade "+fmtPct(g.quality)
+    );
   }
 
   const chart=document.getElementById("oeeChart");
   if(chart){
-    chart.innerHTML=groups.length
-      ? groups.slice(0,14).map(g=>'<div class="col"><i style="--h:'+Math.max(0,Math.min(100,g.performance))+'%"></i><span>'+g.line+'</span><b>'+fmtPct(g.performance)+'</b></div>').join("")
-      : '<div class="empty-state">Sem dados para exibir.</div>';
+    const products=groupedProducts(rows).slice(0,10);
+    chart.innerHTML=products.length
+      ? rankingRows(
+          products,
+          p=>p.name,
+          p=>p.efficiency,
+          p=>(p.lineCount?p.lineCount+" linha(s)":"")+" • Produção "+fmt(p.actual)
+        )
+      : '<div class="empty-state"><strong>Modelos não detalhados pelo retorno atual do L2L.</strong><br>O painel já solicita <code>show_products=1</code>; quando o L2L retornar eficiência por produto/modelo, o ranking aparecerá automaticamente.</div>';
   }
 }
 
@@ -310,6 +318,57 @@ function groupedByLine(rows){
     performance:g.performance.length?g.performance.reduce((a,b)=>a+b,0)/g.performance.length:0,
     quality:g.quality.length?g.quality.reduce((a,b)=>a+b,0)/g.quality.length:0
   })).sort((a,b)=>a.line.localeCompare(b.line));
+}
+
+function extractProductRows(rows){
+  const out=[];
+  rows.forEach(row=>{
+    let products=row.products;
+    if(!products)return;
+    if(!Array.isArray(products) && typeof products==="object") products=Object.values(products);
+    if(!Array.isArray(products))return;
+    products.forEach(p=>{
+      if(!p||typeof p!=="object")return;
+      const name=p.product_name ?? p.product ?? p.name ?? p.model ?? p.product_code ?? p.part_number ?? p.description;
+      const efficiencyRaw=p.peff ?? p.efficiency ?? p.performance_efficiency ?? p.overall_equipment_effectiveness ?? p.oee;
+      const efficiency=Number(efficiencyRaw);
+      if(!name || !Number.isFinite(efficiency))return;
+      out.push({
+        name:String(name),
+        efficiency,
+        line:row.line||"",
+        area:row.area||"",
+        actual:n(p.actual ?? p.production_actual ?? 0)
+      });
+    });
+  });
+  return out;
+}
+
+function groupedProducts(rows){
+  const map={};
+  extractProductRows(rows).forEach(p=>{
+    if(!map[p.name])map[p.name]={name:p.name,values:[],actual:0,lines:new Set()};
+    map[p.name].values.push(p.efficiency);
+    map[p.name].actual+=p.actual;
+    if(p.line)map[p.name].lines.add(p.line);
+  });
+  return Object.values(map).map(x=>({
+    name:x.name,
+    efficiency:x.values.reduce((a,b)=>a+b,0)/x.values.length,
+    actual:x.actual,
+    lineCount:x.lines.size
+  })).sort((a,b)=>b.efficiency-a.efficiency);
+}
+
+function rankingRows(items,getName,getValue,getMeta){
+  if(!items.length)return '<div class="empty-state">Sem dados para exibir com os filtros selecionados.</div>';
+  return '<div class="ranking-list">'+items.map((item,index)=>{
+    const value=Math.max(0,Math.min(120,getValue(item)));
+    const width=Math.min(100,value);
+    const cls=value>=85?"rank-good":value>=70?"rank-warn":"rank-bad";
+    return '<div class="rank-row"><div class="rank-head"><div class="rank-name"><span class="rank-pos">'+(index+1)+'</span><strong>'+getName(item)+'</strong></div><b class="'+cls+'">'+fmtPct(getValue(item))+'</b></div><div class="rank-track"><i class="'+cls+'" style="width:'+width+'%"></i></div><div class="rank-meta">'+getMeta(item)+'</div></div>';
+  }).join("")+'</div>';
 }
 
 function applyLiveData(page){
