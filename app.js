@@ -24,42 +24,101 @@ const oeeData=[
 ];
 function pct(v){return v.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"}
 function oee(){
-return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Escolha um setor e, se quiser, uma linha. Os indicadores são recalculados com os dados reais do L2L.</p></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div><div class="oee-filters oee-filters-live"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Comparativo de eficiência</h2><div class="chart" id="oeeChart"></div><div class="footer-note">Meta de referência: 85% • atualização automática a cada 1 minuto.</div></div></div>';
+return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Filtre os dados reais do L2L por setor, linha, turno, dia e faixa de horário.</p></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div><div class="oee-filters oee-filters-live"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno</option><option value="2">2º Turno</option><option value="3">3º Turno</option></select></label><label>Data<input id="oeeDate" type="date"></label><label>Hora inicial<input id="oeeStart" type="time" value="00:00"></label><label>Hora final<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Comparativo de eficiência</h2><div class="chart" id="oeeChart"></div><div class="footer-note">Meta de referência: 85% • atualização automática a cada 1 minuto.</div></div></div>';
 }
 
-const oeeFilterState={area:"Todas",line:"Todas"};
+let oeeRows=[];
+let oeeLoading=false;
+const oeeFilterState={area:"Todas",line:"Todas",shift:"Todos",date:"",start:"00:00",end:"23:59"};
+
+function normalizeShift(value){
+  if(value===null||value===undefined||value==="")return "";
+  const s=String(value).trim().toUpperCase();
+  if(/^1/.test(s)||s==="A")return "1";
+  if(/^2/.test(s)||s==="B")return "2";
+  if(/^3/.test(s)||s==="C")return "3";
+  return s;
+}
+
+function rowShift(row){
+  return normalizeShift(
+    row.shift_number ??
+    row.shift_id ??
+    row.shift_code ??
+    row.shift_name ??
+    row.production_shift ??
+    row.shift
+  );
+}
+
+function hasShiftDetail(rows){
+  return rows.some(r=>rowShift(r)!=="");
+}
+
+async function refreshOeeRange(){
+  if(oeeLoading)return;
+  oeeLoading=true;
+  const ctx=document.getElementById("oeeContext");
+  if(ctx)ctx.textContent="🟡 Consultando L2L...";
+  try{
+    const date=oeeFilterState.date||todayISO();
+    oeeRows=await window.L2L.getDaily(date,oeeFilterState.start,oeeFilterState.end);
+    l2lLastUpdate=new Date();
+    l2lError="";
+    if(currentPage==="oee"){
+      populateOeeFilters();
+      renderOeeLive();
+    }
+  }catch(err){
+    l2lError=err.message||"Falha ao consultar L2L";
+    if(currentPage==="oee")renderOeeLive();
+  }finally{
+    oeeLoading=false;
+  }
+}
 
 function populateOeeFilters(){
   const areaEl=document.getElementById("oeeArea");
   const lineEl=document.getElementById("oeeLinha");
   if(!areaEl||!lineEl)return;
 
-  const areas=[...new Set(l2lRows.map(r=>r.area).filter(Boolean))].sort();
-  const previousArea=oeeFilterState.area;
+  const source=oeeRows.length?oeeRows:l2lRows;
+  const areas=[...new Set(source.map(r=>r.area).filter(Boolean))].sort();
   areaEl.innerHTML='<option value="Todas">Toda a fábrica</option>'+areas.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
-  areaEl.value=areas.includes(previousArea)?previousArea:"Todas";
+  areaEl.value=areas.includes(oeeFilterState.area)?oeeFilterState.area:"Todas";
   oeeFilterState.area=areaEl.value;
 
-  const lines=[...new Set(l2lRows.filter(r=>oeeFilterState.area==="Todas"||r.area===oeeFilterState.area).map(r=>r.line).filter(Boolean))].sort();
-  const previousLine=oeeFilterState.line;
+  const lines=[...new Set(source.filter(r=>oeeFilterState.area==="Todas"||r.area===oeeFilterState.area).map(r=>r.line).filter(Boolean))].sort();
   lineEl.innerHTML='<option value="Todas">Todas as linhas</option>'+lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
-  lineEl.value=lines.includes(previousLine)?previousLine:"Todas";
+  lineEl.value=lines.includes(oeeFilterState.line)?oeeFilterState.line:"Todas";
   oeeFilterState.line=lineEl.value;
 }
 
 function getFilteredOeeRows(){
-  return l2lRows.filter(r=>
+  const source=oeeRows.length?oeeRows:l2lRows;
+  const shiftAvailable=hasShiftDetail(source);
+  return source.filter(r=>
     (oeeFilterState.area==="Todas"||r.area===oeeFilterState.area) &&
-    (oeeFilterState.line==="Todas"||r.line===oeeFilterState.line)
+    (oeeFilterState.line==="Todas"||r.line===oeeFilterState.line) &&
+    (oeeFilterState.shift==="Todos"||!shiftAvailable||rowShift(r)===oeeFilterState.shift)
   );
 }
 
 function initOee(){
   const area=document.getElementById("oeeArea");
   const line=document.getElementById("oeeLinha");
+  const shift=document.getElementById("oeeShift");
+  const date=document.getElementById("oeeDate");
+  const start=document.getElementById("oeeStart");
+  const end=document.getElementById("oeeEnd");
   const reset=document.getElementById("oeeReset");
-  if(!area||!line||!reset)return;
+  if(!area||!line||!shift||!date||!start||!end||!reset)return;
 
+  if(!oeeFilterState.date)oeeFilterState.date=todayISO();
+  date.value=oeeFilterState.date;
+  start.value=oeeFilterState.start;
+  end.value=oeeFilterState.end;
+  shift.value=oeeFilterState.shift;
   populateOeeFilters();
 
   area.addEventListener("change",()=>{
@@ -74,14 +133,50 @@ function initOee(){
     renderOeeLive();
   });
 
-  reset.addEventListener("click",()=>{
-    oeeFilterState.area="Todas";
-    oeeFilterState.line="Todas";
-    populateOeeFilters();
+  shift.addEventListener("change",()=>{
+    oeeFilterState.shift=shift.value;
     renderOeeLive();
   });
 
-  renderOeeLive();
+  date.addEventListener("change",async()=>{
+    oeeFilterState.date=date.value||todayISO();
+    await refreshOeeRange();
+  });
+
+  start.addEventListener("change",async()=>{
+    oeeFilterState.start=start.value||"00:00";
+    if(oeeFilterState.end<=oeeFilterState.start){
+      oeeFilterState.end="23:59";
+      end.value=oeeFilterState.end;
+    }
+    await refreshOeeRange();
+  });
+
+  end.addEventListener("change",async()=>{
+    oeeFilterState.end=end.value||"23:59";
+    if(oeeFilterState.end<=oeeFilterState.start){
+      oeeFilterState.start="00:00";
+      start.value=oeeFilterState.start;
+    }
+    await refreshOeeRange();
+  });
+
+  reset.addEventListener("click",async()=>{
+    oeeFilterState.area="Todas";
+    oeeFilterState.line="Todas";
+    oeeFilterState.shift="Todos";
+    oeeFilterState.date=todayISO();
+    oeeFilterState.start="00:00";
+    oeeFilterState.end="23:59";
+    date.value=oeeFilterState.date;
+    start.value=oeeFilterState.start;
+    end.value=oeeFilterState.end;
+    shift.value=oeeFilterState.shift;
+    await refreshOeeRange();
+  });
+
+  if(!oeeRows.length)refreshOeeRange();
+  else renderOeeLive();
 }
 
 function renderOeeLive(){
@@ -89,9 +184,12 @@ function renderOeeLive(){
   populateOeeFilters();
 
   const rows=getFilteredOeeRows();
+  const source=oeeRows.length?oeeRows:l2lRows;
   const groups=groupedByLine(rows);
   const selectedArea=oeeFilterState.area==="Todas"?"Toda a fábrica":oeeFilterState.area;
   const selectedLine=oeeFilterState.line==="Todas"?"Todas as linhas":oeeFilterState.line;
+  const selectedShift=oeeFilterState.shift==="Todos"?"Todos os turnos":oeeFilterState.shift+"º Turno";
+  const shiftNote=oeeFilterState.shift!=="Todos"&&!hasShiftDetail(source)?" • turno não detalhado pelo retorno atual do L2L":"";
 
   const oeeValue=avg(rows,"overall_equipment_effectiveness");
   const efficiency=avg(rows,"peff");
@@ -110,7 +208,7 @@ function renderOeeLive(){
   }
 
   const ctx=document.getElementById("oeeContext");
-  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+groups.length+" linha(s)";
+  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+oeeFilterState.date+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s)"+shiftNote;
 
   const table=document.getElementById("oeeTable");
   if(table){
@@ -118,7 +216,7 @@ function renderOeeLive(){
       ? '<div class="table-scroll"><table><tr><th>Setor</th><th>Linha</th><th>OEE</th><th>Eficiência</th><th>Dispon.</th><th>Qualidade</th><th>Status</th></tr>'+
         groups.map(g=>'<tr><td>'+g.area+'</td><td><b>'+g.line+'</b></td><td>'+fmtPct(g.oee)+'</td><td><b>'+fmtPct(g.performance)+'</b></td><td>'+fmtPct(g.availability)+'</td><td>'+fmtPct(g.quality)+'</td><td><span class="status"><span class="dot '+(g.performance>=85?"green":"red")+'"></span>'+(g.performance>=85?"Meta atingida":"Abaixo da meta")+'</span></td></tr>').join("")+
         '</table></div>'
-      : '<div class="empty-state">Nenhum dado encontrado para o setor/linha selecionado.</div>';
+      : '<div class="empty-state">Nenhum dado encontrado para os filtros selecionados.</div>';
   }
 
   const chart=document.getElementById("oeeChart");
@@ -180,6 +278,7 @@ async function refreshL2L(){
     l2lLastUpdate=new Date();
     l2lError="";
     applyLiveData(currentPage);
+    if(currentPage==="oee")await refreshOeeRange();
   }catch(err){
     l2lError=err.message||"Falha ao consultar L2L";
     applyLiveData(currentPage);
