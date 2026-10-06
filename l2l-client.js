@@ -12,6 +12,17 @@ window.L2L = {
     }
     return Array.isArray(payload.data) ? payload.data : [];
   },
+  async getScrapDetails(date, startTime = "00:00", endTime = "23:59") {
+    const day = date || new Date().toISOString().slice(0, 10);
+    const start = encodeURIComponent(day + " " + startTime);
+    const end = encodeURIComponent(day + " " + endTime);
+    const response = await fetch("/api/l2l?report=scrapdetail&start=" + start + "&end=" + end);
+    const payload = await response.json();
+    if (!response.ok || payload.success === false) {
+      throw new Error(payload.error || "Falha ao consultar detalhes de scrap no L2L");
+    }
+    return Array.isArray(payload.data) ? payload.data : [];
+  },
   number(value) {
     const n = Number(value);
     return Number.isFinite(n) ? n : 0;
