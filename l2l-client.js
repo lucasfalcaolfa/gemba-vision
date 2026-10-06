@@ -1,9 +1,11 @@
 window.L2L = {
-  async getDaily(date) {
+  async getDaily(date, startTime = "00:00", endTime = "23:59") {
     const day = date || new Date().toISOString().slice(0, 10);
-    const start = encodeURIComponent(day + " 00:00");
-    const end = encodeURIComponent(day + " 23:59");
-    const response = await fetch("/api/l2l?report=daily&start=" + start + "&end=" + end);
+    const start = encodeURIComponent(day + " " + startTime);
+    const end = encodeURIComponent(day + " " + endTime);
+    const response = await fetch(
+      "/api/l2l?report=daily&show_shifts=1&start=" + start + "&end=" + end
+    );
     const payload = await response.json();
     if (!response.ok || payload.success === false) {
       throw new Error(payload.error || "Falha ao consultar o L2L");
