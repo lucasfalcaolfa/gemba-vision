@@ -938,3 +938,98 @@ td:nth-child(2){overflow-wrap:anywhere}
   font-size:9px;
   color:#71808c;
 }
+
+/* Professional real-time production dashboard */
+.prod-dashboard-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+  gap:16px;
+  margin-bottom:16px;
+}
+.chart-wrap{
+  position:relative;
+  min-height:340px;
+}
+.prod-area-cards{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+}
+.prod-area-card{
+  background:linear-gradient(180deg,#ffffff 0%,#fbfcfd 100%);
+  border:1px solid #dce5ea;
+  border-radius:14px;
+  padding:14px;
+  box-shadow:0 8px 22px rgba(7,27,45,.06);
+}
+.prod-area-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+  margin-bottom:12px;
+}
+.prod-area-head span{
+  display:block;
+  font-size:8px;
+  font-weight:800;
+  letter-spacing:.8px;
+  color:#8998a4;
+  margin-bottom:4px;
+}
+.prod-area-head h3{
+  margin:0;
+  font-size:16px;
+  color:#112638;
+  font-weight:800;
+}
+.prod-area-head strong{
+  font-size:18px;
+}
+.prod-area-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.prod-area-grid>div{
+  background:#f7fafb;
+  border:1px solid #edf2f5;
+  border-radius:10px;
+  padding:10px;
+}
+.prod-area-grid span{
+  display:block;
+  font-size:8px;
+  text-transform:uppercase;
+  color:#85939e;
+  margin-bottom:4px;
+}
+.prod-area-grid b{
+  font-size:14px;
+  color:#112638;
+}
+.prod-area-foot{
+  margin-top:10px;
+  padding-top:10px;
+  border-top:1px solid #edf2f5;
+  font-size:10px;
+  color:#6f7f8d;
+}
+.prod-exec-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+}
+.prod-exec-grid .mini{
+  border:1px solid #e8eef2;
+  background:linear-gradient(180deg,#fbfcfd 0%,#f6f9fb 100%);
+}
+#prodTable table{min-width:900px}
+@media(max-width:1100px){
+  .prod-dashboard-grid{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+  .prod-exec-grid{grid-template-columns:1fr}
+  .prod-area-grid{grid-template-columns:1fr}
+  .chart-wrap{min-height:280px}
+}
