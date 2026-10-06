@@ -207,7 +207,17 @@ function miniMetric(value,label,target=85){
 }
 
 function lineGaugeCard(g){
-  return '<article class="ref-oee-card"><div class="ref-card-title">'+g.line+'</div>'+mainGauge(g.oee)+'<div class="ref-metrics">'+miniMetric(g.availability,"OA",85)+miniMetric(g.performance,"PPP",85)+miniMetric(g.quality,"Yield",85)+'</div></article>';
+  const status=g.oee>=85?"Dentro da meta":g.oee>=70?"Atenção":"Crítico";
+  const statusCls=g.oee>=85?"status-ok":g.oee>=70?"status-watch":"status-critical";
+  const attainment=g.demand?g.actual/g.demand*100:0;
+  return '<article class="pro-oee-card">'+
+    '<div class="pro-card-head"><div><div class="pro-card-kicker">'+(g.area||"Setor")+'</div><h3>'+g.line+'</h3></div><span class="pro-status '+statusCls+'">'+status+'</span></div>'+
+    '<div class="pro-card-body">'+mainGauge(g.oee)+
+      '<div class="pro-divider"></div>'+
+      '<div class="pro-metrics">'+miniMetric(g.availability,"OA",85)+miniMetric(g.performance,"PPP",85)+miniMetric(g.quality,"Yield",85)+'</div>'+
+    '</div>'+
+    '<div class="pro-card-foot"><div><span>Meta OEE</span><strong>85%</strong></div><div><span>Atingimento</span><strong>'+fmtPct(attainment)+'</strong></div><div><span>Produção</span><strong>'+fmt(g.actual)+' / '+fmt(g.demand)+'</strong></div></div>'+
+  '</article>';
 }
 
 function renderOeeLive(){
