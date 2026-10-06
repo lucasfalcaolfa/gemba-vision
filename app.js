@@ -530,6 +530,36 @@ function scrapSummary(rows){
     topQty:top?top[1]:0
   };
 }
+function groupScrap(rows,keyFn){
+  const map={};
+  rows.forEach(r=>{
+    const key=keyFn(r)||"Não informado";
+    if(!map[key])map[key]={key,qty:0,events:0,defects:{}};
+    const g=map[key];
+    g.qty+=n(r.scrap);
+    g.events+=1;
+    const d=r.defect||"Sem categoria";
+    g.defects[d]=(g.defects[d]||0)+n(r.scrap);
+  });
+  return Object.values(map).map(g=>{
+    const sorted=Object.entries(g.defects).sort((a,b)=>b[1]-a[1]);
+    return {...g,topDefect:sorted[0]?.[0]||"-",topQty:sorted[0]?.[1]||0,defectCount:Object.keys(g.defects).length};
+  }).sort((a,b)=>b.qty-a.qty);
+}
+
+function scrapDay(value){
+  if(!value)return "Sem data";
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return String(value);
+  return d.toLocaleDateString("pt-BR");
+}
+
+function scrapGroupCards(title,items){
+  if(!items.length)return '<section class="scrap-group-panel"><h3>'+title+'</h3><div class="empty-state">Sem dados.</div></section>';
+  return '<section class="scrap-group-panel"><h3>'+title+'</h3><div class="scrap-group-list">'+
+    items.map((g,i)=>'<div class="scrap-group-row"><div class="scrap-group-rank">'+(i+1)+'</div><div class="scrap-group-main"><strong>'+g.key+'</strong><span>'+g.events+' ocorrência(s) • '+g.defectCount+' defeito(s)</span><small>Principal: '+g.topDefect+' ('+fmt(g.topQty)+')</small></div><b>'+fmt(g.qty)+'</b></div>').join("")+
+  '</div></section>';
+}
 
 async function openScrapDetails(lineOverride="", areaOverride=""){
   const modal=document.getElementById("scrapModal");
@@ -570,6 +600,12 @@ async function openScrapDetails(lineOverride="", areaOverride=""){
       return;
     }
 
+    const byLine=groupScrap(rows,r=>r.line||"Sem linha");
+    const byShift=groupScrap(rows,r=>r.shift||"Sem turno");
+    const byDate=groupScrap(rows,r=>scrapDay(r.date));
+    const byModel=groupScrap(rows,r=>r.product||"Sem modelo");
+    const byDefect=groupScrap(rows,r=>r.defect||"Sem categoria");
+
     body.innerHTML=
       '<div class="scrap-summary-grid">'+
         '<div><span>Scrap detalhado</span><strong>'+fmt(summary.qty)+'</strong></div>'+
@@ -577,9 +613,18 @@ async function openScrapDetails(lineOverride="", areaOverride=""){
         '<div><span>Tipos de defeito</span><strong>'+fmt(summary.defects)+'</strong></div>'+
         '<div><span>Principal defeito</span><strong>'+summary.topDefect+'</strong><small>'+fmt(summary.topQty)+' peça(s)</small></div>'+
       '</div>'+
-      '<div class="scrap-table-wrap"><table class="scrap-detail-table"><thead><tr><th>Data / Hora</th><th>Setor</th><th>Linha</th><th>Turno</th><th>Modelo / Produto</th><th>Defeito</th><th>Qtd.</th></tr></thead><tbody>'+
+      '<div class="scrap-analysis-grid">'+
+        scrapGroupCards("Defeitos por linha",byLine)+
+        scrapGroupCards("Defeitos por turno",byShift)+
+        scrapGroupCards("Defeitos por data",byDate)+
+        scrapGroupCards("Defeitos por modelo",byModel)+
+      '</div>'+
+      '<section class="scrap-defect-section"><h3>Todos os defeitos</h3><div class="scrap-defect-ranking">'+
+        byDefect.map((g,i)=>'<div class="scrap-defect-row"><span class="scrap-defect-rank">'+(i+1)+'</span><div><strong>'+g.key+'</strong><small>'+g.events+' ocorrência(s)</small></div><b>'+fmt(g.qty)+'</b></div>').join("")+
+      '</div></section>'+
+      '<section class="scrap-occurrence-section"><h3>Ocorrências detalhadas</h3><div class="scrap-table-wrap"><table class="scrap-detail-table"><thead><tr><th>Data / Hora</th><th>Setor</th><th>Linha</th><th>Turno</th><th>Modelo / Produto</th><th>Defeito</th><th>Qtd.</th></tr></thead><tbody>'+
         rows.map(r=>'<tr><td>'+scrapDateTime(r.date)+'</td><td>'+(r.area||"-")+'</td><td><b>'+(r.line||"-")+'</b></td><td>'+(r.shift||"-")+'</td><td>'+(r.product||"-")+'</td><td><span class="defect-chip">'+(r.defect||"Sem categoria")+'</span></td><td><b>'+fmt(r.scrap)+'</b></td></tr>').join("")+
-      '</tbody></table></div>';
+      '</tbody></table></div></section>';
   }catch(err){
     body.innerHTML='<div class="scrap-empty error"><strong>Não foi possível carregar os detalhes de Scrap.</strong><p>'+(err.message||"Erro ao consultar o L2L.")+'</p></div>';
   }
