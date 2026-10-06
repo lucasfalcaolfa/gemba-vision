@@ -202,7 +202,8 @@ function mainGauge(value){
 function miniMetric(value,label,target=85){
   const v=Math.max(0,Math.min(100,n(value)));
   const tone=gaugeTone(v);
-  return '<div class="ref-metric-row"><div class="ref-mini-circle '+tone+'" style="--pct:'+v+'"><span>'+fmt(v,0)+'%</span></div><strong>'+label+'</strong>'+deltaMarkup(v,target)+'</div>';
+  const icon=label==="OA"?"▣":label==="PPP"?"⚙":"◎";
+  return '<div class="ref-metric-row"><div class="ref-mini-circle '+tone+'" style="--pct:'+v+'"><div class="ref-mini-inner"><span class="ref-mini-icon">'+icon+'</span><span class="ref-mini-value">'+fmt(v,0)+'%</span></div></div><strong>'+label+'</strong>'+deltaMarkup(v,target)+'</div>';
 }
 
 function lineGaugeCard(g){
