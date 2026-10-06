@@ -4,7 +4,7 @@ window.L2L = {
     const start = encodeURIComponent(day + " " + startTime);
     const end = encodeURIComponent(day + " " + endTime);
     const response = await fetch(
-      "/api/l2l?report=daily&show_shifts=1&start=" + start + "&end=" + end
+      "/api/l2l?report=daily&show_shifts=1&show_products=1&start=" + start + "&end=" + end
     );
     const payload = await response.json();
     if (!response.ok || payload.success === false) {
