@@ -246,3 +246,96 @@ td:nth-child(2){overflow-wrap:anywhere}
 #oeeTable,#oeeChart{max-height:520px;overflow:auto;padding-right:4px}
 #oeeChart .empty-state{padding:28px 8px;line-height:1.6}
 #oeeChart code{font-size:10px;background:#f3f6f8;padding:2px 4px;border-radius:4px}
+
+/* Speedometer efficiency cards by line */
+.line-gauge-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+  margin-bottom:18px;
+}
+.line-gauge-card{
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:12px;
+  box-shadow:var(--shadow);
+  padding:14px 14px 16px;
+  min-width:0;
+}
+.line-gauge-title{
+  font-size:15px;
+  font-weight:800;
+  color:#455563;
+  text-transform:uppercase;
+  line-height:1.2;
+  min-height:36px;
+  margin-bottom:2px;
+}
+.speedometer{display:flex;justify-content:center;align-items:center}
+.speedometer svg{width:100%;max-width:210px;height:auto;overflow:visible}
+.speedometer-track,.speedometer-value{
+  fill:none;
+  stroke-width:10;
+  stroke-linecap:round;
+}
+.speedometer-track{stroke:#505257}
+.speedometer-value{transition:stroke-dasharray .25s ease}
+.speedometer-label{
+  font-size:15px;
+  font-weight:800;
+  fill:#172635;
+}
+.speedometer-number{
+  font-size:24px;
+  font-weight:800;
+}
+.gauge-green{stroke:#24ad5f;fill:#24ad5f;color:#24ad5f}
+.gauge-yellow{stroke:#efbd32;fill:#efbd32;color:#d7a91a}
+.gauge-red{stroke:#ef5350;fill:#ef5350;color:#ef5350}
+.line-mini-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  margin-top:4px;
+}
+.line-mini-metric{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  min-width:0;
+}
+.line-mini-metric strong{
+  font-size:10px;
+  color:#172635;
+}
+.line-mini-circle{
+  --pct:0;
+  width:50px;
+  height:50px;
+  border-radius:50%;
+  display:grid;
+  place-items:center;
+  position:relative;
+  background:conic-gradient(currentColor calc(var(--pct)*1%),#e4e9ed 0);
+}
+.line-mini-circle::after{
+  content:"";
+  position:absolute;
+  inset:5px;
+  border-radius:50%;
+  background:#fff;
+}
+.line-mini-circle span{
+  position:relative;
+  z-index:1;
+  font-size:10px;
+  font-weight:800;
+  color:#172635;
+}
+@media(max-width:1280px){
+  .line-gauge-grid{grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+}
+@media(max-width:640px){
+  .line-gauge-grid{grid-template-columns:1fr}
+}
