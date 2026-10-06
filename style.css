@@ -1271,3 +1271,116 @@ body.modal-open{overflow:hidden}
   cursor:default;
   opacity:.75;
 }
+
+/* Expanded scrap analysis */
+.scrap-analysis-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px;
+  margin-bottom:16px;
+}
+.scrap-group-panel,
+.scrap-defect-section,
+.scrap-occurrence-section{
+  background:#fff;
+  border:1px solid #e0e7ec;
+  border-radius:12px;
+  box-shadow:0 4px 12px rgba(7,27,45,.04);
+}
+.scrap-group-panel h3,
+.scrap-defect-section h3,
+.scrap-occurrence-section h3{
+  margin:0;
+  padding:13px 14px;
+  font-size:12px;
+  color:#183246;
+  border-bottom:1px solid #edf1f3;
+}
+.scrap-group-list{
+  display:flex;
+  flex-direction:column;
+}
+.scrap-group-row{
+  display:grid;
+  grid-template-columns:24px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:11px 14px;
+  border-bottom:1px solid #f0f3f5;
+}
+.scrap-group-row:last-child{border-bottom:0}
+.scrap-group-rank,
+.scrap-defect-rank{
+  width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#eef3f6;
+  color:#526574;
+  font-size:9px;
+  font-weight:800;
+}
+.scrap-group-main{
+  min-width:0;
+}
+.scrap-group-main strong{
+  display:block;
+  font-size:11px;
+  color:#173044;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.scrap-group-main span,
+.scrap-group-main small{
+  display:block;
+  margin-top:2px;
+  font-size:8px;
+  color:#7b8a95;
+}
+.scrap-group-row>b{
+  font-size:13px;
+  color:#c67b00;
+}
+.scrap-defect-section{
+  margin-bottom:16px;
+}
+.scrap-defect-ranking{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+}
+.scrap-defect-row{
+  display:grid;
+  grid-template-columns:24px minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:11px 14px;
+  border-bottom:1px solid #f0f3f5;
+}
+.scrap-defect-row:nth-child(odd){
+  border-right:1px solid #f0f3f5;
+}
+.scrap-defect-row strong{
+  display:block;
+  font-size:11px;
+  color:#173044;
+}
+.scrap-defect-row small{
+  display:block;
+  margin-top:2px;
+  font-size:8px;
+  color:#7b8a95;
+}
+.scrap-defect-row>b{
+  font-size:13px;
+  color:#b8443f;
+}
+.scrap-occurrence-section{
+  overflow:hidden;
+}
+@media(max-width:900px){
+  .scrap-analysis-grid{grid-template-columns:1fr}
+  .scrap-defect-ranking{grid-template-columns:1fr}
+  .scrap-defect-row:nth-child(odd){border-right:0}
+}
