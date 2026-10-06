@@ -531,7 +531,7 @@ function scrapSummary(rows){
   };
 }
 
-async function openScrapDetails(){
+async function openScrapDetails(lineOverride="", areaOverride=""){
   const modal=document.getElementById("scrapModal");
   const body=document.getElementById("scrapModalBody");
   const ctx=document.getElementById("scrapModalContext");
@@ -548,16 +548,22 @@ async function openScrapDetails(){
   try{
     let rows=await window.L2L.getScrapDetails(date,productionFilterState.start,productionFilterState.end);
 
+    const activeArea=areaOverride||productionFilterState.area;
+    const activeLine=lineOverride||productionFilterState.line;
     rows=rows.map(r=>({...r,area:resolveScrapArea(r)})).filter(r=>
-      (productionFilterState.area==="Todas"||String(r.area)===String(productionFilterState.area)) &&
-      (productionFilterState.line==="Todas"||String(r.line)===String(productionFilterState.line)) &&
+      (activeArea==="Todas"||!activeArea||String(r.area)===String(activeArea)) &&
+      (activeLine==="Todas"||!activeLine||String(r.line)===String(activeLine)) &&
       (productionFilterState.shift==="Todos"||normalizeShift(r.shift)===productionFilterState.shift)
     );
 
     rows.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
     const summary=scrapSummary(rows);
 
-    ctx.textContent='L2L • '+(productionFilterState.area==="Todas"?"Todos os setores":productionFilterState.area)+' • '+(productionFilterState.line==="Todas"?"Todas as linhas":productionFilterState.line)+' • '+date.split("-").reverse().join("/")+' • '+productionFilterState.start+'–'+productionFilterState.end;
+    const contextArea=areaOverride||productionFilterState.area;
+    const contextLine=lineOverride||productionFilterState.line;
+    ctx.textContent='L2L • '+(contextArea==="Todas"||!contextArea?"Todos os setores":contextArea)+' • '+(contextLine==="Todas"||!contextLine?"Todas as linhas":contextLine)+' • '+date.split("-").reverse().join("/")+' • '+productionFilterState.start+'–'+productionFilterState.end;
+    const title=document.getElementById("scrapModalTitle");
+    if(title)title.textContent=contextLine && contextLine!=="Todas" ? 'Scrap / Defeitos — '+contextLine : 'Scrap / Defeitos';
 
     if(!rows.length){
       body.innerHTML='<div class="scrap-empty"><strong>Nenhum detalhe de scrap encontrado para este período.</strong><p>Se houver Scrap no resumo, mas nenhum registro aqui, a linha pode estar registrando scrap sem categoria/detalhamento. O L2L só consegue mostrar defeito, modelo e turno quando esses detalhes são gravados no Scrap Detail.</p></div>';
@@ -577,6 +583,11 @@ async function openScrapDetails(){
   }catch(err){
     body.innerHTML='<div class="scrap-empty error"><strong>Não foi possível carregar os detalhes de Scrap.</strong><p>'+(err.message||"Erro ao consultar o L2L.")+'</p></div>';
   }
+}
+
+function lineScrapButton(g){
+  const disabled=n(g.scrap)<=0;
+  return '<button type="button" class="line-scrap-btn '+(disabled?'zero':'has-scrap')+'" '+(disabled?'disabled':'onclick="openScrapDetails(\''+String(g.line).replace(/'/g,"&#39;")+'\',\''+String(g.area||"").replace(/'/g,"&#39;")+'\')"')+' title="'+(disabled?'Sem scrap registrado nesta linha':'Clique para ver os defeitos desta linha')+'"><span>'+fmt(g.scrap)+'</span>'+(disabled?'':'<small>Ver defeitos ↗</small>')+'</button>';
 }
 
 function renderProductionLive(){
@@ -628,7 +639,7 @@ function renderProductionLive(){
         allGroups.map(g=>{
           const netLine=Math.max(0,g.actual-g.scrap);
           const pct=g.demand?g.actual/g.demand*100:0;
-          return '<tr><td>'+g.area+'</td><td><b>'+g.line+'</b></td><td>'+fmt(g.demand)+'</td><td><b>'+fmt(g.actual)+'</b></td><td>'+fmt(netLine)+'</td><td>'+fmt(g.scrap)+'</td><td>'+fmtPct(pct)+'</td><td>'+(pct>=100?"🟢":pct>=95?"🟡":"🔴")+'</td></tr>';
+          return '<tr><td>'+g.area+'</td><td><b>'+g.line+'</b></td><td>'+fmt(g.demand)+'</td><td><b>'+fmt(g.actual)+'</b></td><td>'+fmt(netLine)+'</td><td>'+lineScrapButton(g)+'</td><td>'+fmtPct(pct)+'</td><td>'+(pct>=100?"🟢":pct>=95?"🟡":"🔴")+'</td></tr>';
         }).join("")+
         '</table></div>'
       : '<div class="empty-state">Nenhum dado de produção encontrado para os filtros selecionados.</div>';
