@@ -24,24 +24,111 @@ const oeeData=[
 ];
 function pct(v){return v.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"}
 function oee(){
-return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de análise</h2><p>Selecione uma combinação ou mantenha “Toda a fábrica” para a visão consolidada.</p></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div><div class="oee-filters"><label>Área<select id="oeeArea"><option value="Todas">Toda a fábrica</option><option>Fundição</option><option>Acabamento</option><option>Usinagem</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeTurno"><option value="Todos">Todos os turnos</option><option>A</option><option>B</option><option>C</option></select></label><label>Data<input id="oeeDate" type="date"></label><label>De<input id="oeeStart" type="time" value="00:00"></label><label>Até<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">Visão consolidada • Todas as áreas, linhas e turnos</div></div><div class="cards" id="oeeCards"></div><div class="section-grid"><div class="panel"><h2>OEE por linha</h2><div id="oeeTable"></div></div><div class="panel"><h2>Comparativo de OEE</h2><div class="chart" id="oeeChart"></div><div class="footer-note">Meta de referência: 85% • Dados reais do L2L.</div></div></div><div class="footer-note">Dados reais do L2L • atualização automática a cada 1 minuto.</div>';
+return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Escolha um setor e, se quiser, uma linha. Os indicadores são recalculados com os dados reais do L2L.</p></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div><div class="oee-filters oee-filters-live"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Comparativo de eficiência</h2><div class="chart" id="oeeChart"></div><div class="footer-note">Meta de referência: 85% • atualização automática a cada 1 minuto.</div></div></div>';
 }
-function updateOee(){
-const area=document.getElementById("oeeArea").value, linha=document.getElementById("oeeLinha").value, turno=document.getElementById("oeeTurno").value, date=document.getElementById("oeeDate").value, start=document.getElementById("oeeStart").value, end=document.getElementById("oeeEnd").value;
-const rows=oeeData.filter(x=>(area==="Todas"||x.area===area)&&(linha==="Todas"||x.linha===linha)&&(turno==="Todos"||x.turno===turno)&&(start<=end));
-const avg=k=>rows.length?rows.reduce((s,x)=>s+x[k],0)/rows.length:0;
-document.getElementById("oeeContext").textContent=(area==="Todas"?"Toda a fábrica":area)+" • "+(linha==="Todas"?"Todas as linhas":linha)+" • "+(turno==="Todos"?"Todos os turnos":"Turno "+turno)+" • "+(date?date.split("-").reverse().join("/"):"Todas as datas")+" • "+start+" → "+end+" • "+rows.length+" registro(s)";
-document.getElementById("oeeCards").innerHTML=card("OEE",rows.length?pct(avg("oee")):"—",avg("oee")>=85?"good":"warn")+card("Disponibilidade",rows.length?pct(avg("disp")):"—","")+card("Performance",rows.length?pct(avg("perf")):"—","")+card("Qualidade",rows.length?pct(avg("qual")):"—","good")+card("Eficiência",rows.length?pct(avg("ef")):"—",avg("ef")>=85?"good":"warn");
-document.getElementById("oeeTable").innerHTML=rows.length?'<table><tr><th>Área</th><th>Linha</th><th>Turno</th><th>Meta</th><th>OEE</th><th>Status</th></tr>'+rows.map(x=>'<tr><td>'+x.area+'</td><td>'+x.linha+'</td><td>'+x.turno+'</td><td>'+pct(x.meta)+'</td><td><b>'+pct(x.oee)+'</b></td><td><span class="status"><span class="dot '+(x.oee>=x.meta?"green":"red")+'"></span>'+(x.oee>=x.meta?"Meta atingida":"Abaixo da meta")+'</span></td></tr>').join("")+'</table>':'<p class="empty-state">Nenhum registro encontrado para essa combinação de filtros.</p>';
-document.getElementById("oeeChart").innerHTML=rows.length?rows.map(x=>'<div class="col"><i style="--h:'+x.oee+'%"></i>'+x.linha+'<br><b>'+pct(x.oee)+'</b></div>').join(""):'<p class="empty-state">Sem dados para exibir.</p>';
+
+const oeeFilterState={area:"Todas",line:"Todas"};
+
+function populateOeeFilters(){
+  const areaEl=document.getElementById("oeeArea");
+  const lineEl=document.getElementById("oeeLinha");
+  if(!areaEl||!lineEl)return;
+
+  const areas=[...new Set(l2lRows.map(r=>r.area).filter(Boolean))].sort();
+  const previousArea=oeeFilterState.area;
+  areaEl.innerHTML='<option value="Todas">Toda a fábrica</option>'+areas.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
+  areaEl.value=areas.includes(previousArea)?previousArea:"Todas";
+  oeeFilterState.area=areaEl.value;
+
+  const lines=[...new Set(l2lRows.filter(r=>oeeFilterState.area==="Todas"||r.area===oeeFilterState.area).map(r=>r.line).filter(Boolean))].sort();
+  const previousLine=oeeFilterState.line;
+  lineEl.innerHTML='<option value="Todas">Todas as linhas</option>'+lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
+  lineEl.value=lines.includes(previousLine)?previousLine:"Todas";
+  oeeFilterState.line=lineEl.value;
 }
+
+function getFilteredOeeRows(){
+  return l2lRows.filter(r=>
+    (oeeFilterState.area==="Todas"||r.area===oeeFilterState.area) &&
+    (oeeFilterState.line==="Todas"||r.line===oeeFilterState.line)
+  );
+}
+
 function initOee(){
-const area=document.getElementById("oeeArea"), linha=document.getElementById("oeeLinha"), turno=document.getElementById("oeeTurno"), date=document.getElementById("oeeDate"), start=document.getElementById("oeeStart"), end=document.getElementById("oeeEnd");
-function updateLines(){const selected=linha.value;const available=[...new Set(oeeData.filter(x=>area.value==="Todas"||x.area===area.value).map(x=>x.linha))];linha.innerHTML='<option value="Todas">Todas as linhas</option>'+available.map(x=>'<option>'+x+'</option>').join("");if(available.includes(selected))linha.value=selected;else linha.value="Todas";}
-area.addEventListener("change",()=>{updateLines();updateOee()});linha.addEventListener("change",updateOee);turno.addEventListener("change",updateOee);date.addEventListener("change",updateOee);start.addEventListener("change",updateOee);end.addEventListener("change",updateOee);
-document.getElementById("oeeReset").addEventListener("click",()=>{area.value="Todas";turno.value="Todos";date.value="";start.value="00:00";end.value="23:59";updateLines();linha.value="Todas";updateOee()});
-updateLines();updateOee();
+  const area=document.getElementById("oeeArea");
+  const line=document.getElementById("oeeLinha");
+  const reset=document.getElementById("oeeReset");
+  if(!area||!line||!reset)return;
+
+  populateOeeFilters();
+
+  area.addEventListener("change",()=>{
+    oeeFilterState.area=area.value;
+    oeeFilterState.line="Todas";
+    populateOeeFilters();
+    renderOeeLive();
+  });
+
+  line.addEventListener("change",()=>{
+    oeeFilterState.line=line.value;
+    renderOeeLive();
+  });
+
+  reset.addEventListener("click",()=>{
+    oeeFilterState.area="Todas";
+    oeeFilterState.line="Todas";
+    populateOeeFilters();
+    renderOeeLive();
+  });
+
+  renderOeeLive();
 }
+
+function renderOeeLive(){
+  if(currentPage!=="oee")return;
+  populateOeeFilters();
+
+  const rows=getFilteredOeeRows();
+  const groups=groupedByLine(rows);
+  const selectedArea=oeeFilterState.area==="Todas"?"Toda a fábrica":oeeFilterState.area;
+  const selectedLine=oeeFilterState.line==="Todas"?"Todas as linhas":oeeFilterState.line;
+
+  const oeeValue=avg(rows,"overall_equipment_effectiveness");
+  const efficiency=avg(rows,"peff");
+  const availability=avg(rows,"operational_availability");
+  const quality=avg(rows,"yield");
+  const scrapPct=avg(rows,"scrap_percent");
+
+  const cards=document.getElementById("oeeCards");
+  if(cards){
+    cards.innerHTML=
+      card("OEE",rows.length?fmtPct(oeeValue):"—",oeeValue>=85?"good":"warn")+
+      card("Eficiência",rows.length?fmtPct(efficiency):"—",efficiency>=85?"good":"warn")+
+      card("Disponibilidade",rows.length?fmtPct(availability):"—")+
+      card("Qualidade",rows.length?fmtPct(quality):"—","good")+
+      card("Scrap %",rows.length?fmtPct(scrapPct):"—",scrapPct<=2?"good":"warn");
+  }
+
+  const ctx=document.getElementById("oeeContext");
+  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+groups.length+" linha(s)";
+
+  const table=document.getElementById("oeeTable");
+  if(table){
+    table.innerHTML=groups.length
+      ? '<div class="table-scroll"><table><tr><th>Setor</th><th>Linha</th><th>OEE</th><th>Eficiência</th><th>Dispon.</th><th>Qualidade</th><th>Status</th></tr>'+
+        groups.map(g=>'<tr><td>'+g.area+'</td><td><b>'+g.line+'</b></td><td>'+fmtPct(g.oee)+'</td><td><b>'+fmtPct(g.performance)+'</b></td><td>'+fmtPct(g.availability)+'</td><td>'+fmtPct(g.quality)+'</td><td><span class="status"><span class="dot '+(g.performance>=85?"green":"red")+'"></span>'+(g.performance>=85?"Meta atingida":"Abaixo da meta")+'</span></td></tr>').join("")+
+        '</table></div>'
+      : '<div class="empty-state">Nenhum dado encontrado para o setor/linha selecionado.</div>';
+  }
+
+  const chart=document.getElementById("oeeChart");
+  if(chart){
+    chart.innerHTML=groups.length
+      ? groups.slice(0,14).map(g=>'<div class="col"><i style="--h:'+Math.max(0,Math.min(100,g.performance))+'%"></i><span>'+g.line+'</span><b>'+fmtPct(g.performance)+'</b></div>').join("")
+      : '<div class="empty-state">Sem dados para exibir.</div>';
+  }
+}
+
 const productionData=[
 {area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-05",start:"07:00",end:"08:00",plan:900,real:850},
 {area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-05",start:"08:00",end:"09:00",plan:900,real:875},
@@ -157,17 +244,7 @@ function applyLiveData(page){
       groups.map(g=>{const s=g.actual-g.demand,p=g.demand?g.actual/g.demand*100:0;return '<tr><td>'+g.area+'</td><td><b>'+g.line+'</b></td><td>'+fmt(g.demand)+'</td><td>'+fmt(g.actual)+'</td><td>'+fmt(g.scrap)+'</td><td>'+(s>=0?"+":"")+fmt(s)+'</td><td>'+fmtPct(p)+'</td><td>'+(p>=100?"🟢":p>=95?"🟡":"🔴")+'</td></tr>'}).join("")+'</table>';
   }
 
-  if(page==="oee"){
-    const groups=groupedByLine(l2lRows);
-    const cards=document.getElementById("oeeCards");
-    if(cards)cards.innerHTML=card("OEE",fmtPct(avg(l2lRows,"overall_equipment_effectiveness")),avg(l2lRows,"overall_equipment_effectiveness")>=85?"good":"warn")+card("Disponibilidade",fmtPct(avg(l2lRows,"operational_availability")))+card("Performance",fmtPct(avg(l2lRows,"peff")))+card("Qualidade",fmtPct(avg(l2lRows,"yield")),"good")+card("Scrap %",fmtPct(avg(l2lRows,"scrap_percent")),avg(l2lRows,"scrap_percent")<=2?"good":"warn");
-    const ctx=document.getElementById("oeeContext");if(ctx)ctx.textContent=liveStamp()+" • "+groups.length+" linha(s)";
-    const table=document.getElementById("oeeTable");
-    if(table)table.innerHTML='<table><tr><th>Área</th><th>Linha</th><th>OEE</th><th>Dispon.</th><th>Performance</th><th>Qualidade</th><th>Status</th></tr>'+
-      groups.map(g=>'<tr><td>'+g.area+'</td><td>'+g.line+'</td><td><b>'+fmtPct(g.oee)+'</b></td><td>'+fmtPct(g.availability)+'</td><td>'+fmtPct(g.performance)+'</td><td>'+fmtPct(g.quality)+'</td><td><span class="status"><span class="dot '+(g.oee>=85?"green":"red")+'"></span>'+(g.oee>=85?"Meta atingida":"Abaixo da meta")+'</span></td></tr>').join("")+'</table>';
-    const chart=document.getElementById("oeeChart");
-    if(chart)chart.innerHTML=groups.slice(0,12).map(g=>'<div class="col"><i style="--h:'+Math.max(0,Math.min(100,g.oee))+'%"></i>'+g.line+'<br><b>'+fmtPct(g.oee)+'</b></div>').join("");
-  }
+  if(page==="oee")renderOeeLive();
 
   if(page==="quality"){
     const cards=document.querySelectorAll(".cards .card .value");
@@ -183,6 +260,7 @@ function render(page){
   currentPage=page;
   document.getElementById("content").innerHTML=shell(pages[page]);
   if(page==="stock")initStock();
+  if(page==="oee")initOee();
   applyLiveData(page);
 }
 document.querySelectorAll(".nav").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));b.classList.add("active");render(b.dataset.page)}));
