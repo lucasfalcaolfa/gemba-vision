@@ -747,3 +747,129 @@ td:nth-child(2){overflow-wrap:anywhere}
 @media(max-width:650px){
   .line-gauge-grid{grid-template-columns:1fr !important}
 }
+
+/* Premium polish for OEE cards */
+.line-gauge-grid{
+  grid-template-columns:repeat(4,minmax(245px,1fr)) !important;
+  gap:20px !important;
+}
+.pro-oee-card{
+  background:linear-gradient(180deg,#ffffff 0%,#fcfdfe 100%);
+  border:1px solid #d7e0e6;
+  border-radius:16px;
+  box-shadow:0 10px 28px rgba(7,27,45,.08),0 2px 6px rgba(7,27,45,.04);
+  transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.pro-oee-card:hover{
+  transform:translateY(-2px);
+  box-shadow:0 14px 34px rgba(7,27,45,.12),0 3px 8px rgba(7,27,45,.05);
+  border-color:#c8d5dd;
+}
+.pro-card-head{
+  padding:16px 18px 12px;
+  background:linear-gradient(180deg,#fff 0%,#fbfcfd 100%);
+}
+.pro-card-kicker{
+  font-size:9px;
+  letter-spacing:1px;
+  color:#8a99a5;
+}
+.pro-card-head h3{
+  font-size:17px;
+  letter-spacing:.15px;
+  color:#0b2235;
+}
+.pro-status{
+  padding:6px 9px;
+  font-size:8px;
+  letter-spacing:.25px;
+  border:1px solid transparent;
+}
+.status-ok{background:#edf8f1;color:#137647;border-color:#d7ecdf}
+.status-watch{background:#fff8e8;color:#8f6900;border-color:#f2e5bc}
+.status-critical{background:#fff0ef;color:#b63733;border-color:#f1d5d3}
+
+.pro-card-body{
+  padding:14px 18px 14px;
+}
+.pro-card-body .ref-main-gauge svg{
+  max-width:212px !important;
+}
+.pro-card-body .ref-gauge-track{
+  stroke:#33424d !important;
+  opacity:.95;
+}
+.pro-card-body .ref-gauge-label{
+  font-size:13px !important;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  fill:#61717d !important;
+}
+.pro-card-body .ref-gauge-number{
+  font-size:30px !important;
+  font-weight:900 !important;
+}
+.pro-card-body .ref-gauge-delta{
+  font-size:9px !important;
+}
+.pro-divider{
+  background:linear-gradient(90deg,transparent,#e1e7eb 12%,#e1e7eb 88%,transparent);
+  margin:2px 0 12px;
+}
+.pro-metrics{
+  gap:10px;
+}
+.pro-metrics .ref-metric-row{
+  grid-template-columns:46px 52px 1fr !important;
+  padding:4px 0;
+}
+.pro-metrics .ref-mini-circle{
+  width:44px !important;
+  height:44px !important;
+  box-shadow:inset 0 0 0 1px rgba(7,27,45,.03);
+}
+.pro-metrics .ref-metric-row strong{
+  font-size:11px !important;
+  letter-spacing:.2px;
+  color:#243746 !important;
+}
+.pro-metrics .metric-delta{
+  padding:4px 7px;
+  border-radius:999px;
+  justify-self:end;
+  background:#f5f7f9;
+}
+.pro-metrics .delta-up{background:#edf8f1}
+.pro-metrics .delta-down{background:#fff0ef}
+.pro-metrics .delta-flat{background:#f1f3f5}
+
+.pro-card-foot{
+  background:#f8fafb;
+}
+.pro-card-foot>div{
+  padding:11px 12px;
+}
+.pro-card-foot span{
+  font-size:7px;
+  letter-spacing:.65px;
+  color:#8a98a3;
+}
+.pro-card-foot strong{
+  font-size:12px;
+  font-weight:800;
+  color:#10283a;
+}
+
+@media(min-width:1600px){
+  .line-gauge-grid{grid-template-columns:repeat(4,minmax(260px,1fr)) !important}
+  .pro-oee-card{min-height:390px}
+}
+@media(max-width:1450px){
+  .line-gauge-grid{grid-template-columns:repeat(3,minmax(245px,1fr)) !important}
+}
+@media(max-width:1100px){
+  .line-gauge-grid{grid-template-columns:repeat(2,minmax(230px,1fr)) !important}
+}
+@media(max-width:650px){
+  .line-gauge-grid{grid-template-columns:1fr !important}
+}
