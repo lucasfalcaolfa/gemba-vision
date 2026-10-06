@@ -179,6 +179,29 @@ function initOee(){
   else renderOeeLive();
 }
 
+function gaugeTone(value){
+  const v=n(value);
+  if(v>=85)return "gauge-green";
+  if(v>=70)return "gauge-yellow";
+  return "gauge-red";
+}
+
+function mainGauge(value,label){
+  const v=Math.max(0,Math.min(100,n(value)));
+  const tone=gaugeTone(v);
+  return '<div class="speedometer"><svg viewBox="0 0 200 120" role="img" aria-label="'+label+' '+fmtPct(v)+'"><path class="speedometer-track" d="M20 100 A80 80 0 0 1 180 100" pathLength="100"></path><path class="speedometer-value '+tone+'" d="M20 100 A80 80 0 0 1 180 100" pathLength="100" stroke-dasharray="'+v+' 100"></path><text x="100" y="58" text-anchor="middle" class="speedometer-label">'+label+'</text><text x="100" y="88" text-anchor="middle" class="speedometer-number '+tone+'">'+fmtPct(v)+'</text></svg></div>';
+}
+
+function miniMetric(value,label){
+  const v=Math.max(0,Math.min(100,n(value)));
+  const tone=gaugeTone(v);
+  return '<div class="line-mini-metric"><div class="line-mini-circle '+tone+'" style="--pct:'+v+'"><span>'+fmt(v,0)+'%</span></div><strong>'+label+'</strong></div>';
+}
+
+function lineGaugeCard(g){
+  return '<article class="line-gauge-card"><div class="line-gauge-title">'+g.line+'</div>'+mainGauge(g.performance,"Eficiência")+'<div class="line-mini-grid">'+miniMetric(g.availability,"OA")+miniMetric(g.oee,"OEE")+miniMetric(g.quality,"Yield")+'</div></article>';
+}
+
 function renderOeeLive(){
   if(currentPage!=="oee")return;
   populateOeeFilters();
@@ -199,12 +222,11 @@ function renderOeeLive(){
 
   const cards=document.getElementById("oeeCards");
   if(cards){
-    cards.innerHTML=
-      card("OEE",rows.length?fmtPct(oeeValue):"—",oeeValue>=85?"good":"warn")+
-      card("Eficiência",rows.length?fmtPct(efficiency):"—",efficiency>=85?"good":"warn")+
-      card("Disponibilidade",rows.length?fmtPct(availability):"—")+
-      card("Qualidade",rows.length?fmtPct(quality):"—","good")+
-      card("Scrap %",rows.length?fmtPct(scrapPct):"—",scrapPct<=2?"good":"warn");
+    cards.className="line-gauge-grid";
+    const ordered=[...groups].sort((a,b)=>b.performance-a.performance);
+    cards.innerHTML=ordered.length
+      ? ordered.map(lineGaugeCard).join("")
+      : '<div class="empty-state">Nenhuma linha encontrada para os filtros selecionados.</div>';
   }
 
   const ctx=document.getElementById("oeeContext");
