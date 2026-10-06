@@ -456,3 +456,144 @@ td:nth-child(2){overflow-wrap:anywhere}
 @media(max-width:650px){
   .line-gauge-grid{grid-template-columns:1fr}
 }
+
+/* Final fidelity pass for reference OEE cards */
+.line-gauge-grid{
+  grid-template-columns:repeat(4,minmax(210px,1fr)) !important;
+  gap:16px !important;
+  align-items:stretch;
+}
+.ref-oee-card{
+  background:#fff !important;
+  border:0 !important;
+  border-radius:8px !important;
+  padding:12px 12px 14px !important;
+  min-height:360px;
+  box-shadow:none !important;
+}
+.ref-card-title{
+  font-family:Georgia,"Times New Roman",serif !important;
+  font-size:16px !important;
+  font-weight:700 !important;
+  line-height:1.05 !important;
+  color:#5a5a5a !important;
+  text-transform:uppercase;
+  min-height:42px;
+  margin-bottom:2px;
+}
+.ref-main-gauge{
+  margin-top:0;
+  margin-bottom:2px;
+}
+.ref-main-gauge svg{
+  max-width:205px !important;
+}
+.ref-gauge-track{
+  fill:none !important;
+  stroke:#505153 !important;
+  stroke-width:9 !important;
+}
+.ref-gauge-value{
+  fill:none !important;
+  stroke-width:9 !important;
+}
+.ref-gauge-value.gauge-green{stroke:#24ad5f !important;fill:none !important}
+.ref-gauge-value.gauge-yellow{stroke:#efbd32 !important;fill:none !important}
+.ref-gauge-value.gauge-red{stroke:#ef5350 !important;fill:none !important}
+.ref-gauge-label{
+  font-size:16px !important;
+  font-weight:800 !important;
+  fill:#172635 !important;
+}
+.ref-gauge-delta{
+  font-size:10px !important;
+  font-weight:800 !important;
+}
+.ref-gauge-number{
+  font-size:25px !important;
+  font-weight:800 !important;
+}
+.ref-gauge-number.gauge-green{fill:#24ad5f !important;stroke:none !important}
+.ref-gauge-number.gauge-yellow{fill:#efbd32 !important;stroke:none !important}
+.ref-gauge-number.gauge-red{fill:#ef5350 !important;stroke:none !important}
+
+.ref-metrics{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:11px !important;
+  margin-top:0 !important;
+  padding:0 2px;
+}
+.ref-metric-row{
+  display:grid !important;
+  grid-template-columns:52px 50px 1fr !important;
+  align-items:center !important;
+  gap:8px !important;
+  min-height:52px;
+}
+.ref-metric-row strong{
+  font-size:11px !important;
+  font-weight:800 !important;
+  color:#172635 !important;
+}
+.ref-mini-circle{
+  --pct:0;
+  width:48px !important;
+  height:48px !important;
+  border-radius:50%;
+  position:relative;
+  display:grid;
+  place-items:center;
+  background:conic-gradient(currentColor calc(var(--pct)*1%),#dfe5e9 0) !important;
+  stroke:none !important;
+  fill:none !important;
+}
+.ref-mini-circle::after{
+  content:"";
+  position:absolute;
+  inset:5px;
+  border-radius:50%;
+  background:#fff;
+}
+.ref-mini-inner{
+  position:relative;
+  z-index:2;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  line-height:1;
+}
+.ref-mini-icon{
+  font-size:11px;
+  color:#172635;
+  margin-bottom:2px;
+}
+.ref-mini-value{
+  font-size:10px;
+  font-weight:800;
+  color:inherit;
+}
+.metric-delta{
+  justify-self:end;
+  font-size:10px !important;
+  font-weight:800 !important;
+  white-space:nowrap;
+}
+.delta-up{color:#17a95d !important;fill:#17a95d !important}
+.delta-down{color:#ef5350 !important;fill:#ef5350 !important}
+.delta-flat{color:#8b8f94 !important;fill:#8b8f94 !important}
+
+.ref-mini-circle.gauge-green{color:#24ad5f !important}
+.ref-mini-circle.gauge-yellow{color:#efbd32 !important}
+.ref-mini-circle.gauge-red{color:#ef5350 !important}
+
+@media(max-width:1400px){
+  .line-gauge-grid{grid-template-columns:repeat(4,minmax(190px,1fr)) !important}
+}
+@media(max-width:1100px){
+  .line-gauge-grid{grid-template-columns:repeat(2,minmax(210px,1fr)) !important}
+}
+@media(max-width:650px){
+  .line-gauge-grid{grid-template-columns:1fr !important}
+}
