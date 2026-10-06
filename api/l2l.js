@@ -14,6 +14,29 @@ module.exports = async function handler(req, res) {
   const apiKey = process.env.L2L_API_KEY;
   const siteCode = process.env.L2L_SITE_CODE;
 
+  async function l2lGet(path, params = {}) {
+    const url = new URL(baseUrl + path);
+    for (const [key, value] of Object.entries(params)) {
+      if (value !== undefined && value !== null && String(value).trim() !== "") {
+        url.searchParams.set(key, String(value));
+      }
+    }
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { L2LAUTH: apiKey, Accept: "application/json" },
+    });
+    const raw = await response.text();
+    let payload;
+    try { payload = JSON.parse(raw); }
+    catch { payload = { success: false, error: "Invalid JSON returned by L2L." }; }
+    if (!response.ok) {
+      const error = new Error(payload.error || "L2L request failed.");
+      error.status = response.status;
+      throw error;
+    }
+    return payload;
+  }
+
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
@@ -33,6 +56,85 @@ module.exports = async function handler(req, res) {
       success: false,
       error: "L2L integration is not configured in Vercel environment variables.",
     });
+  }
+
+  if (report === "scrapdetail") {
+    const start = String(req.query.start || "").trim();
+    const end = String(req.query.end || "").trim();
+    if (!start || !end) {
+      return res.status(400).json({ success: false, error: "start and end are required for scrap details." });
+    }
+
+    try {
+      let scrapPayload;
+      try {
+        scrapPayload = await l2lGet("/api/1.0/scrapdetail/", {
+          site: siteCode,
+          start__gte: start,
+          start__lte: end,
+          limit: 2000,
+        });
+      } catch {
+        scrapPayload = await l2lGet("/api/1.0/scrapdetail/", { site: siteCode, limit: 2000 });
+      }
+
+      const lookups = await Promise.allSettled([
+        l2lGet("/api/1.0/scrapcategory/", { site: siteCode, limit: 2000 }),
+        l2lGet("/api/1.0/productcomponents/", { site: siteCode, limit: 2000 }),
+        l2lGet("/api/1.0/resourceshifts/", { site: siteCode, limit: 2000 }),
+        l2lGet("/api/1.0/lines/", { site: siteCode, limit: 2000 }),
+      ]);
+
+      const dataOf = (result) => result.status === "fulfilled" && Array.isArray(result.value?.data) ? result.value.data : [];
+      const [categories, products, shifts, lines] = lookups.map(dataOf);
+      const byId = (rows) => new Map(rows.map(x => [String(x.id), x]));
+      const categoryMap = byId(categories);
+      const productMap = byId(products);
+      const shiftMap = byId(shifts);
+      const lineMap = byId(lines);
+
+      const refId = (value) => {
+        if (value && typeof value === "object") return value.id ?? value.pk ?? value.value ?? null;
+        return value;
+      };
+      const refLabel = (value, map, fallback = "-") => {
+        if (value && typeof value === "object") return value.name ?? value.code ?? value.description ?? String(value.id ?? fallback);
+        const found = map.get(String(value));
+        return found ? (found.name ?? found.code ?? found.description ?? String(found.id)) : (value ?? fallback);
+      };
+
+      const startDate = new Date(start.replace(" ", "T"));
+      const endDate = new Date(end.replace(" ", "T"));
+      const rows = Array.isArray(scrapPayload?.data) ? scrapPayload.data : [];
+      const normalized = rows.map(row => {
+        const whenRaw = row.start || row.created || row.end || null;
+        const when = whenRaw ? new Date(whenRaw) : null;
+        const lineRef = lineMap.get(String(refId(row.line))) || (row.line && typeof row.line === "object" ? row.line : null);
+        return {
+          id: row.id,
+          date: whenRaw,
+          defect: refLabel(row.category, categoryMap, "Sem categoria"),
+          defect_id: refId(row.category),
+          product: refLabel(row.product, productMap, "Sem modelo"),
+          product_id: refId(row.product),
+          shift: refLabel(row.shift, shiftMap, "Sem turno"),
+          shift_id: refId(row.shift),
+          line: refLabel(row.line, lineMap, "Sem linha"),
+          line_id: refId(row.line),
+          area: lineRef?.area?.name ?? lineRef?.area_name ?? lineRef?.area ?? "",
+          scrap: Number(row.scrap || 0),
+        };
+      }).filter(row => {
+        if (!row.date) return true;
+        const d = new Date(row.date);
+        if (Number.isNaN(d.getTime()) || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return true;
+        return d >= startDate && d <= endDate;
+      });
+
+      return res.status(200).json({ success: true, data: normalized });
+    } catch (error) {
+      return res.status(error.status || 502).json({ success: false, error: error.message || "Unable to load L2L scrap details." });
+    }
   }
 
   const allowedReports = {
