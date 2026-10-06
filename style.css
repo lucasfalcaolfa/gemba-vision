@@ -215,3 +215,13 @@ td:nth-child(2){overflow-wrap:anywhere}
 .page:has(#oeeCards){padding-bottom:28px}
 @media(max-width:1200px){.oee-filters-live{grid-template-columns:repeat(3,minmax(150px,1fr));max-width:none}}@media(max-width:960px){.oee-filters-live{grid-template-columns:repeat(2,minmax(0,1fr));max-width:none}.oee-section-grid{grid-template-columns:1fr}.oee-chart-panel .chart{min-height:240px}}
 @media(max-width:640px){.oee-filters-live{grid-template-columns:1fr}.oee-chart-panel .chart{min-height:220px}.page:has(#oeeCards){padding-bottom:18px}}
+
+/* Keep OEE filters in a single horizontal row on desktop */
+@media (min-width:1100px){
+  .oee-filters-live{
+    display:grid;
+    grid-template-columns:1.15fr 1.15fr .85fr 1fr .85fr .85fr;
+    gap:10px;
+    align-items:end;
+  }
+}
