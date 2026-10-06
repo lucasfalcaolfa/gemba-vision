@@ -139,6 +139,24 @@ module.exports = async function handler(req, res) {
           line: refLabel(row.line, lineMap, "Sem linha"),
           line_id: refId(row.line),
           area: lineRef?.area?.name ?? lineRef?.area_name ?? lineRef?.area ?? "",
+          cause:
+            row.cause?.name ??
+            row.cause?.description ??
+            row.cause ??
+            row.reason?.name ??
+            row.reason?.description ??
+            row.reason ??
+            row.root_cause?.name ??
+            row.root_cause?.description ??
+            row.root_cause ??
+            row.scrap_cause?.name ??
+            row.scrap_cause?.description ??
+            row.scrap_cause ??
+            row.cause_description ??
+            row.comment ??
+            row.comments ??
+            row.notes ??
+            "",
           scrap: Number(row.scrap || 0),
         };
       }).filter(row => {
