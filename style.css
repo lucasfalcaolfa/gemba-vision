@@ -203,7 +203,7 @@ td:nth-child(2){overflow-wrap:anywhere}
 }
 
 /* OEE live layout refinements */
-.oee-filters-live{grid-template-columns:minmax(220px,1fr) minmax(220px,1fr);max-width:760px}
+.oee-filters-live{grid-template-columns:repeat(6,minmax(135px,1fr));max-width:none}
 .oee-section-grid{align-items:start}
 .oee-chart-panel{display:flex;flex-direction:column}
 .oee-chart-panel .chart{min-height:280px;height:auto;align-items:flex-end;padding-top:22px}
@@ -213,5 +213,5 @@ td:nth-child(2){overflow-wrap:anywhere}
 .table-scroll{width:100%;overflow:auto}
 #oeeTable table{min-width:760px}
 .page:has(#oeeCards){padding-bottom:28px}
-@media(max-width:960px){.oee-filters-live{grid-template-columns:1fr 1fr;max-width:none}.oee-section-grid{grid-template-columns:1fr}.oee-chart-panel .chart{min-height:240px}}
+@media(max-width:1200px){.oee-filters-live{grid-template-columns:repeat(3,minmax(150px,1fr));max-width:none}}@media(max-width:960px){.oee-filters-live{grid-template-columns:repeat(2,minmax(0,1fr));max-width:none}.oee-section-grid{grid-template-columns:1fr}.oee-chart-panel .chart{min-height:240px}}
 @media(max-width:640px){.oee-filters-live{grid-template-columns:1fr}.oee-chart-panel .chart{min-height:220px}.page:has(#oeeCards){padding-bottom:18px}}
