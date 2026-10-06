@@ -275,28 +275,186 @@ function renderOeeLive(){
   }
 }
 
-const productionData=[
-{area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-05",start:"07:00",end:"08:00",plan:900,real:850},
-{area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-05",start:"08:00",end:"09:00",plan:900,real:875},
-{area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-05",start:"09:00",end:"10:00",plan:900,real:920},
-{area:"Fundição",linha:"AL2",turno:"A",date:"2026-10-05",start:"07:00",end:"08:00",plan:850,real:810},
-{area:"Fundição",linha:"AL2",turno:"A",date:"2026-10-05",start:"08:00",end:"09:00",plan:850,real:830},
-{area:"Fundição",linha:"AL3",turno:"A",date:"2026-10-05",start:"07:00",end:"08:00",plan:830,real:790},
-{area:"Fundição",linha:"AL3",turno:"A",date:"2026-10-05",start:"08:00",end:"09:00",plan:830,real:760},
-{area:"Acabamento",linha:"AC1",turno:"A",date:"2026-10-05",start:"08:00",end:"09:00",plan:780,real:790},
-{area:"Usinagem",linha:"US1",turno:"A",date:"2026-10-05",start:"08:00",end:"09:00",plan:760,real:740},
-{area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-06",start:"08:00",end:"09:00",plan:900,real:860},
-{area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-06",start:"09:00",end:"10:00",plan:900,real:920},
-{area:"Fundição",linha:"AL1",turno:"A",date:"2026-10-06",start:"10:00",end:"11:00",plan:900,real:880},
-{area:"Fundição",linha:"AL2",turno:"A",date:"2026-10-06",start:"08:00",end:"09:00",plan:850,real:820},
-{area:"Fundição",linha:"AL2",turno:"A",date:"2026-10-06",start:"09:00",end:"10:00",plan:850,real:870},
-{area:"Fundição",linha:"AL3",turno:"A",date:"2026-10-06",start:"08:00",end:"09:00",plan:830,real:760},
-{area:"Acabamento",linha:"AC1",turno:"A",date:"2026-10-06",start:"08:00",end:"09:00",plan:780,real:790},
-{area:"Usinagem",linha:"US1",turno:"A",date:"2026-10-06",start:"08:00",end:"09:00",plan:760,real:740}
-];
-function production(){return '<div class="panel"><div class="oee-filter-panel"><div class="oee-filters"><label>Área<select id="prodArea"><option value="Todas">Toda a fábrica</option><option>Fundição</option><option>Acabamento</option><option>Usinagem</option></select></label><label>Linha<select id="prodLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="prodTurno"><option value="Todos">Todos os turnos</option><option>A</option><option>B</option><option>C</option></select></label><label>Data<input id="prodDate" type="date"></label><label>De<input id="prodStart" type="time" value="00:00"></label><label>Até<input id="prodEnd" type="time" value="23:59"></label></div><div class="filter-actions"><button class="filter-reset" id="prodReset">↺ Limpar filtros</button></div><div class="filter-context" id="prodContext"></div></div></div><div id="prodCards" class="cards"></div><div class="panel"><h2>Controle de produção — análise detalhada</h2><div id="prodTable"></div><div class="footer-note">Dados reais do L2L • atualização automática a cada 1 minuto.</div></div>'}
-function updateProduction(){const area=document.getElementById("prodArea").value,linha=document.getElementById("prodLinha").value,turno=document.getElementById("prodTurno").value,date=document.getElementById("prodDate").value,start=document.getElementById("prodStart").value,end=document.getElementById("prodEnd").value;let rows=productionData.filter(x=>(area==="Todas"||x.area===area)&&(linha==="Todas"||x.linha===linha)&&(turno==="Todos"||x.turno===turno)&&(!date||x.date===date)&&x.end>start&&x.start<end);const plan=rows.reduce((a,x)=>a+x.plan,0),real=rows.reduce((a,x)=>a+x.real,0),saldo=real-plan,ating=plan?real/plan*100:0,ritmo=rows.length?real/rows.length:0;document.getElementById("prodCards").innerHTML=card("Plano",plan.toLocaleString("pt-BR"))+card("Realizado",real.toLocaleString("pt-BR"))+card("Saldo",(saldo>=0?"+":"")+saldo.toLocaleString("pt-BR"),saldo>=0?"good":"bad")+card("Atingimento",ating.toFixed(1)+"%",ating>=100?"good":ating>=95?"warn":"bad")+card("Ritmo/h",Math.round(ritmo).toLocaleString("pt-BR"),"good");document.getElementById("prodContext").textContent=(area==="Todas"?"Toda a fábrica":area)+" • "+(linha==="Todas"?"Todas as linhas":linha)+" • "+(turno==="Todos"?"Todos os turnos":"Turno "+turno)+" • "+(date?date.split("-").reverse().join("/"):"Todas as datas")+" • "+start+" → "+end+" • "+rows.length+" registro(s)";document.getElementById("prodTable").innerHTML=rows.length?'<table><tr><th>Área</th><th>Linha</th><th>Turno</th><th>Período</th><th>Plano</th><th>Realizado</th><th>Saldo</th><th>Ating.</th><th>Status</th></tr>'+rows.map(x=>{const s=x.real-x.plan,p=x.real/x.plan*100;return '<tr><td>'+x.area+'</td><td><b>'+x.linha+'</b></td><td>'+x.turno+'</td><td>'+x.start+'–'+x.end+'</td><td>'+x.plan.toLocaleString("pt-BR")+'</td><td>'+x.real.toLocaleString("pt-BR")+'</td><td>'+(s>=0?"+":"")+s.toLocaleString("pt-BR")+'</td><td>'+p.toFixed(1)+'%</td><td>'+(p>=100?"🟢":p>=95?"🟡":"🔴")+'</td></tr>'}).join("")+'</table>':'<div class="empty-state">Nenhum registro encontrado para os filtros selecionados.</div>'}
-function initProduction(){const area=document.getElementById("prodArea"),linha=document.getElementById("prodLinha"),turno=document.getElementById("prodTurno"),date=document.getElementById("prodDate"),start=document.getElementById("prodStart"),end=document.getElementById("prodEnd");function updateLines(){const a=area.value;linha.innerHTML='<option value="Todas">Todas as linhas</option>'+[...new Set(productionData.filter(x=>a==="Todas"||x.area===a).map(x=>x.linha))].map(x=>'<option>'+x+'</option>').join("")}area.addEventListener("change",()=>{updateLines();updateProduction()});[linha,turno,date,start,end].forEach(x=>x.addEventListener("change",updateProduction));document.getElementById("prodReset").addEventListener("click",()=>{area.value="Todas";turno.value="Todos";date.value="";start.value="00:00";end.value="23:59";updateLines();linha.value="Todas";updateProduction()});updateLines();updateProduction()}
+let productionRows=[];
+let productionLoading=false;
+const productionFilterState={area:"Todas",line:"Todas",shift:"Todos",date:"",start:"00:00",end:"23:59"};
+
+function production(){
+  return '<div class="panel oee-filter-panel">'+
+    '<div class="oee-filter-head"><div><h2>Filtros de produção</h2><p>Dados reais do L2L para demanda, produção atual e produzido líquido.</p></div><button class="filter-reset" id="prodReset">↺ Limpar filtros</button></div>'+
+    '<div class="oee-filters oee-filters-live">'+
+      '<label>Setor<select id="prodArea"><option value="Todas">Toda a fábrica</option></select></label>'+
+      '<label>Linha<select id="prodLinha"><option value="Todas">Todas as linhas</option></select></label>'+
+      '<label>Turno<select id="prodTurno"><option value="Todos">Todos os turnos</option><option value="1">1º Turno</option><option value="2">2º Turno</option><option value="3">3º Turno</option></select></label>'+
+      '<label>Data<input id="prodDate" type="date"></label>'+
+      '<label>Hora inicial<input id="prodStart" type="time" value="00:00"></label>'+
+      '<label>Hora final<input id="prodEnd" type="time" value="23:59"></label>'+
+    '</div>'+
+    '<div class="filter-context" id="prodContext">🟡 L2L: carregando...</div>'+
+  '</div>'+
+  '<div id="prodCards" class="cards"></div>'+
+  '<div class="panel"><h2>Produção por linha — dados da API</h2><div id="prodTable"></div><div class="footer-note">Mapeamento: Demanda = demand • Produção atual = actual • Produzido líquido = actual − scrap • atualização automática a cada 1 minuto.</div></div>';
+}
+
+async function refreshProductionRange(){
+  if(productionLoading)return;
+  productionLoading=true;
+  const ctx=document.getElementById("prodContext");
+  if(ctx)ctx.textContent="🟡 Consultando L2L...";
+  try{
+    const date=productionFilterState.date||todayISO();
+    productionRows=await window.L2L.getDaily(date,productionFilterState.start,productionFilterState.end);
+    l2lLastUpdate=new Date();
+    l2lError="";
+    if(currentPage==="production"){
+      populateProductionFilters();
+      renderProductionLive();
+    }
+  }catch(err){
+    l2lError=err.message||"Falha ao consultar L2L";
+    if(currentPage==="production")renderProductionLive();
+  }finally{
+    productionLoading=false;
+  }
+}
+
+function populateProductionFilters(){
+  const areaEl=document.getElementById("prodArea");
+  const lineEl=document.getElementById("prodLinha");
+  if(!areaEl||!lineEl)return;
+
+  const source=productionRows.length?productionRows:l2lRows;
+  const areas=[...new Set(source.map(r=>r.area).filter(Boolean))].sort();
+  areaEl.innerHTML='<option value="Todas">Toda a fábrica</option>'+areas.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
+  areaEl.value=areas.includes(productionFilterState.area)?productionFilterState.area:"Todas";
+  productionFilterState.area=areaEl.value;
+
+  const lines=[...new Set(source.filter(r=>productionFilterState.area==="Todas"||r.area===productionFilterState.area).map(r=>r.line).filter(Boolean))].sort();
+  lineEl.innerHTML='<option value="Todas">Todas as linhas</option>'+lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
+  lineEl.value=lines.includes(productionFilterState.line)?productionFilterState.line:"Todas";
+  productionFilterState.line=lineEl.value;
+}
+
+function getFilteredProductionRows(){
+  const source=productionRows.length?productionRows:l2lRows;
+  const shiftAvailable=hasShiftDetail(source);
+  return source.filter(r=>
+    (productionFilterState.area==="Todas"||r.area===productionFilterState.area) &&
+    (productionFilterState.line==="Todas"||r.line===productionFilterState.line) &&
+    (productionFilterState.shift==="Todos"||!shiftAvailable||rowShift(r)===productionFilterState.shift)
+  );
+}
+
+function renderProductionLive(){
+  if(currentPage!=="production")return;
+
+  populateProductionFilters();
+  const rows=getFilteredProductionRows();
+  const groups=groupedByLine(rows);
+
+  const demand=total(rows,"demand");
+  const actual=total(rows,"actual");
+  const scrap=total(rows,"scrap");
+  const net=Math.max(0,actual-scrap);
+  const attainment=demand?actual/demand*100:0;
+
+  const cards=document.getElementById("prodCards");
+  if(cards){
+    cards.innerHTML=
+      card("Demanda",fmt(demand))+
+      card("Produção atual",fmt(actual),actual>=demand&&demand>0?"good":"")+
+      card("Produzido líquido",fmt(net),net>0?"good":"")+
+      card("Atingimento",fmtPct(attainment),attainment>=100?"good":attainment>=95?"warn":"bad")+
+      card("Scrap",fmt(scrap),scrap===0?"good":"warn");
+  }
+
+  const selectedArea=productionFilterState.area==="Todas"?"Toda a fábrica":productionFilterState.area;
+  const selectedLine=productionFilterState.line==="Todas"?"Todas as linhas":productionFilterState.line;
+  const selectedShift=productionFilterState.shift==="Todos"?"Todos os turnos":productionFilterState.shift+"º Turno";
+  const ctx=document.getElementById("prodContext");
+  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+productionFilterState.date+" • "+productionFilterState.start+"–"+productionFilterState.end+" • "+groups.length+" linha(s)";
+
+  const table=document.getElementById("prodTable");
+  if(table){
+    table.innerHTML=groups.length
+      ? '<div class="table-scroll"><table><tr><th>Setor</th><th>Linha</th><th>Demanda</th><th>Produção atual</th><th>Produzido líquido</th><th>Scrap</th><th>Atingimento</th><th>Status</th></tr>'+
+        groups.map(g=>{
+          const netLine=Math.max(0,g.actual-g.scrap);
+          const pct=g.demand?g.actual/g.demand*100:0;
+          return '<tr><td>'+g.area+'</td><td><b>'+g.line+'</b></td><td>'+fmt(g.demand)+'</td><td><b>'+fmt(g.actual)+'</b></td><td>'+fmt(netLine)+'</td><td>'+fmt(g.scrap)+'</td><td>'+fmtPct(pct)+'</td><td>'+(pct>=100?"🟢":pct>=95?"🟡":"🔴")+'</td></tr>';
+        }).join("")+
+        '</table></div>'
+      : '<div class="empty-state">Nenhum dado de produção encontrado para os filtros selecionados.</div>';
+  }
+}
+
+function initProduction(){
+  const area=document.getElementById("prodArea");
+  const line=document.getElementById("prodLinha");
+  const shift=document.getElementById("prodTurno");
+  const date=document.getElementById("prodDate");
+  const start=document.getElementById("prodStart");
+  const end=document.getElementById("prodEnd");
+  const reset=document.getElementById("prodReset");
+  if(!area||!line||!shift||!date||!start||!end||!reset)return;
+
+  if(!productionFilterState.date)productionFilterState.date=todayISO();
+  date.value=productionFilterState.date;
+  start.value=productionFilterState.start;
+  end.value=productionFilterState.end;
+  shift.value=productionFilterState.shift;
+  populateProductionFilters();
+
+  area.addEventListener("change",()=>{
+    productionFilterState.area=area.value;
+    productionFilterState.line="Todas";
+    populateProductionFilters();
+    renderProductionLive();
+  });
+
+  line.addEventListener("change",()=>{
+    productionFilterState.line=line.value;
+    renderProductionLive();
+  });
+
+  shift.addEventListener("change",()=>{
+    productionFilterState.shift=shift.value;
+    renderProductionLive();
+  });
+
+  date.addEventListener("change",async()=>{
+    productionFilterState.date=date.value||todayISO();
+    await refreshProductionRange();
+  });
+
+  start.addEventListener("change",async()=>{
+    productionFilterState.start=start.value||"00:00";
+    await refreshProductionRange();
+  });
+
+  end.addEventListener("change",async()=>{
+    productionFilterState.end=end.value||"23:59";
+    await refreshProductionRange();
+  });
+
+  reset.addEventListener("click",async()=>{
+    productionFilterState.area="Todas";
+    productionFilterState.line="Todas";
+    productionFilterState.shift="Todos";
+    productionFilterState.date=todayISO();
+    productionFilterState.start="00:00";
+    productionFilterState.end="23:59";
+    date.value=productionFilterState.date;
+    start.value=productionFilterState.start;
+    end.value=productionFilterState.end;
+    shift.value=productionFilterState.shift;
+    await refreshProductionRange();
+  });
+
+  if(!productionRows.length)refreshProductionRange();
+  else renderProductionLive();
+}
+
 const stockData=[
 {modelo:"Case-Joint",inacabado:1850,acabado:920},
 {modelo:"INJP1",inacabado:1320,acabado:680},
@@ -327,6 +485,7 @@ async function refreshL2L(){
     l2lError="";
     applyLiveData(currentPage);
     if(currentPage==="oee")await refreshOeeRange();
+    if(currentPage==="production")await refreshProductionRange();
   }catch(err){
     l2lError=err.message||"Falha ao consultar L2L";
     applyLiveData(currentPage);
@@ -431,16 +590,7 @@ function applyLiveData(page){
     }
   }
 
-  if(page==="production"){
-    const groups=groupedByLine(l2lRows);
-    const plan=total(l2lRows,"demand"),real=total(l2lRows,"actual"),saldo=real-plan,ating=plan?real/plan*100:0;
-    const cards=document.getElementById("prodCards");
-    if(cards)cards.innerHTML=card("Plano",fmt(plan))+card("Realizado",fmt(real))+card("Saldo",(saldo>=0?"+":"")+fmt(saldo),saldo>=0?"good":"bad")+card("Atingimento",fmtPct(ating),ating>=100?"good":ating>=95?"warn":"bad")+card("Scrap",fmt(total(l2lRows,"scrap")),total(l2lRows,"scrap")===0?"good":"warn");
-    const ctx=document.getElementById("prodContext");if(ctx)ctx.textContent=liveStamp()+" • "+groups.length+" linha(s)";
-    const table=document.getElementById("prodTable");
-    if(table)table.innerHTML='<table><tr><th>Área</th><th>Linha</th><th>Plano</th><th>Realizado</th><th>Scrap</th><th>Saldo</th><th>Ating.</th><th>Status</th></tr>'+
-      groups.map(g=>{const s=g.actual-g.demand,p=g.demand?g.actual/g.demand*100:0;return '<tr><td>'+g.area+'</td><td><b>'+g.line+'</b></td><td>'+fmt(g.demand)+'</td><td>'+fmt(g.actual)+'</td><td>'+fmt(g.scrap)+'</td><td>'+(s>=0?"+":"")+fmt(s)+'</td><td>'+fmtPct(p)+'</td><td>'+(p>=100?"🟢":p>=95?"🟡":"🔴")+'</td></tr>'}).join("")+'</table>';
-  }
+  if(page==="production")renderProductionLive();
 
   if(page==="oee")renderOeeLive();
 
@@ -459,6 +609,7 @@ function render(page){
   document.getElementById("content").innerHTML=shell(pages[page]);
   if(page==="stock")initStock();
   if(page==="oee")initOee();
+  if(page==="production")initProduction();
   applyLiveData(page);
 }
 document.querySelectorAll(".nav").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));b.classList.add("active");render(b.dataset.page)}));
