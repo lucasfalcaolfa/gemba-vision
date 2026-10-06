@@ -225,3 +225,24 @@ td:nth-child(2){overflow-wrap:anywhere}
     align-items:end;
   }
 }
+
+/* Efficiency ranking panels */
+.ranking-list{display:flex;flex-direction:column;gap:12px}
+.rank-row{padding:11px 0;border-bottom:1px solid #eef2f4}
+.rank-row:last-child{border-bottom:0}
+.rank-head{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.rank-name{display:flex;align-items:center;gap:9px;min-width:0}
+.rank-name strong{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rank-pos{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#eef3f6;color:#526574;font-size:10px;font-weight:800;flex:0 0 22px}
+.rank-track{height:10px;background:#edf2f5;border-radius:999px;overflow:hidden;margin:8px 0 5px}
+.rank-track i{display:block;height:100%;border-radius:999px}
+.rank-good{color:var(--green)}
+.rank-warn{color:var(--yellow)}
+.rank-bad{color:var(--danger)}
+.rank-track i.rank-good{background:var(--green)}
+.rank-track i.rank-warn{background:var(--yellow)}
+.rank-track i.rank-bad{background:var(--danger)}
+.rank-meta{font-size:9px;color:var(--muted);line-height:1.35}
+#oeeTable,#oeeChart{max-height:520px;overflow:auto;padding-right:4px}
+#oeeChart .empty-state{padding:28px 8px;line-height:1.6}
+#oeeChart code{font-size:10px;background:#f3f6f8;padding:2px 4px;border-radius:4px}
