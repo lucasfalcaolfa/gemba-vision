@@ -87,7 +87,7 @@ function populateOeeFilters(){
   areaEl.value=areas.includes(oeeFilterState.area)?oeeFilterState.area:"Todas";
   oeeFilterState.area=areaEl.value;
 
-  const lines=[...new Set(source.filter(r=>oeeFilterState.area==="Todas"||r.area===oeeFilterState.area).map(r=>r.line).filter(Boolean))].sort();
+  const lines=[...new Set(source.filter(r=>oeeFilterState.area==="Todas"||r.area===oeeFilterState.area).map(r=>r.line).filter(Boolean))].sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
   lineEl.innerHTML='<option value="Todas">Todas as linhas</option>'+lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
   lineEl.value=lines.includes(oeeFilterState.line)?oeeFilterState.line:"Todas";
   oeeFilterState.line=lineEl.value;
@@ -217,6 +217,37 @@ function miniMetric(value,label,target=85){
   return '<div class="ref-metric-row"><div class="ref-mini-circle '+tone+'" style="--pct:'+v+'"><div class="ref-mini-inner"><span class="ref-mini-icon">'+icon+'</span><span class="ref-mini-value">'+fmt(v,0)+'%</span></div></div><strong>'+label+'</strong>'+deltaMarkup(v,target)+'</div>';
 }
 
+function oeeLineNumber(lineName){
+  const name=String(lineName||"").toUpperCase().trim();
+  const patterns=[
+    /INJETORA\s*AL\s*0*(\d+)/,
+    /INJETORA\s*0*(\d+)/,
+    /\bAL\s*0*(\d+)\b/,
+    /\bINJ(?:ETORA)?\s*0*(\d+)\b/,
+    /(\d+)/
+  ];
+  for(const pattern of patterns){
+    const match=name.match(pattern);
+    if(match)return Number(match[1]);
+  }
+  return Number.MAX_SAFE_INTEGER;
+}
+
+function sortOeeCardsByLine(groups){
+  return [...groups].sort((a,b)=>{
+    const areaA=String(a.area||"");
+    const areaB=String(b.area||"");
+    const areaCompare=areaA.localeCompare(areaB,"pt-BR",{numeric:true,sensitivity:"base"});
+    if(areaCompare!==0)return areaCompare;
+
+    const numberA=oeeLineNumber(a.line);
+    const numberB=oeeLineNumber(b.line);
+    if(numberA!==numberB)return numberA-numberB;
+
+    return String(a.line||"").localeCompare(String(b.line||""),"pt-BR",{numeric:true,sensitivity:"base"});
+  });
+}
+
 function lineGaugeCard(g){
   const status=g.oee>=85?"Dentro da meta":g.oee>=70?"Atenção":"Crítico";
   const statusCls=g.oee>=85?"status-ok":g.oee>=70?"status-watch":"status-critical";
@@ -252,7 +283,7 @@ function renderOeeLive(){
   const cards=document.getElementById("oeeCards");
   if(cards){
     cards.className="line-gauge-grid";
-    const ordered=[...groups].sort((a,b)=>b.performance-a.performance);
+    const ordered=sortOeeCardsByLine(groups);
     cards.innerHTML=ordered.length
       ? ordered.map(lineGaugeCard).join("")
       : '<div class="empty-state">Nenhuma linha encontrada para os filtros selecionados.</div>';
