@@ -12,6 +12,24 @@ window.L2L = {
     }
     return Array.isArray(payload.data) ? payload.data : [];
   },
+  async getRange(startDate, endDate, startTime = "00:00", endTime = "23:59") {
+    const first = startDate || new Date().toISOString().slice(0, 10);
+    const last = endDate || first;
+    const dates = [];
+    const cursor = new Date(first + "T00:00:00");
+    const finish = new Date(last + "T00:00:00");
+    while (cursor <= finish) {
+      dates.push(cursor.toISOString().slice(0, 10));
+      cursor.setDate(cursor.getDate() + 1);
+    }
+    const requests = dates.map((day, index) => {
+      const s = index === 0 ? startTime : "00:00";
+      const e = index === dates.length - 1 ? endTime : "23:59";
+      return this.getDaily(day, s, e);
+    });
+    const results = await Promise.all(requests);
+    return results.flat();
+  },
   async getScrapDetails(date, startTime = "00:00", endTime = "23:59") {
     const day = date || new Date().toISOString().slice(0, 10);
     const start = encodeURIComponent(day + " " + startTime);
