@@ -24,10 +24,10 @@ button{cursor:pointer}
   height:72px;background:var(--navy);color:#fff;display:flex;align-items:center;
   padding:0 22px;gap:24px;position:sticky;top:0;z-index:50;box-shadow:0 2px 10px rgba(0,0,0,.18)
 }
-.brand{display:flex;align-items:center;flex:0 0 245px;min-width:0;height:72px;position:relative;padding:0 28px 0 18px;overflow:visible}.brand:before{content:"";position:absolute;left:-10px;top:0;width:250px;height:72px;background:linear-gradient(110deg,rgba(211,0,43,.92) 0%,rgba(174,0,42,.68) 55%,rgba(8,31,49,0) 100%);clip-path:polygon(0 0,100% 0,82% 100%,0 100%);z-index:0}.brand-logo{position:relative;z-index:1;display:block;width:175px;max-width:100%;height:auto;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.18))}
-.brand-mark{width:34px;height:34px;border:2px solid #fff;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:18px}
-.brand strong{display:block;letter-spacing:2px;font-size:15px}
-.brand span{font-size:8px;letter-spacing:2px;color:#b9c8d4}
+.brand{display:flex;align-items:center;flex:0 0 285px;min-width:0;height:72px;position:relative;padding:0 30px 0 18px;overflow:visible}
+.brand:before{content:"";position:absolute;left:0;top:0;width:285px;height:72px;background:linear-gradient(110deg,#7d1028 0%,#651126 48%,rgba(8,31,49,0) 100%);clip-path:polygon(0 0,100% 0,82% 100%,0 100%);z-index:0}
+.brand:after{content:"";position:absolute;left:0;top:0;width:205px;height:72px;background:linear-gradient(90deg,rgba(255,255,255,.06),rgba(255,255,255,0));z-index:0;pointer-events:none}
+.brand-logo{position:relative;z-index:2;display:block;width:185px;max-width:100%;height:auto;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.12))}
 .title{font-size:21px;font-weight:800;letter-spacing:2px;flex:1;min-width:0}
 .clock{text-align:right;white-space:nowrap}
 .clock b{display:block;font-size:18px}
