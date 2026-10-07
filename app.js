@@ -338,51 +338,92 @@ function aggregateShiftRows(hourlyRows){
   }));
 }
 
-async function fetchHourlyHeatDay(day){
-  const requests=[];
-  for(let hour=0;hour<24;hour++){
-    const endHour=hour;
-    const start=day+" "+String(hour).padStart(2,"0")+":00";
-    const end=day+" "+String(endHour).padStart(2,"0")+":59";
-    requests.push({hour,start,end});
-  }
-
-  const all=[];
-  const batchSize=6;
-  for(let i=0;i<requests.length;i+=batchSize){
-    const batch=requests.slice(i,i+batchSize);
-    const results=await Promise.all(batch.map(async q=>{
-      const rows=await window.L2L.getDailyWindow(q.start,q.end);
-      return mergeHourlyRows(rows,day,q.hour);
-    }));
-    results.forEach(rows=>all.push(...rows));
-  }
-  return all;
+function localIsoDate(date){
+  const y=date.getFullYear();
+  const m=String(date.getMonth()+1).padStart(2,"0");
+  const d=String(date.getDate()).padStart(2,"0");
+  return y+"-"+m+"-"+d;
 }
 
-async function refreshOeeHeatmap(){
+function pitchesToHourlyRows(pitches){
+  const buckets={};
+
+  (Array.isArray(pitches)?pitches:[]).forEach(pitch=>{
+    const start=new Date(pitch.pitch_start);
+    const end=new Date(pitch.pitch_end);
+    const oee=n(pitch.oee);
+    if(Number.isNaN(start.getTime())||Number.isNaN(end.getTime())||end<=start||!Number.isFinite(oee))return;
+
+    let cursor=new Date(start);
+    while(cursor<end){
+      const hourStart=new Date(cursor);
+      hourStart.setMinutes(0,0,0);
+      const hourEnd=new Date(hourStart);
+      hourEnd.setHours(hourEnd.getHours()+1);
+
+      const segStart=new Date(Math.max(start.getTime(),hourStart.getTime()));
+      const segEnd=new Date(Math.min(end.getTime(),hourEnd.getTime()));
+      const minutes=Math.max(0,(segEnd-segStart)/60000);
+
+      if(minutes>0){
+        const hour=hourStart.getHours();
+        const date=localIsoDate(hourStart);
+        const key=[pitch.area||"",pitch.line||"Sem linha",date,hour].join("|");
+        if(!buckets[key]){
+          buckets[key]={
+            area:pitch.area||"",
+            line:pitch.line||"Sem linha",
+            date,
+            hour,
+            shift:oeeHourShift(hour),
+            weighted:0,
+            weight:0
+          };
+        }
+        buckets[key].weighted+=oee*minutes;
+        buckets[key].weight+=minutes;
+      }
+
+      cursor=hourEnd;
+    }
+  });
+
+  return Object.values(buckets).map(x=>({
+    area:x.area,
+    line:x.line,
+    date:x.date,
+    hour:x.hour,
+    shift:x.shift,
+    oee:x.weight?x.weighted/x.weight:0
+  }));
+}
+
+async function refreshOeeHeatmap(force=false){
   if(oeeHeatmapLoading||currentPage!=="oee")return;
   const startDate=oeeFilterState.startDate||todayISO();
   const endDate=oeeFilterState.endDate||startDate;
   const key=[startDate,endDate,oeeFilterState.area,oeeFilterState.line].join("|");
+  if(!force&&oeeHeatmapRows.length&&oeeHeatmapKey===key){
+    renderOeeHeatmap();
+    return;
+  }
+
   oeeHeatmapLoading=true;
   const mount=document.getElementById("oeeHeatmapMount");
   if(mount&&!oeeHourlyHeatmapRows.length){
-    mount.innerHTML='<section class="panel oee-heat-panel"><div class="scrap-loading"><div class="scrap-spinner"></div><strong>Montando mapa de calor hora a hora...</strong></div></section>';
+    mount.innerHTML='<section class="panel oee-heat-panel"><div class="scrap-loading"><div class="scrap-spinner"></div><strong>Consultando OEE horário em tempo real no L2L...</strong></div></section>';
   }
+
   try{
-    const dates=oeeHeatDateRange(startDate,endDate);
-    const hourly=[];
-    for(const d of dates){
-      const dayRows=await fetchHourlyHeatDay(d.iso);
-      hourly.push(...dayRows);
-    }
+    const pitches=await window.L2L.getPitchHeat(startDate,endDate);
+    const hourly=pitchesToHourlyRows(pitches);
     oeeHourlyHeatmapRows=hourly;
     oeeHeatmapRows=aggregateShiftRows(hourly);
     oeeHeatmapKey=key;
+    l2lLastUpdate=new Date();
     if(currentPage==="oee")renderOeeHeatmap();
   }catch(err){
-    if(mount)mount.innerHTML='<section class="panel oee-heat-panel"><div class="empty-state"><strong>Não foi possível carregar o mapa de calor por hora.</strong><br>'+stockEsc(err.message||"Falha ao consultar L2L")+'</div></section>';
+    if(mount)mount.innerHTML='<section class="panel oee-heat-panel"><div class="empty-state"><strong>Não foi possível carregar o OEE horário em tempo real.</strong><br>'+stockEsc(err.message||"Falha ao consultar L2L")+'</div></section>';
   }finally{
     oeeHeatmapLoading=false;
   }
@@ -1366,7 +1407,10 @@ async function refreshL2L(){
     l2lLastUpdate=new Date();
     l2lError="";
     applyLiveData(currentPage);
-    if(currentPage==="oee")await refreshOeeRange();
+    if(currentPage==="oee"){
+      await refreshOeeRange();
+      await refreshOeeHeatmap(true);
+    }
     if(currentPage==="production")await refreshProductionRange();
     if(currentPage==="stock")await refreshStockRange();
   }catch(err){
