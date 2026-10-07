@@ -1594,15 +1594,17 @@ function parseSafetyDays(textContent,pageViewport){
 
   if(headersByDay.every(Boolean)){
     const anchors=headersByDay.map(h=>h.x);
-    const boundaries=[0];
-    for(let i=0;i<4;i++)boundaries.push((anchors[i]+anchors[i+1])/2);
-    boundaries.push(pageViewport.width);
+    const gaps=anchors.slice(1).map((x,i)=>x-anchors[i]).filter(x=>x>0);
+    const typicalGap=gaps.length?gaps.reduce((a,b)=>a+b,0)/gaps.length:pageViewport.width/5;
+    const gutter=Math.max(2,typicalGap*.025);
 
     const headerY=Math.max(...headersByDay.map(h=>h.y));
     const weekInfo=extractSafetyWeekInfo(allLines,headerY);
 
     const days=headersByDay.map((header,day)=>{
-      const colLines=groupSafetyColumnLines(textContent.items,boundaries[day],boundaries[day+1],header.y+2)
+      const left=day===0?Math.max(0,anchors[0]-typicalGap*.08):anchors[day]-typicalGap*.08;
+      const right=day<4?anchors[day+1]-gutter:Math.min(pageViewport.width,anchors[day]+typicalGap);
+      const colLines=groupSafetyColumnLines(textContent.items,left,right,header.y+2)
         .map(l=>l.text)
         .filter(Boolean);
 
@@ -1688,7 +1690,7 @@ function renderSafetyCards(){
       '<div class="safety-day-card-top"><span>'+d.short+'</span>'+todayBadge+'</div>'+
       '<div class="safety-day-icon">'+safetyIconSvg(d.day)+'</div>'+
       '<strong>'+escapeSafetyHtml(d.title)+'</strong>'+
-      '<p>'+escapeSafetyHtml(safetyPreviewText(d))+'</p>'+
+      '<p class="safety-card-open">Clique para ver o conteúdo completo do dia</p>'+
     '</button>';
   }).join("");
   box.querySelectorAll("[data-safety-day]").forEach(btn=>btn.addEventListener("click",()=>{
@@ -1707,17 +1709,34 @@ function renderSafetyDetail(){
     return;
   }
 
-  const focus=d.focus||"Conteúdo principal disponível no PDF semanal.";
+  const focus=(d.focus||"").trim();
   const points=(d.points||[]).filter(Boolean);
+  const action=(d.action||"").trim();
+  const summary=(d.summary||"").trim();
+
   const pointHtml=points.length
     ? '<ul>'+points.map(p=>'<li>'+escapeSafetyHtml(p)+'</li>').join("")+'</ul>'
-    : '<p class="safety-reading-empty">Não há uma lista separada de pontos-chave neste dia.</p>';
-  const action=d.action||"";
-  const summary=d.summary||"";
-  const fullText=(d.fullText||"").split("\n").filter(Boolean);
+    : '<p class="safety-reading-empty">Este dia não possui uma lista separada de pontos-chave no PDF.</p>';
 
-  const heroCopy=(focus||summary||fullText.join(" ")).replace(/\s+/g," ").trim();
+  const heroCopy=focus||summary||action||"Conteúdo disponível abaixo na leitura completa.";
   const weekMeta=escapeSafetyHtml(safetyWeekInfo.week||"Semana atual");
+
+  const completeSections=[
+    {label:"TÍTULO",value:d.title},
+    {label:"FOCO",value:focus},
+    {label:"PONTOS PRINCIPAIS",value:points},
+    {label:"RESUMO",value:summary},
+    {label:"AÇÃO",value:action}
+  ].filter(section=>Array.isArray(section.value)?section.value.length:Boolean(section.value));
+
+  const completeHtml=completeSections.map(section=>{
+    if(Array.isArray(section.value)){
+      return '<div class="safety-complete-section"><h4>'+section.label+'</h4><ul>'+
+        section.value.map(item=>'<li>'+escapeSafetyHtml(item)+'</li>').join("")+
+      '</ul></div>';
+    }
+    return '<div class="safety-complete-section"><h4>'+section.label+'</h4><p>'+escapeSafetyHtml(section.value)+'</p></div>';
+  }).join("");
 
   box.innerHTML=
     '<div class="safety-feature-grid">'+
@@ -1732,14 +1751,15 @@ function renderSafetyDetail(){
         '</div>'+
       '</section>'+
       '<div class="safety-reading-stack">'+
-        '<section class="safety-reading-card focus-card"><div class="safety-reading-icon">◎</div><div><span>FOCO</span><h3>'+escapeSafetyHtml(d.title)+'</h3><p>'+escapeSafetyHtml(focus)+'</p></div></section>'+
+        (focus?'<section class="safety-reading-card focus-card"><div class="safety-reading-icon">◎</div><div><span>FOCO</span><h3>'+escapeSafetyHtml(d.title)+'</h3><p>'+escapeSafetyHtml(focus)+'</p></div></section>':'')+
         '<section class="safety-reading-card points-card"><div class="safety-reading-icon">⚙</div><div><span>PONTOS-CHAVE</span>'+pointHtml+'</div></section>'+
         (action?'<section class="safety-reading-card action-card"><div class="safety-reading-icon">◉</div><div><span>AÇÃO DO DIA</span><h3>Pense antes de executar</h3><p>'+escapeSafetyHtml(action)+'</p></div></section>':'')+
       '</div>'+
     '</div>'+
     (summary?'<section class="safety-summary-strip"><div class="safety-summary-icon">▣</div><div><span>RESUMO</span><p>'+escapeSafetyHtml(summary)+'</p></div></section>':'')+
-    '<section class="safety-fulltext"><div class="safety-fulltext-head"><span>LEITURA COMPLETA DO DIA</span><small>Texto integral extraído da coluna de '+escapeSafetyHtml(d.label)+'</small></div>'+
-      '<div class="safety-fulltext-body">'+fullText.map(line=>'<p>'+escapeSafetyHtml(line)+'</p>').join("")+'</div>'+
+    '<section class="safety-fulltext">'+
+      '<div class="safety-fulltext-head"><div><span>LEITURA COMPLETA DO DIA</span><strong>'+escapeSafetyHtml(d.label)+'</strong></div><small>Conteúdo integral organizado a partir da coluna deste dia no PDF</small></div>'+
+      '<div class="safety-fulltext-body">'+completeHtml+'</div>'+
     '</section>';
 }
 
