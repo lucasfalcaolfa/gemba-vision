@@ -256,6 +256,17 @@ function miniMetric(value,label,target=85){
   return '<div class="ref-metric-row"><div class="ref-mini-circle '+tone+'" style="--pct:'+v+'"><div class="ref-mini-inner"><span class="ref-mini-icon">'+icon+'</span><span class="ref-mini-value">'+fmt(v,0)+'%</span></div></div><strong>'+label+'</strong>'+deltaMarkup(v,target)+'</div>';
 }
 
+function isHeatmapInjectionLine(lineName){
+  const name=String(lineName||"").toUpperCase().trim();
+  return /INJETORA\s*AL\s*0*\d+/.test(name);
+}
+
+function isoDaysBefore(iso,days){
+  const d=new Date((iso||todayISO())+"T00:00:00");
+  d.setDate(d.getDate()-days);
+  return localIsoDate(d);
+}
+
 function oeeLineNumber(lineName){
   const name=String(lineName||"").toUpperCase().trim();
   const patterns=[
@@ -560,6 +571,7 @@ function renderOeeHeatmap(){
   if(!mount)return;
 
   let details=oeeHeatmapRows.filter(r=>
+    isHeatmapInjectionLine(r.line) &&
     (heatmapFilterState.area==="Todas"||r.area===heatmapFilterState.area) &&
     (heatmapFilterState.line==="Todas"||r.line===heatmapFilterState.line)
   );
@@ -584,16 +596,16 @@ function renderOeeHeatmap(){
 
   const lineAverages=lines.map(line=>{
     const vals=visibleDetails.filter(r=>r.line===line).map(r=>r.oee).filter(Number.isFinite);
-    return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
+    return {line,value:vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null};
   });
-  const below=lineAverages.filter(v=>v>0&&v<75).length;
+  const below=lineAverages.filter(x=>x.value!==null&&x.value<75).length;
 
   const startLabel=startDate.split("-").reverse().join("/");
   const endLabel=endDate.split("-").reverse().join("/");
   const periodLabel=startLabel===endLabel?startLabel:startLabel+" → "+endLabel;
 
   if(!details.length||!lines.length){
-    mount.innerHTML='<section class="panel oee-heat-panel"><div class="oee-heat-top"><div><span>ANÁLISE DIÁRIA POR TURNO</span><h2>Mapa de calor OEE diário</h2><p>Período '+periodLabel+' • meta de 75%.</p></div></div><div class="empty-state">Nenhum OEE diário por turno foi encontrado para os filtros selecionados.</div></section>';
+    mount.innerHTML='<section class="panel oee-heat-panel"><div class="oee-heat-top"><div><span>ANÁLISE DIÁRIA POR TURNO</span><h2>Mapa de calor OEE das injetoras</h2><p>Período '+periodLabel+' • meta de 75%.</p></div></div><div class="empty-state">Nenhuma linha INJETORA AL foi encontrada no L2L para os filtros selecionados.</div></section>';
     return;
   }
 
@@ -609,19 +621,19 @@ function renderOeeHeatmap(){
   mount.innerHTML=`
     <section class="panel oee-heat-panel compact-heat-panel">
       <div class="oee-heat-top">
-        <div><span>ANÁLISE DIÁRIA POR TURNO</span><h2>Mapa de calor OEE diário</h2><p>Eficiência diária por injetora • período ${periodLabel} • meta de 75%.</p></div>
+        <div><span>ANÁLISE DIÁRIA POR TURNO</span><h2>Mapa de calor OEE das injetoras</h2><p>Eficiência diária • ${periodLabel} • meta de 75% OEE.</p></div>
         <div class="oee-heat-legend"><div class="oee-heat-legend-title">Escala OEE</div><div class="oee-heat-gradient"></div><div class="oee-heat-legend-labels"><span><b>&lt; 50%</b><small>Crítico</small></span><span><b>50%–74%</b><small>Atenção</small></span><span><b>≥ 75%</b><small>Dentro da meta</small></span></div></div>
       </div>
 
       <div class="heat-week-nav">
         <button type="button" onclick="changeHeatWeek(-1)" ${hasPrev?"":"disabled"}>‹ Semana anterior</button>
-        <div><span>Semana exibida</span><strong>${weekLabel}</strong><small>${weeks.length>1?"Semana "+(heatmapWeekIndex+1)+" de "+weeks.length:"Período completo"}</small></div>
+        <div><span>Período exibido</span><strong>${weekLabel}</strong><small>${weeks.length>1?"Semana "+(heatmapWeekIndex+1)+" de "+weeks.length:"7 dias"}</small></div>
         <button type="button" onclick="changeHeatWeek(1)" ${hasNext?"":"disabled"}>Próxima semana ›</button>
       </div>
 
       <div class="oee-heat-summary">
-        <div><span>Média da semana exibida</span><strong>${overall.toFixed(1).replace(".",",")}%</strong></div>
-        <div><span>Linhas abaixo de 75%</span><strong>${below} <small>de ${lines.length}</small></strong></div>
+        <div><span>Média das injetoras</span><strong>${overall.toFixed(1).replace(".",",")}%</strong></div>
+        <div><span>Injetoras abaixo de 75%</span><strong>${below} <small>de ${lines.length}</small></strong></div>
         <div><span>Meta / referência</span><strong>75% OEE</strong></div>
       </div>
 
@@ -634,14 +646,22 @@ function populateHeatmapFilters(){
   const area=document.getElementById("heatArea");
   const line=document.getElementById("heatLine");
   if(!area||!line)return;
-  const source=oeeRows.length?oeeRows:l2lRows;
+
+  const source=(oeeRows.length?oeeRows:l2lRows).filter(r=>isHeatmapInjectionLine(r.line));
   const areas=[...new Set(source.map(r=>r.area).filter(Boolean))].sort();
-  area.innerHTML='<option value="Todas">Toda a fábrica</option>'+areas.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
+
+  area.innerHTML='<option value="Todas">Todas as áreas com injetoras</option>'+areas.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
   area.value=areas.includes(heatmapFilterState.area)?heatmapFilterState.area:"Todas";
   heatmapFilterState.area=area.value;
-  const lines=[...new Set(source.filter(r=>heatmapFilterState.area==="Todas"||r.area===heatmapFilterState.area).map(r=>r.line).filter(Boolean))]
-    .sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
-  line.innerHTML='<option value="Todas">Todas as linhas</option>'+lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
+
+  const lines=[...new Set(
+    source
+      .filter(r=>heatmapFilterState.area==="Todas"||r.area===heatmapFilterState.area)
+      .map(r=>r.line)
+      .filter(Boolean)
+  )].sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
+
+  line.innerHTML='<option value="Todas">Todas as injetoras</option>'+lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
   line.value=lines.includes(heatmapFilterState.line)?heatmapFilterState.line:"Todas";
   heatmapFilterState.line=line.value;
 }
@@ -665,8 +685,8 @@ function initHeatmap(){
   const reset=document.getElementById("heatReset");
   if(!area||!line||!shift||!startDate||!endDate||!apply||!reset)return;
 
-  if(!heatmapFilterState.startDate)heatmapFilterState.startDate=todayISO();
-  if(!heatmapFilterState.endDate)heatmapFilterState.endDate=heatmapFilterState.startDate;
+  if(!heatmapFilterState.endDate)heatmapFilterState.endDate=todayISO();
+  if(!heatmapFilterState.startDate)heatmapFilterState.startDate=isoDaysBefore(heatmapFilterState.endDate,6);
   heatmapFilterState.start="00:00";
   heatmapFilterState.end="23:59";
 
@@ -689,14 +709,23 @@ function initHeatmap(){
       heatmapFilterState.area=area.value;
       heatmapFilterState.line=line.value;
       heatmapFilterState.shift=shift.value;
-      heatmapFilterState.startDate=startDate.value||todayISO();
-      heatmapFilterState.endDate=endDate.value||heatmapFilterState.startDate;
-      if(heatmapFilterState.endDate<heatmapFilterState.startDate){
-        heatmapFilterState.endDate=heatmapFilterState.startDate;
-        endDate.value=heatmapFilterState.endDate;
+
+      const chosenEnd=endDate.value||todayISO();
+      let chosenStart=startDate.value||isoDaysBefore(chosenEnd,6);
+      if(chosenStart>chosenEnd)chosenStart=chosenEnd;
+
+      // Se o usuário escolher apenas um dia, transforma em uma janela de 7 dias
+      // terminando na data escolhida, igual ao padrão visual do Gemba.
+      if(chosenStart===chosenEnd){
+        chosenStart=isoDaysBefore(chosenEnd,6);
+        startDate.value=chosenStart;
       }
+
+      heatmapFilterState.startDate=chosenStart;
+      heatmapFilterState.endDate=chosenEnd;
       heatmapFilterState.start="00:00";
       heatmapFilterState.end="23:59";
+
       heatmapWeekIndex=0;
       oeeHeatmapRows=[];
       oeeHourlyHeatmapRows=[];
@@ -715,14 +744,16 @@ function initHeatmap(){
     heatmapFilterState.area="Todas";
     heatmapFilterState.line="Todas";
     heatmapFilterState.shift="Todos";
-    heatmapFilterState.startDate=todayISO();
     heatmapFilterState.endDate=todayISO();
+    heatmapFilterState.startDate=isoDaysBefore(heatmapFilterState.endDate,6);
     heatmapFilterState.start="00:00";
     heatmapFilterState.end="23:59";
+
     shift.value="Todos";
     startDate.value=heatmapFilterState.startDate;
     endDate.value=heatmapFilterState.endDate;
     populateHeatmapFilters();
+
     heatmapWeekIndex=0;
     oeeHeatmapRows=[];
     oeeHourlyHeatmapRows=[];
