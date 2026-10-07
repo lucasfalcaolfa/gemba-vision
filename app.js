@@ -799,15 +799,16 @@ const STOCK_STAGE={
 
 let stockRows=[];
 let stockLoading=false;
-const stockFilterState={date:"",model:"Todos"};
+const stockFilterState={startDate:"2026-09-15",endDate:"",model:"Todos"};
 
 function stock(){
   return '<div class="panel stock-filter-panel">'+
     '<div class="stock-filter-head"><div><span>CONTROLE EM TEMPO REAL</span><h2>Estoque da Fundição</h2><p>Selecione a data e o modelo para consultar a posição calculada com os dados do L2L.</p></div><div class="stock-live-badge" id="stockLiveStatus">🟡 L2L: carregando...</div></div>'+
-    '<div class="stock-filter-grid">'+
-      '<label>Data<input id="stockDate" type="date"></label>'+
+    '<div class="stock-filter-grid stock-filter-grid-range">'+
+      '<label>Data inicial<input id="stockStartDate" type="date"></label>'+
+      '<label>Data final<input id="stockEndDate" type="date"></label>'+
       '<label>Modelo<select id="stockModel"><option value="Todos">Todos os modelos</option></select></label>'+
-      '<button type="button" id="stockReset" class="stock-filter-reset">↺ Hoje / Todos</button>'+
+      '<button type="button" id="stockReset" class="stock-filter-reset">↺ 15/09 até hoje</button>'+
     '</div>'+
     '<div class="filter-context" id="stockContext">Atualização automática a cada 1 minuto.</div>'+
   '</div>'+
@@ -907,8 +908,9 @@ async function refreshStockRange(){
   const status=document.getElementById("stockLiveStatus");
   if(status)status.textContent="🟡 Consultando L2L...";
   try{
-    const day=stockFilterState.date||todayISO();
-    stockRows=await window.L2L.getDaily(day,"00:00","23:59");
+    const first=stockFilterState.startDate||"2026-09-15";
+    const last=stockFilterState.endDate||todayISO();
+    stockRows=await window.L2L.getRange(first,last,"00:00","23:59");
     l2lLastUpdate=new Date();
     l2lError="";
     if(currentPage==="stock")updateStock();
@@ -937,9 +939,10 @@ function updateStock(){
 
   const context=document.getElementById("stockContext");
   if(context){
-    const dateLabel=(stockFilterState.date||todayISO()).split("-").reverse().join("/");
+    const startLabel=(stockFilterState.startDate||"2026-09-15").split("-").reverse().join("/");
+    const endLabel=(stockFilterState.endDate||todayISO()).split("-").reverse().join("/");
     const modelLabel=stockFilterState.model==="Todos"?"Todos os modelos":stockFilterState.model;
-    context.textContent=liveStamp()+" • "+dateLabel+" • "+modelLabel+" • atualização automática a cada 1 minuto";
+    context.textContent=liveStamp()+" • Acumulado "+startLabel+" → "+endLabel+" • "+modelLabel+" • atualização automática a cada 1 minuto";
   }
 
   const cards=document.getElementById("stockCards");
@@ -972,7 +975,7 @@ function updateStock(){
       '<div class="stock-summary-grid">'+
         '<div><span>Inacabados</span><strong>'+fmt(totalI)+'</strong><small>'+ (stockFilterState.model==="Todos"?"Todos os modelos":stockEsc(stockFilterState.model)) +'</small></div>'+
         '<div><span>Acabados</span><strong>'+fmt(totalA)+'</strong><small>'+ (stockFilterState.model==="Todos"?"Todos os modelos":stockEsc(stockFilterState.model)) +'</small></div>'+
-        '<div><span>Total</span><strong>'+fmt(totalI+totalA)+'</strong><small>Data selecionada</small></div>'+
+        '<div><span>Total</span><strong>'+fmt(totalI+totalA)+'</strong><small>Período acumulado</small></div>'+
         '<div><span>Modelos na visão</span><strong>'+fmt(visible.length)+'</strong><small>'+(position.some(x=>x.model!=="GERAL")?"Detalhe de produto disponível":"L2L sem detalhe de produto")+'</small></div>'+
       '</div>'+
       (downstream===0&&totalA>0?'<div class="stock-warning">⚠️ Não foi identificada saída do processo seguinte para esta seleção. O valor de Acabados está baseado no fluxo disponível no L2L.</div>':'');
@@ -980,16 +983,33 @@ function updateStock(){
 }
 
 function initStock(){
-  const date=document.getElementById("stockDate");
+  const startDate=document.getElementById("stockStartDate");
+  const endDate=document.getElementById("stockEndDate");
   const model=document.getElementById("stockModel");
   const reset=document.getElementById("stockReset");
-  if(!date||!model||!reset)return;
+  if(!startDate||!endDate||!model||!reset)return;
 
-  if(!stockFilterState.date)stockFilterState.date=todayISO();
-  date.value=stockFilterState.date;
+  if(!stockFilterState.startDate)stockFilterState.startDate="2026-09-15";
+  if(!stockFilterState.endDate)stockFilterState.endDate=todayISO();
+  startDate.value=stockFilterState.startDate;
+  endDate.value=stockFilterState.endDate;
 
-  date.addEventListener("change",async()=>{
-    stockFilterState.date=date.value||todayISO();
+  startDate.addEventListener("change",async()=>{
+    stockFilterState.startDate=startDate.value||"2026-09-15";
+    if(stockFilterState.endDate<stockFilterState.startDate){
+      stockFilterState.endDate=stockFilterState.startDate;
+      endDate.value=stockFilterState.endDate;
+    }
+    stockFilterState.model="Todos";
+    await refreshStockRange();
+  });
+
+  endDate.addEventListener("change",async()=>{
+    stockFilterState.endDate=endDate.value||todayISO();
+    if(stockFilterState.endDate<stockFilterState.startDate){
+      stockFilterState.startDate=stockFilterState.endDate;
+      startDate.value=stockFilterState.startDate;
+    }
     stockFilterState.model="Todos";
     await refreshStockRange();
   });
@@ -1000,9 +1020,11 @@ function initStock(){
   });
 
   reset.addEventListener("click",async()=>{
-    stockFilterState.date=todayISO();
+    stockFilterState.startDate="2026-09-15";
+    stockFilterState.endDate=todayISO();
     stockFilterState.model="Todos";
-    date.value=stockFilterState.date;
+    startDate.value=stockFilterState.startDate;
+    endDate.value=stockFilterState.endDate;
     await refreshStockRange();
   });
 
