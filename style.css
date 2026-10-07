@@ -2431,3 +2431,84 @@ body.modal-open{overflow:hidden}
     grid-template-columns:1fr !important;
   }
 }
+
+/* Weekly pagination for OEE heatmap */
+.heat-week-nav{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:12px;
+  margin:2px 0 14px;
+  padding:10px 12px;
+  background:#f8fafb;
+  border:1px solid #e1e7eb;
+  border-radius:12px;
+}
+.heat-week-nav>div{
+  text-align:center;
+}
+.heat-week-nav span{
+  display:block;
+  font-size:7px;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  color:#8a9aa5;
+}
+.heat-week-nav strong{
+  display:block;
+  margin-top:2px;
+  font-size:12px;
+  color:#173247;
+}
+.heat-week-nav small{
+  display:block;
+  margin-top:2px;
+  font-size:8px;
+  color:#718391;
+}
+.heat-week-nav button{
+  height:34px;
+  border:1px solid #d5e0e7;
+  border-radius:8px;
+  background:#fff;
+  color:#27465d;
+  padding:0 11px;
+  font-size:9px;
+  font-weight:900;
+  cursor:pointer;
+}
+.heat-week-nav button:hover:not(:disabled){
+  background:#eef4f8;
+  border-color:#bfcfd9;
+}
+.heat-week-nav button:disabled{
+  opacity:.38;
+  cursor:not-allowed;
+}
+.compact-heat-scroll{
+  overflow:hidden !important;
+}
+.compact-daily-heat-table{
+  width:100%;
+  min-width:0;
+  table-layout:fixed;
+}
+.compact-daily-heat-table thead th.sticky-col,
+.compact-daily-heat-table .sticky-col{
+  width:30%;
+  min-width:0;
+}
+.compact-daily-heat-table thead th:not(.sticky-col),
+.compact-daily-heat-table tbody td:not(.sticky-col){
+  width:auto;
+  min-width:0;
+}
+@media(max-width:900px){
+  .heat-week-nav{
+    grid-template-columns:1fr 1fr;
+  }
+  .heat-week-nav>div{
+    grid-column:1/-1;
+    grid-row:1;
+  }
+}
