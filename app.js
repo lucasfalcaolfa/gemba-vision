@@ -30,6 +30,7 @@ return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h
 let oeeRows=[];
 let oeeLoading=false;
 let oeeHeatmapRows=[];
+let oeeHourlyHeatmapRows=[];
 let oeeHeatmapLoading=false;
 let oeeHeatmapKey="";
 const oeeFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"",endDate:"",start:"00:00",end:"23:59"};
@@ -285,12 +286,22 @@ function nextIsoDay(iso){
   return d.toISOString().slice(0,10);
 }
 
-function mergeHeatWindowRows(parts,date,shift){
+function oeeHourShift(hour){
+  if(hour>=6&&hour<=13)return "1";
+  if(hour>=14&&hour<=21)return "2";
+  return "3";
+}
+
+function oeeHourLabel(hour){
+  return String(hour).padStart(2,"0")+":00";
+}
+
+function mergeHourlyRows(rows,date,hour){
   const map={};
-  parts.flat().forEach(row=>{
+  rows.forEach(row=>{
     const line=row.line||"Sem linha";
     const key=(row.area||"")+"|"+line;
-    if(!map[key])map[key]={area:row.area||"",line,date,shift,weighted:0,weight:0,values:[]};
+    if(!map[key])map[key]={area:row.area||"",line,date,hour,shift:oeeHourShift(hour),weighted:0,weight:0,values:[]};
     const oee=n(row.overall_equipment_effectiveness ?? row.oee);
     if(!Number.isFinite(oee))return;
     const weight=Math.max(0,n(row.planned_production_minutes ?? row.production_minutes ?? row.runtime_minutes));
@@ -305,9 +316,48 @@ function mergeHeatWindowRows(parts,date,shift){
     area:x.area,
     line:x.line,
     date:x.date,
+    hour:x.hour,
     shift:x.shift,
     oee:x.weight>0?x.weighted/x.weight:(x.values.length?x.values.reduce((a,b)=>a+b,0)/x.values.length:0)
   }));
+}
+
+function aggregateShiftRows(hourlyRows){
+  const map={};
+  hourlyRows.forEach(row=>{
+    const key=[row.area,row.line,row.date,row.shift].join("|");
+    if(!map[key])map[key]={area:row.area,line:row.line,date:row.date,shift:row.shift,values:[]};
+    map[key].values.push(row.oee);
+  });
+  return Object.values(map).map(x=>({
+    area:x.area,
+    line:x.line,
+    date:x.date,
+    shift:x.shift,
+    oee:x.values.length?x.values.reduce((a,b)=>a+b,0)/x.values.length:0
+  }));
+}
+
+async function fetchHourlyHeatDay(day){
+  const requests=[];
+  for(let hour=0;hour<24;hour++){
+    const endHour=hour;
+    const start=day+" "+String(hour).padStart(2,"0")+":00";
+    const end=day+" "+String(endHour).padStart(2,"0")+":59";
+    requests.push({hour,start,end});
+  }
+
+  const all=[];
+  const batchSize=6;
+  for(let i=0;i<requests.length;i+=batchSize){
+    const batch=requests.slice(i,i+batchSize);
+    const results=await Promise.all(batch.map(async q=>{
+      const rows=await window.L2L.getDailyWindow(q.start,q.end);
+      return mergeHourlyRows(rows,day,q.hour);
+    }));
+    results.forEach(rows=>all.push(...rows));
+  }
+  return all;
 }
 
 async function refreshOeeHeatmap(){
@@ -317,29 +367,22 @@ async function refreshOeeHeatmap(){
   const key=[startDate,endDate,oeeFilterState.area,oeeFilterState.line].join("|");
   oeeHeatmapLoading=true;
   const mount=document.getElementById("oeeHeatmapMount");
-  if(mount&&!oeeHeatmapRows.length){
-    mount.innerHTML='<section class="panel oee-heat-panel"><div class="scrap-loading"><div class="scrap-spinner"></div><strong>Montando mapa de calor por turno...</strong></div></section>';
+  if(mount&&!oeeHourlyHeatmapRows.length){
+    mount.innerHTML='<section class="panel oee-heat-panel"><div class="scrap-loading"><div class="scrap-spinner"></div><strong>Montando mapa de calor hora a hora...</strong></div></section>';
   }
   try{
     const dates=oeeHeatDateRange(startDate,endDate);
-    const all=[];
+    const hourly=[];
     for(const d of dates){
-      const next=nextIsoDay(d.iso);
-      const [t1,t2,t3a,t3b]=await Promise.all([
-        window.L2L.getDailyWindow(d.iso+" 06:00",d.iso+" 13:59"),
-        window.L2L.getDailyWindow(d.iso+" 14:00",d.iso+" 21:59"),
-        window.L2L.getDailyWindow(d.iso+" 22:00",d.iso+" 23:59"),
-        window.L2L.getDailyWindow(next+" 00:00",next+" 05:59")
-      ]);
-      all.push(...mergeHeatWindowRows([t1],d.iso,"1"));
-      all.push(...mergeHeatWindowRows([t2],d.iso,"2"));
-      all.push(...mergeHeatWindowRows([t3a,t3b],d.iso,"3"));
+      const dayRows=await fetchHourlyHeatDay(d.iso);
+      hourly.push(...dayRows);
     }
-    oeeHeatmapRows=all;
+    oeeHourlyHeatmapRows=hourly;
+    oeeHeatmapRows=aggregateShiftRows(hourly);
     oeeHeatmapKey=key;
     if(currentPage==="oee")renderOeeHeatmap();
   }catch(err){
-    if(mount)mount.innerHTML='<section class="panel oee-heat-panel"><div class="empty-state"><strong>Não foi possível carregar o mapa de calor.</strong><br>'+stockEsc(err.message||"Falha ao consultar L2L")+'</div></section>';
+    if(mount)mount.innerHTML='<section class="panel oee-heat-panel"><div class="empty-state"><strong>Não foi possível carregar o mapa de calor por hora.</strong><br>'+stockEsc(err.message||"Falha ao consultar L2L")+'</div></section>';
   }finally{
     oeeHeatmapLoading=false;
   }
@@ -351,7 +394,14 @@ function oeeHeatClass(value){
   return "heat-good";
 }
 
-function oeeHeatShiftCard(shift,title,timeRange,icon,rows,dates,lines){
+function shiftHours(shift){
+  if(shift==="1")return [6,7,8,9,10,11,12,13];
+  if(shift==="2")return [14,15,16,17,18,19,20,21];
+  return [22,23,0,1,2,3,4,5];
+}
+
+function oeeHourlyShiftCard(shift,title,timeRange,icon,rows,lines){
+  const hours=shiftHours(shift);
   return `
     <article class="oee-heat-shift shift-${shift}">
       <div class="oee-heat-shift-head">
@@ -365,40 +415,38 @@ function oeeHeatShiftCard(shift,title,timeRange,icon,rows,dates,lines){
       </div>
 
       <div class="oee-heat-table-wrap">
-        <table class="oee-heat-table">
+        <table class="oee-heat-table hourly-heat-table">
           <thead>
             <tr>
               <th class="sticky-col">INJETORA</th>
-              ${dates.map(d=>`<th>${d.label}</th>`).join("")}
+              ${hours.map(h=>`<th>${String(h).padStart(2,"0")}h</th>`).join("")}
+              <th>MÉDIA</th>
             </tr>
           </thead>
           <tbody>
             ${lines.map(line=>{
-              const cells=dates.map(d=>{
-                const values=rows
-                  .filter(r=>r.shift===shift&&r.line===line&&r.date===d.iso)
+              const hourCells=hours.map(hour=>{
+                const vals=rows
+                  .filter(r=>r.shift===shift&&r.line===line&&r.hour===hour)
                   .map(r=>r.oee)
                   .filter(Number.isFinite);
 
-                if(!values.length){
-                  return `<td class="heat-empty">—</td>`;
-                }
+                if(!vals.length)return '<td class="heat-empty">—</td>';
 
-                const value=values.reduce((a,b)=>a+b,0)/values.length;
-
-                return `
-                  <td class="oee-heat-cell ${oeeHeatClass(value)}" title="${line} • ${d.label} • ${title}">
-                    ${Math.round(value)}%
-                  </td>
-                `;
+                const value=vals.reduce((a,b)=>a+b,0)/vals.length;
+                return `<td class="oee-heat-cell ${oeeHeatClass(value)}" title="${line} • ${oeeHourLabel(hour)} • ${title}"><b>${Math.round(value)}%</b></td>`;
               }).join("");
 
-              return `
-                <tr>
-                  <td class="oee-heat-line sticky-col"><b>${line}</b></td>
-                  ${cells}
-                </tr>
-              `;
+              const shiftVals=rows
+                .filter(r=>r.shift===shift&&r.line===line&&hours.includes(r.hour))
+                .map(r=>r.oee)
+                .filter(Number.isFinite);
+              const avg=shiftVals.length?shiftVals.reduce((a,b)=>a+b,0)/shiftVals.length:null;
+              const avgCell=avg===null
+                ? '<td class="heat-empty heat-average">—</td>'
+                : `<td class="oee-heat-cell heat-average ${oeeHeatClass(avg)}"><b>${Math.round(avg)}%</b></td>`;
+
+              return `<tr><td class="oee-heat-line sticky-col"><b>${line}</b></td>${hourCells}${avgCell}</tr>`;
             }).join("")}
           </tbody>
         </table>
@@ -411,82 +459,47 @@ function renderOeeHeatmap(){
   const mount=document.getElementById("oeeHeatmapMount");
   if(!mount)return;
 
-  const dates=oeeHeatDateRange(oeeFilterState.startDate,oeeFilterState.endDate);
-
-  let details=oeeHeatmapRows.filter(r=>
+  let details=oeeHourlyHeatmapRows.filter(r=>
     (oeeFilterState.area==="Todas"||r.area===oeeFilterState.area) &&
     (oeeFilterState.line==="Todas"||r.line===oeeFilterState.line)
   );
 
   const selectedShift=oeeFilterState.shift;
-  if(selectedShift!=="Todos"){
-    details=details.filter(r=>r.shift===selectedShift);
-  }
+  if(selectedShift!=="Todos")details=details.filter(r=>r.shift===selectedShift);
 
   const lines=[...new Set(details.map(r=>r.line).filter(Boolean))]
-    .sort((a,b)=>
-      oeeLineNumber(a)-oeeLineNumber(b) ||
-      String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"})
-    );
+    .sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
 
   const values=details.map(r=>r.oee).filter(Number.isFinite);
-  const overall=values.length
-    ? values.reduce((a,b)=>a+b,0)/values.length
-    : 0;
+  const overall=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;
 
   const lineAverages=lines.map(line=>{
-    const vals=details
-      .filter(r=>r.line===line)
-      .map(r=>r.oee)
-      .filter(Number.isFinite);
-
-    return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
+    const vals=details.filter(r=>r.line===line).map(r=>r.oee).filter(Number.isFinite);
+    return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
   });
-
   const below=lineAverages.filter(v=>v>0&&v<75).length;
 
-  if(!details.length||!dates.length||!lines.length){
-    mount.innerHTML=`
-      <section class="panel oee-heat-panel">
-        <div class="oee-heat-top">
-          <div>
-            <span>ANÁLISE POR TURNO</span>
-            <h2>Mapa de calor OEE</h2>
-            <p>Meta de referência: 75% OEE.</p>
-          </div>
-        </div>
-        <div class="empty-state">
-          Nenhum OEE foi encontrado nas janelas de turno para os filtros selecionados.
-        </div>
-      </section>
-    `;
+  if(!details.length||!lines.length){
+    mount.innerHTML='<section class="panel oee-heat-panel"><div class="oee-heat-top"><div><span>ANÁLISE HORA A HORA</span><h2>Mapa de calor OEE por hora</h2><p>Meta de referência: 75% OEE.</p></div></div><div class="empty-state">Nenhum OEE horário foi encontrado para os filtros selecionados.</div></section>';
     return;
   }
 
-  const shiftCards=[];
-  if(selectedShift==="Todos"||selectedShift==="1"){
-    shiftCards.push(
-      oeeHeatShiftCard("1","1º Turno","06:00–14:00","☀",details,dates,lines)
-    );
-  }
-  if(selectedShift==="Todos"||selectedShift==="2"){
-    shiftCards.push(
-      oeeHeatShiftCard("2","2º Turno","14:00–22:00","◐",details,dates,lines)
-    );
-  }
-  if(selectedShift==="Todos"||selectedShift==="3"){
-    shiftCards.push(
-      oeeHeatShiftCard("3","3º Turno","22:00–06:00","☾",details,dates,lines)
-    );
-  }
+  const cards=[];
+  if(selectedShift==="Todos"||selectedShift==="1")cards.push(oeeHourlyShiftCard("1","1º Turno","06:00–14:00","☀",details,lines));
+  if(selectedShift==="Todos"||selectedShift==="2")cards.push(oeeHourlyShiftCard("2","2º Turno","14:00–22:00","◐",details,lines));
+  if(selectedShift==="Todos"||selectedShift==="3")cards.push(oeeHourlyShiftCard("3","3º Turno","22:00–06:00","☾",details,lines));
+
+  const startLabel=(oeeFilterState.startDate||todayISO()).split("-").reverse().join("/");
+  const endLabel=(oeeFilterState.endDate||oeeFilterState.startDate||todayISO()).split("-").reverse().join("/");
+  const periodLabel=startLabel===endLabel?startLabel:startLabel+" → "+endLabel;
 
   mount.innerHTML=`
     <section class="panel oee-heat-panel">
       <div class="oee-heat-top">
         <div>
-          <span>ANÁLISE POR TURNO</span>
-          <h2>Mapa de calor OEE</h2>
-          <p>OEE das injetoras por turno e dia • meta de referência de 75%.</p>
+          <span>ANÁLISE HORA A HORA</span>
+          <h2>Mapa de calor OEE por hora</h2>
+          <p>OEE médio de cada hora por injetora • período ${periodLabel} • meta de 75%.</p>
         </div>
 
         <div class="oee-heat-legend">
@@ -501,22 +514,13 @@ function renderOeeHeatmap(){
       </div>
 
       <div class="oee-heat-summary">
-        <div>
-          <span>Média geral do período</span>
-          <strong>${overall.toFixed(1).replace(".",",")}%</strong>
-        </div>
-        <div>
-          <span>Linhas abaixo de 75%</span>
-          <strong>${below} <small>de ${lines.length}</small></strong>
-        </div>
-        <div>
-          <span>Meta / referência</span>
-          <strong>75% OEE</strong>
-        </div>
+        <div><span>Média geral do período</span><strong>${overall.toFixed(1).replace(".",",")}%</strong></div>
+        <div><span>Linhas abaixo de 75%</span><strong>${below} <small>de ${lines.length}</small></strong></div>
+        <div><span>Meta / referência</span><strong>75% OEE</strong></div>
       </div>
 
-      <div class="oee-heat-grid">
-        ${shiftCards.join("")}
+      <div class="oee-heat-grid hourly-heat-grid">
+        ${cards.join("")}
       </div>
     </section>
   `;
