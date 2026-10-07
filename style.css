@@ -2061,3 +2061,33 @@ body.modal-open{overflow:hidden}
   .safety-day-tabs .week-view{margin-left:0}
   .safety-viewer{padding:8px}
 }
+
+/* OEE filter actions */
+.oee-filter-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.filter-apply{
+  border:0;
+  border-radius:8px;
+  padding:9px 13px;
+  background:#0d4f75;
+  color:#fff;
+  font-size:9px;
+  font-weight:900;
+  cursor:pointer;
+  box-shadow:0 4px 12px rgba(13,79,117,.14);
+}
+.filter-apply:hover{background:#0a4162}
+.filter-apply:disabled{
+  opacity:.65;
+  cursor:wait;
+}
+@media(max-width:760px){
+  .oee-filter-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+}
