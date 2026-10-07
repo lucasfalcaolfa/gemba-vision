@@ -30,6 +30,21 @@ window.L2L = {
     const results = await Promise.all(requests);
     return results.flat();
   },
+  async getStockFlow(startDate, endDate) {
+    const first = startDate || "2026-09-15";
+    const last = endDate || new Date().toISOString().slice(0, 10);
+    const start = encodeURIComponent(first + " 00:00");
+    const end = encodeURIComponent(last + " 23:59");
+    const response = await fetch("/api/l2l?report=stockflow&start=" + start + "&end=" + end);
+    const payload = await response.json();
+    if (!response.ok || payload.success === false) {
+      throw new Error(payload.error || "Falha ao consultar o fluxo de estoque no L2L");
+    }
+    return {
+      data: Array.isArray(payload.data) ? payload.data : [],
+      meta: payload.meta || {}
+    };
+  },
   async getScrapDetails(date, startTime = "00:00", endTime = "23:59") {
     const day = date || new Date().toISOString().slice(0, 10);
     const start = encodeURIComponent(day + " " + startTime);
