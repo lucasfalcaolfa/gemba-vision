@@ -261,6 +261,21 @@ function isHeatmapInjectionLine(lineName){
   return /INJETORA\s*AL\s*0*\d+/.test(name);
 }
 
+function previousWorkingDays(endIso,count){
+  const end=new Date((endIso||todayISO())+"T00:00:00");
+  const dates=[];
+  const cursor=new Date(end);
+
+  while(dates.length<count){
+    if(cursor.getDay()!==0)dates.unshift(localIsoDate(cursor));
+    cursor.setDate(cursor.getDate()-1);
+  }
+  return {
+    start:dates[0]||endIso||todayISO(),
+    end:dates[dates.length-1]||endIso||todayISO()
+  };
+}
+
 function isoDaysBefore(iso,days){
   const d=new Date((iso||todayISO())+"T00:00:00");
   d.setDate(d.getDate()-days);
@@ -347,10 +362,15 @@ function oeeHeatDateRange(startDate,endDate){
   const first=new Date((startDate||todayISO())+"T00:00:00");
   const last=new Date((endDate||startDate||todayISO())+"T00:00:00");
   if(Number.isNaN(first.getTime())||Number.isNaN(last.getTime()))return out;
+
   for(let d=new Date(first);d<=last;d.setDate(d.getDate()+1)){
+    // Domingo = 0. Não entra no mapa de calor nem nas médias.
+    if(d.getDay()===0)continue;
+
     out.push({
-      iso:d.toISOString().slice(0,10),
-      label:d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"})
+      iso:localIsoDate(d),
+      label:d.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit"}),
+      weekday:d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","")
     });
   }
   return out;
@@ -516,7 +536,7 @@ async function refreshOeeHeatmap(force=false){
     const pitches=await window.L2L.getPitchHeat(startDate,queryEndDate,startTime,queryEndTime);
     const hourly=pitchesToHourlyRows(pitches);
     oeeHourlyHeatmapRows=hourly;
-    oeeHeatmapRows=aggregateShiftRows(hourly).filter(r=>r.date>=startDate&&r.date<=endDate);
+    oeeHeatmapRows=aggregateShiftRows(hourly).filter(r=>r.date>=startDate&&r.date<=endDate&&new Date(r.date+"T00:00:00").getDay()!==0);
     oeeHeatmapKey=key;
     l2lLastUpdate=new Date();
     if(currentPage==="heatmap")renderOeeHeatmap();
@@ -686,7 +706,7 @@ function initHeatmap(){
   if(!area||!line||!shift||!startDate||!endDate||!apply||!reset)return;
 
   if(!heatmapFilterState.endDate)heatmapFilterState.endDate=todayISO();
-  if(!heatmapFilterState.startDate)heatmapFilterState.startDate=isoDaysBefore(heatmapFilterState.endDate,6);
+  if(!heatmapFilterState.startDate)heatmapFilterState.startDate=previousWorkingDays(heatmapFilterState.endDate,7).start;
   heatmapFilterState.start="00:00";
   heatmapFilterState.end="23:59";
 
@@ -711,13 +731,13 @@ function initHeatmap(){
       heatmapFilterState.shift=shift.value;
 
       const chosenEnd=endDate.value||todayISO();
-      let chosenStart=startDate.value||isoDaysBefore(chosenEnd,6);
+      let chosenStart=startDate.value||previousWorkingDays(chosenEnd,7).start;
       if(chosenStart>chosenEnd)chosenStart=chosenEnd;
 
       // Se o usuário escolher apenas um dia, transforma em uma janela de 7 dias
       // terminando na data escolhida, igual ao padrão visual do Gemba.
       if(chosenStart===chosenEnd){
-        chosenStart=isoDaysBefore(chosenEnd,6);
+        chosenStart=previousWorkingDays(chosenEnd,7).start;
         startDate.value=chosenStart;
       }
 
@@ -745,7 +765,7 @@ function initHeatmap(){
     heatmapFilterState.line="Todas";
     heatmapFilterState.shift="Todos";
     heatmapFilterState.endDate=todayISO();
-    heatmapFilterState.startDate=isoDaysBefore(heatmapFilterState.endDate,6);
+    heatmapFilterState.startDate=previousWorkingDays(heatmapFilterState.endDate,7).start;
     heatmapFilterState.start="00:00";
     heatmapFilterState.end="23:59";
 
