@@ -2258,3 +2258,102 @@ body.modal-open{overflow:hidden}
     width:100%;
   }
 }
+
+/* Monthly OEE heatmap */
+.heatmap-month-filters{
+  grid-template-columns:1fr 1.1fr 1fr .9fr !important;
+}
+.monthly-heat-panel{
+  overflow:hidden;
+}
+.monthly-heat-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:16px;
+}
+.monthly-shift-card{
+  width:100%;
+  min-width:0;
+}
+.monthly-shift-meta{
+  margin-left:auto;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.6px;
+  text-transform:uppercase;
+  color:#778c9a;
+  background:#f3f6f8;
+  border:1px solid #e1e7eb;
+  border-radius:999px;
+  padding:5px 8px;
+}
+.monthly-heat-scroll{
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-gutter:stable;
+}
+.monthly-heat-table{
+  width:max-content;
+  min-width:100%;
+  table-layout:fixed;
+}
+.monthly-heat-table thead th{
+  min-width:54px;
+  padding:9px 6px;
+  font-size:8px;
+}
+.monthly-heat-table thead th.sticky-col{
+  min-width:160px;
+  width:160px;
+}
+.monthly-heat-table tbody td{
+  min-width:54px;
+  width:54px;
+  padding:10px 5px;
+  font-size:9px;
+}
+.monthly-heat-table .sticky-col{
+  min-width:160px;
+  width:160px;
+}
+.monthly-heat-table .heat-average,
+.monthly-average-head{
+  position:sticky;
+  right:0;
+  z-index:2;
+  min-width:72px !important;
+  width:72px !important;
+  border-left:2px solid #d8e2e8;
+}
+.monthly-average-head{
+  z-index:4;
+  background:#eef3f6 !important;
+}
+.monthly-heat-table tbody .heat-average{
+  box-shadow:-5px 0 9px rgba(17,45,66,.04);
+}
+.monthly-heat-table .oee-heat-line{
+  font-size:10px;
+}
+.monthly-heat-table .heat-empty{
+  color:#b0bac1;
+  font-weight:700;
+}
+.monthly-heat-table .oee-heat-cell b{
+  font-size:9px;
+}
+@media(max-width:1000px){
+  .heatmap-month-filters{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+@media(max-width:640px){
+  .heatmap-month-filters{
+    grid-template-columns:1fr !important;
+  }
+  .monthly-heat-table thead th.sticky-col,
+  .monthly-heat-table .sticky-col{
+    min-width:130px;
+    width:130px;
+  }
+}
