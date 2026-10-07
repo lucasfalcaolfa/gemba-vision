@@ -352,22 +352,59 @@ function oeeHeatClass(value){
 }
 
 function oeeHeatShiftCard(shift,title,timeRange,icon,rows,dates,lines){
-  return '<article class="oee-heat-shift shift-'+shift+'">'+
-    '<div class="oee-heat-shift-head"><div><span class="oee-heat-icon">'+icon+'</span><strong>'+title+'</strong><small>'+timeRange+'</small></div></div>'+
-    '<div class="table-scroll"><table class="oee-heat-table"><thead><tr><th>Injetora</th>'+
-      dates.map(d=>'<th>'+d.label+'</th>').join("")+
-    '</tr></thead><tbody>'+
-      lines.map(line=>{
-        const cells=dates.map(d=>{
-          const values=rows.filter(r=>r.shift===shift&&r.line===line&&r.date===d.iso).map(r=>r.oee).filter(Number.isFinite);
-          if(!values.length)return '<td class="heat-empty">—</td>';
-          const value=values.reduce((a,b)=>a+b,0)/values.length;
-          return '<td class="'+oeeHeatClass(value)+'" title="'+line+' • '+d.label+' • '+title+'"><b>'+fmt(value,0)+'%</b></td>';
-        }).join("");
-        return '<tr><td class="oee-heat-line"><b>'+line+'</b></td>'+cells+'</tr>';
-      }).join("")+
-    '</tbody></table></div>'+
-  '</article>';
+  return `
+    <article class="oee-heat-shift shift-${shift}">
+      <div class="oee-heat-shift-head">
+        <div class="oee-heat-shift-left">
+          <span class="oee-heat-icon">${icon}</span>
+          <div>
+            <strong>${title}</strong>
+            <small>${timeRange}</small>
+          </div>
+        </div>
+      </div>
+
+      <div class="oee-heat-table-wrap">
+        <table class="oee-heat-table">
+          <thead>
+            <tr>
+              <th class="sticky-col">INJETORA</th>
+              ${dates.map(d=>`<th>${d.label}</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody>
+            ${lines.map(line=>{
+              const cells=dates.map(d=>{
+                const values=rows
+                  .filter(r=>r.shift===shift&&r.line===line&&r.date===d.iso)
+                  .map(r=>r.oee)
+                  .filter(Number.isFinite);
+
+                if(!values.length){
+                  return `<td class="heat-empty">—</td>`;
+                }
+
+                const value=values.reduce((a,b)=>a+b,0)/values.length;
+
+                return `
+                  <td class="oee-heat-cell ${oeeHeatClass(value)}" title="${line} • ${d.label} • ${title}">
+                    ${Math.round(value)}%
+                  </td>
+                `;
+              }).join("");
+
+              return `
+                <tr>
+                  <td class="oee-heat-line sticky-col"><b>${line}</b></td>
+                  ${cells}
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </article>
+  `;
 }
 
 function renderOeeHeatmap(){
@@ -375,47 +412,114 @@ function renderOeeHeatmap(){
   if(!mount)return;
 
   const dates=oeeHeatDateRange(oeeFilterState.startDate,oeeFilterState.endDate);
+
   let details=oeeHeatmapRows.filter(r=>
     (oeeFilterState.area==="Todas"||r.area===oeeFilterState.area) &&
     (oeeFilterState.line==="Todas"||r.line===oeeFilterState.line)
   );
+
   const selectedShift=oeeFilterState.shift;
-  if(selectedShift!=="Todos")details=details.filter(r=>r.shift===selectedShift);
+  if(selectedShift!=="Todos"){
+    details=details.filter(r=>r.shift===selectedShift);
+  }
 
   const lines=[...new Set(details.map(r=>r.line).filter(Boolean))]
-    .sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
+    .sort((a,b)=>
+      oeeLineNumber(a)-oeeLineNumber(b) ||
+      String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"})
+    );
 
   const values=details.map(r=>r.oee).filter(Number.isFinite);
-  const overall=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;
+  const overall=values.length
+    ? values.reduce((a,b)=>a+b,0)/values.length
+    : 0;
+
   const lineAverages=lines.map(line=>{
-    const vals=details.filter(r=>r.line===line).map(r=>r.oee).filter(Number.isFinite);
-    return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
+    const vals=details
+      .filter(r=>r.line===line)
+      .map(r=>r.oee)
+      .filter(Number.isFinite);
+
+    return vals.length ? vals.reduce((a,b)=>a+b,0)/vals.length : 0;
   });
+
   const below=lineAverages.filter(v=>v>0&&v<75).length;
 
   if(!details.length||!dates.length||!lines.length){
-    mount.innerHTML='<section class="panel oee-heat-panel"><div class="oee-heat-top"><div><span>ANÁLISE POR TURNO</span><h2>Mapa de calor OEE</h2><p>Meta de referência: 75% OEE.</p></div></div><div class="empty-state">Nenhum OEE foi encontrado nas janelas de turno para os filtros selecionados.</div></section>';
+    mount.innerHTML=`
+      <section class="panel oee-heat-panel">
+        <div class="oee-heat-top">
+          <div>
+            <span>ANÁLISE POR TURNO</span>
+            <h2>Mapa de calor OEE</h2>
+            <p>Meta de referência: 75% OEE.</p>
+          </div>
+        </div>
+        <div class="empty-state">
+          Nenhum OEE foi encontrado nas janelas de turno para os filtros selecionados.
+        </div>
+      </section>
+    `;
     return;
   }
 
-  const cards=[];
-  if(selectedShift==="Todos"||selectedShift==="1")cards.push(oeeHeatShiftCard("1","1º Turno","06:00–14:00","☀",details,dates,lines));
-  if(selectedShift==="Todos"||selectedShift==="2")cards.push(oeeHeatShiftCard("2","2º Turno","14:00–22:00","◐",details,dates,lines));
-  if(selectedShift==="Todos"||selectedShift==="3")cards.push(oeeHeatShiftCard("3","3º Turno","22:00–06:00","☾",details,dates,lines));
+  const shiftCards=[];
+  if(selectedShift==="Todos"||selectedShift==="1"){
+    shiftCards.push(
+      oeeHeatShiftCard("1","1º Turno","06:00–14:00","☀",details,dates,lines)
+    );
+  }
+  if(selectedShift==="Todos"||selectedShift==="2"){
+    shiftCards.push(
+      oeeHeatShiftCard("2","2º Turno","14:00–22:00","◐",details,dates,lines)
+    );
+  }
+  if(selectedShift==="Todos"||selectedShift==="3"){
+    shiftCards.push(
+      oeeHeatShiftCard("3","3º Turno","22:00–06:00","☾",details,dates,lines)
+    );
+  }
 
-  mount.innerHTML=
-    '<section class="panel oee-heat-panel">'+
-      '<div class="oee-heat-top">'+
-        '<div><span>ANÁLISE POR TURNO</span><h2>Mapa de calor OEE</h2><p>OEE das injetoras por turno e data • referência operacional de 75%.</p></div>'+
-        '<div class="oee-heat-legend"><div class="oee-heat-legend-title">Escala OEE</div><div class="oee-heat-gradient"></div><div class="oee-heat-legend-labels"><span><b>&lt; 50%</b><small>Crítico</small></span><span><b>50%–74%</b><small>Atenção</small></span><span><b>≥ 75%</b><small>Dentro da meta</small></span></div></div>'+
-      '</div>'+
-      '<div class="oee-heat-summary">'+
-        '<div><span>Média geral do período</span><strong>'+fmtPct(overall)+'</strong></div>'+
-        '<div><span>Linhas abaixo de 75%</span><strong>'+below+' <small>de '+lines.length+'</small></strong></div>'+
-        '<div><span>Meta / referência</span><strong>75% OEE</strong></div>'+
-      '</div>'+
-      '<div class="oee-heat-grid">'+cards.join("")+'</div>'+
-    '</section>';
+  mount.innerHTML=`
+    <section class="panel oee-heat-panel">
+      <div class="oee-heat-top">
+        <div>
+          <span>ANÁLISE POR TURNO</span>
+          <h2>Mapa de calor OEE</h2>
+          <p>OEE das injetoras por turno e dia • meta de referência de 75%.</p>
+        </div>
+
+        <div class="oee-heat-legend">
+          <div class="oee-heat-legend-title">Escala OEE</div>
+          <div class="oee-heat-gradient"></div>
+          <div class="oee-heat-legend-labels">
+            <span><b>&lt; 50%</b><small>Crítico</small></span>
+            <span><b>50%–74%</b><small>Atenção</small></span>
+            <span><b>≥ 75%</b><small>Dentro da meta</small></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="oee-heat-summary">
+        <div>
+          <span>Média geral do período</span>
+          <strong>${overall.toFixed(1).replace(".",",")}%</strong>
+        </div>
+        <div>
+          <span>Linhas abaixo de 75%</span>
+          <strong>${below} <small>de ${lines.length}</small></strong>
+        </div>
+        <div>
+          <span>Meta / referência</span>
+          <strong>75% OEE</strong>
+        </div>
+      </div>
+
+      <div class="oee-heat-grid">
+        ${shiftCards.join("")}
+      </div>
+    </section>
+  `;
 }
 
 function renderOeeLive(){
