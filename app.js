@@ -40,6 +40,7 @@ function splitDateTimeLocal(value,fallbackDate,fallbackTime){
 }
 
 const heatmapFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"",endDate:"",start:"00:00",end:"23:59"};
+let heatmapWeekIndex=0;
 
 function heatmap(){
   return '<div class="panel heatmap-filter-panel">'+
@@ -306,6 +307,30 @@ function lineGaugeCard(g){
 
 
 
+function chunkHeatDates(dates,size=7){
+  const chunks=[];
+  for(let i=0;i<dates.length;i+=size)chunks.push(dates.slice(i,i+size));
+  return chunks;
+}
+
+function heatWeekLabel(dates){
+  if(!dates.length)return "";
+  const first=dates[0].label;
+  const last=dates[dates.length-1].label;
+  return first===last?first:first+" → "+last;
+}
+
+function changeHeatWeek(delta){
+  const allDates=oeeHeatDateRange(
+    heatmapFilterState.startDate||todayISO(),
+    heatmapFilterState.endDate||heatmapFilterState.startDate||todayISO()
+  );
+  const weeks=chunkHeatDates(allDates,7);
+  if(!weeks.length)return;
+  heatmapWeekIndex=Math.max(0,Math.min(weeks.length-1,heatmapWeekIndex+delta));
+  renderOeeHeatmap();
+}
+
 function oeeHeatDateRange(startDate,endDate){
   const out=[];
   const first=new Date((startDate||todayISO())+"T00:00:00");
@@ -544,16 +569,21 @@ function renderOeeHeatmap(){
 
   const startDate=heatmapFilterState.startDate||todayISO();
   const endDate=heatmapFilterState.endDate||startDate;
-  const dates=oeeHeatDateRange(startDate,endDate);
+  const allDates=oeeHeatDateRange(startDate,endDate);
+  const weeks=chunkHeatDates(allDates,7);
+  if(heatmapWeekIndex>=weeks.length)heatmapWeekIndex=Math.max(0,weeks.length-1);
+  const dates=weeks[heatmapWeekIndex]||allDates.slice(0,7);
 
   const lines=[...new Set(details.map(r=>r.line).filter(Boolean))]
     .sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
 
-  const values=details.map(r=>r.oee).filter(Number.isFinite);
+  const visibleDateSet=new Set(dates.map(d=>d.iso));
+  const visibleDetails=details.filter(r=>visibleDateSet.has(r.date));
+  const values=visibleDetails.map(r=>r.oee).filter(Number.isFinite);
   const overall=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;
 
   const lineAverages=lines.map(line=>{
-    const vals=details.filter(r=>r.line===line).map(r=>r.oee).filter(Number.isFinite);
+    const vals=visibleDetails.filter(r=>r.line===line).map(r=>r.oee).filter(Number.isFinite);
     return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
   });
   const below=lineAverages.filter(v=>v>0&&v<75).length;
@@ -572,17 +602,29 @@ function renderOeeHeatmap(){
   if(selectedShift==="Todos"||selectedShift==="2")cards.push(oeeDailyShiftCard("2","2º Turno","17:00–02:00","◐",details,lines,dates));
   if(selectedShift==="Todos"||selectedShift==="3")cards.push(oeeDailyShiftCard("3","3º Turno","02:00–07:00","☾",details,lines,dates));
 
+  const weekLabel=heatWeekLabel(dates);
+  const hasPrev=heatmapWeekIndex>0;
+  const hasNext=heatmapWeekIndex<weeks.length-1;
+
   mount.innerHTML=`
     <section class="panel oee-heat-panel compact-heat-panel">
       <div class="oee-heat-top">
         <div><span>ANÁLISE DIÁRIA POR TURNO</span><h2>Mapa de calor OEE diário</h2><p>Eficiência diária por injetora • período ${periodLabel} • meta de 75%.</p></div>
         <div class="oee-heat-legend"><div class="oee-heat-legend-title">Escala OEE</div><div class="oee-heat-gradient"></div><div class="oee-heat-legend-labels"><span><b>&lt; 50%</b><small>Crítico</small></span><span><b>50%–74%</b><small>Atenção</small></span><span><b>≥ 75%</b><small>Dentro da meta</small></span></div></div>
       </div>
+
+      <div class="heat-week-nav">
+        <button type="button" onclick="changeHeatWeek(-1)" ${hasPrev?"":"disabled"}>‹ Semana anterior</button>
+        <div><span>Semana exibida</span><strong>${weekLabel}</strong><small>${weeks.length>1?"Semana "+(heatmapWeekIndex+1)+" de "+weeks.length:"Período completo"}</small></div>
+        <button type="button" onclick="changeHeatWeek(1)" ${hasNext?"":"disabled"}>Próxima semana ›</button>
+      </div>
+
       <div class="oee-heat-summary">
-        <div><span>Média geral do período</span><strong>${overall.toFixed(1).replace(".",",")}%</strong></div>
+        <div><span>Média da semana exibida</span><strong>${overall.toFixed(1).replace(".",",")}%</strong></div>
         <div><span>Linhas abaixo de 75%</span><strong>${below} <small>de ${lines.length}</small></strong></div>
         <div><span>Meta / referência</span><strong>75% OEE</strong></div>
       </div>
+
       <div class="oee-heat-grid compact-heat-grid">${cards.join("")}</div>
     </section>
   `;
@@ -655,6 +697,7 @@ function initHeatmap(){
       }
       heatmapFilterState.start="00:00";
       heatmapFilterState.end="23:59";
+      heatmapWeekIndex=0;
       oeeHeatmapRows=[];
       oeeHourlyHeatmapRows=[];
       oeeHeatmapKey="";
@@ -680,6 +723,7 @@ function initHeatmap(){
     startDate.value=heatmapFilterState.startDate;
     endDate.value=heatmapFilterState.endDate;
     populateHeatmapFilters();
+    heatmapWeekIndex=0;
     oeeHeatmapRows=[];
     oeeHourlyHeatmapRows=[];
     oeeHeatmapKey="";
