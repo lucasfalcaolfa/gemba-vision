@@ -1518,41 +1518,68 @@ function extractSafetyWeekInfo(lines,dayHeaderY){
 
 function parseSafetyDays(textContent,pageViewport){
   const lines=groupSafetyTextLines(textContent.items);
+  const labels=["Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira"];
+  const shorts=["SEG","TER","QUA","QUI","SEX"];
   const dayHeaders=lines.map((line,index)=>({line,index,day:safetyDayLabel(line.text)})).filter(x=>x.day>=0);
-  if(dayHeaders.length<5){
-    return {days:[],weekInfo:{title:"Safety Moments",week:""}};
-  }
-
   const headersByDay=Array(5).fill(null);
   dayHeaders.forEach(h=>{if(!headersByDay[h.day])headersByDay[h.day]=h;});
-  if(headersByDay.some(x=>!x))return {days:[],weekInfo:{title:"Safety Moments",week:""}};
 
-  const anchors=headersByDay.map(h=>h.line.x);
-  const boundaries=[0];
-  for(let i=0;i<4;i++) boundaries.push((anchors[i]+anchors[i+1])/2);
-  boundaries.push(pageViewport.width);
+  // Prefer the real day-header positions when PDF.js can read them.
+  if(headersByDay.every(Boolean)){
+    const anchors=headersByDay.map(h=>h.line.x);
+    const boundaries=[0];
+    for(let i=0;i<4;i++) boundaries.push((anchors[i]+anchors[i+1])/2);
+    boundaries.push(pageViewport.width);
+    const headerY=Math.max(...headersByDay.map(h=>h.line.y));
+    const weekInfo=extractSafetyWeekInfo(lines,headerY);
 
-  const lowestHeaderY=Math.min(...headersByDay.map(h=>h.line.y));
-  const weekInfo=extractSafetyWeekInfo(lines,Math.max(...headersByDay.map(h=>h.line.y)));
+    const days=headersByDay.map((h,day)=>{
+      const colLines=lines.filter(line=>
+        line.y<=h.line.y+2 &&
+        line.x>=boundaries[day]-2 &&
+        line.x<boundaries[day+1]+2
+      );
+      const ordered=[h.line.text,...colLines.filter(l=>l!==h.line).map(l=>l.text)];
+      const unique=ordered.filter((t,i,a)=>t&&a.indexOf(t)===i);
+      return {day,label:labels[day],short:shorts[day],...splitSafetySections(unique)};
+    });
+    return {days,weekInfo};
+  }
 
-  const days=headersByDay.map((h,day)=>{
-    const colLines=lines.filter(line=>
-      line.y<=h.line.y+2 &&
-      line.x>=boundaries[day]-2 &&
-      line.x<boundaries[day+1]+2
+  // Fallback for PDFs whose text layer does not preserve the weekday headers:
+  // split the page into the same five visual columns used by the official template.
+  const topY=Math.max(...lines.map(l=>l.y),0);
+  const bodyCutoff=topY*0.82;
+  const colWidth=pageViewport.width/5;
+  const days=[];
+  for(let day=0;day<5;day++){
+    const left=day*colWidth;
+    const right=(day+1)*colWidth;
+    const col=lines
+      .filter(l=>l.x>=left-4 && l.x<right+4 && l.y<bodyCutoff)
+      .sort((a,b)=>b.y-a.y)
+      .map(l=>l.text)
+      .filter(Boolean);
+
+    // Remove repeated page-level headings that can bleed into a column.
+    const cleaned=col.filter(t=>
+      !/^week\b/i.test(t) &&
+      !/^safety moments?$/i.test(t) &&
+      !/momento de segurança/i.test(t) &&
+      !/pequenas mudanças, risco diferente/i.test(t)
     );
-    const ordered=[h.line.text,...colLines.filter(l=>l!==h.line).map(l=>l.text)];
-    const unique=ordered.filter((t,i,a)=>t&&a.indexOf(t)===i);
-    const parsed=splitSafetySections(unique);
-    return {
-      day,
-      label:["Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira"][day],
-      short:["SEG","TER","QUA","QUI","SEX"][day],
-      ...parsed
-    };
-  });
 
-  return {days,weekInfo};
+    const withHeader=[labels[day],...cleaned];
+    const parsed=splitSafetySections(withHeader);
+    days.push({day,label:labels[day],short:shorts[day],...parsed});
+  }
+
+  const usable=days.filter(d=>d.title||d.focus||d.points.length||d.summary);
+  const weekInfo={
+    title:(lines.find(l=>l.y>bodyCutoff&&l.text.length>12&&!/^week\b/i.test(l.text))?.text)||"Safety Moments",
+    week:(lines.find(l=>/^week\b/i.test(l.text))?.text)||""
+  };
+  return {days:usable.length>=3?days:[],weekInfo};
 }
 
 function escapeSafetyHtml(value){
