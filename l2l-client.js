@@ -12,11 +12,11 @@ window.L2L = {
     }
     return Array.isArray(payload.data) ? payload.data : [];
   },
-  async getPitchHeat(startDate, endDate) {
+  async getPitchHeat(startDate, endDate, startTime = "00:00", endTime = "23:59") {
     const first = startDate || new Date().toISOString().slice(0, 10);
     const last = endDate || first;
-    const start = encodeURIComponent(first + " 00:00");
-    const end = encodeURIComponent(last + " 23:59");
+    const start = encodeURIComponent(first + " " + startTime);
+    const end = encodeURIComponent(last + " " + endTime);
     const response = await fetch("/api/l2l?report=pitchheat&start=" + start + "&end=" + end);
     const payload = await response.json();
     if (!response.ok || payload.success === false) {
