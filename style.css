@@ -1650,3 +1650,30 @@ body.modal-open{overflow:hidden}
 @media(max-width:640px){
   .stock-filter-grid-range{grid-template-columns:1fr}
 }
+
+/* Detailed stock by model */
+.stock-by-model-table{min-width:920px}
+.stock-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:74px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:10px;
+  font-weight:900;
+}
+.stock-pill-wip{
+  background:#fff5df;
+  color:#a66b00;
+  border:1px solid #f0ddb1;
+}
+.stock-pill-fg{
+  background:#eaf8f0;
+  color:#18784c;
+  border:1px solid #d4ecde;
+}
+.stock-total-model{
+  font-size:13px;
+  color:#0d3552;
+}
