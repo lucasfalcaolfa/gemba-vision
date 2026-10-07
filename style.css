@@ -2036,14 +2036,21 @@ body.modal-open{overflow:hidden}
 .safety-day-card-top{display:flex;justify-content:space-between;align-items:center}
 .safety-day-card-top>span:first-child{font-size:9px;font-weight:900;letter-spacing:.8px;color:#173a55}
 .safety-today-badge{font-size:7px;font-weight:900;background:#e2231a;color:#fff;padding:4px 7px;border-radius:999px}
-.safety-day-icon{height:58px;display:flex;align-items:center;justify-content:center;margin:4px 0 7px}
-.safety-day-icon svg{width:58px;height:58px}
+.safety-day-icon{height:64px;display:flex;align-items:center;justify-content:center;margin:3px 0 8px}
+.safety-day-icon svg{width:64px;height:64px;filter:drop-shadow(0 4px 8px rgba(7,27,45,.08))}
 .safety-day-card strong{display:block;color:#0f2a40;font-size:13px;line-height:1.22;margin-bottom:7px}
 .safety-day-card p{margin:0;color:#718391;font-size:9px;line-height:1.38}
 .safety-day-detail{background:transparent;border:0;box-shadow:none;overflow:visible}
 .safety-feature-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:14px}
-.safety-hero-card{min-height:420px;border-radius:15px;overflow:hidden;position:relative;background:url("safety-hero.svg") center/cover no-repeat,#102e46;box-shadow:0 10px 26px rgba(7,27,45,.13)}
-.safety-hero-overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,26,42,.96) 0%,rgba(6,26,42,.88) 38%,rgba(6,26,42,.36) 68%,rgba(6,26,42,.06) 100%)}
+.safety-hero-card{min-height:420px;border-radius:15px;overflow:hidden;position:relative;background:#102e46;box-shadow:0 10px 26px rgba(7,27,45,.13)}
+.safety-hero-visual{position:absolute;inset:0;overflow:hidden}
+.safety-hero-visual svg{width:100%;height:100%;display:block;object-fit:cover}
+.safety-hero-overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,26,42,.97) 0%,rgba(6,26,42,.90) 37%,rgba(6,26,42,.48) 59%,rgba(6,26,42,.12) 100%)}
+.safety-theme-change .safety-hero-overlay{background:linear-gradient(90deg,rgba(6,26,42,.97) 0%,rgba(6,26,42,.90) 38%,rgba(6,26,42,.44) 62%,rgba(6,26,42,.08) 100%)}
+.safety-theme-tools .safety-hero-overlay{background:linear-gradient(90deg,rgba(6,26,42,.97) 0%,rgba(6,26,42,.89) 39%,rgba(6,26,42,.38) 63%,rgba(6,26,42,.06) 100%)}
+.safety-theme-protection .safety-hero-overlay{background:linear-gradient(90deg,rgba(5,31,48,.97) 0%,rgba(5,31,48,.88) 37%,rgba(14,67,99,.34) 64%,rgba(14,67,99,.05) 100%)}
+.safety-theme-temporary .safety-hero-overlay{background:linear-gradient(90deg,rgba(39,30,10,.92) 0%,rgba(32,37,40,.82) 42%,rgba(68,58,19,.30) 67%,rgba(68,58,19,.04) 100%)}
+.safety-theme-analysis .safety-hero-overlay{background:linear-gradient(90deg,rgba(5,34,44,.96) 0%,rgba(5,34,44,.87) 40%,rgba(21,86,74,.30) 67%,rgba(21,86,74,.05) 100%)}
 .safety-hero-content{position:relative;z-index:2;height:100%;box-sizing:border-box;padding:22px;display:flex;flex-direction:column;color:#fff}
 .safety-hero-top{display:flex;align-items:center;gap:12px}
 .safety-weekday-pill{background:#e2231a;border-radius:999px;padding:8px 14px;font-size:9px;font-weight:900;letter-spacing:.4px}
