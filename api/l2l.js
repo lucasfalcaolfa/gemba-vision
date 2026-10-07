@@ -37,6 +37,48 @@ module.exports = async function handler(req, res) {
     return payload;
   }
 
+  async function resolveNumericSite(start, end) {
+    const configuredId = String(process.env.L2L_SITE_ID || "").trim();
+    if (/^\d+$/.test(configuredId)) return Number(configuredId);
+
+    // 1) Best source: the production report already used by this integration.
+    try {
+      const daily = await l2lGet("/api/1.0/reporting/production/daily_summary_data_by_line/", {
+        site: siteCode,
+        start,
+        end,
+      });
+      const rows = Array.isArray(daily?.data) ? daily.data : [];
+      const found = rows.find(r => r.site !== undefined && r.site !== null && String(r.site).trim() !== "")?.site;
+      if (found !== undefined && found !== null && String(found).trim() !== "") return Number(found);
+    } catch {}
+
+    // 2) Resolve by the Sites master data when the selected period has no production rows.
+    try {
+      const sitesPayload = await l2lGet("/api/1.0/sites/", { limit: 2000 });
+      const sites = Array.isArray(sitesPayload?.data) ? sitesPayload.data : [];
+      const wanted = String(siteCode || "").trim().toUpperCase();
+      const match = sites.find(site => {
+        const candidates = [
+          site.code,
+          site.name,
+          site.externalid,
+          site.external_id,
+          site.sitecode,
+          site.site_code,
+        ].filter(v => v !== undefined && v !== null).map(v => String(v).trim().toUpperCase());
+        return candidates.includes(wanted);
+      });
+      if (match?.id !== undefined && match?.id !== null) return Number(match.id);
+    } catch {}
+
+    // 3) Last safe fallback for the currently configured Manaus plant.
+    // This numeric id has already been observed in successful L2L production responses.
+    if (String(siteCode || "").trim().toUpperCase() === "BRMNP3") return 240;
+
+    throw new Error("Unable to resolve numeric L2L site id.");
+  }
+
   if (req.method !== "GET") {
     return res.status(405).json({ success: false, error: "Method not allowed" });
   }
@@ -71,16 +113,7 @@ module.exports = async function handler(req, res) {
         return v.length === 16 ? v + ":00" : v;
       };
 
-      const dailyForSite = await l2lGet("/api/1.0/reporting/production/daily_summary_data_by_line/", {
-        site: siteCode,
-        start,
-        end,
-      });
-      const dailyRows = Array.isArray(dailyForSite?.data) ? dailyForSite.data : [];
-      const numericSite = dailyRows.find(r => r.site !== undefined && r.site !== null)?.site;
-      if (numericSite === undefined || numericSite === null || numericSite === "") {
-        throw new Error("Unable to resolve numeric L2L site id for pitch heatmap.");
-      }
+      const numericSite = await resolveNumericSite(start, end);
 
       const [linesResult, areasResult] = await Promise.allSettled([
         l2lGet("/api/1.0/lines/", { site: numericSite, limit: 2000 }),
@@ -203,19 +236,8 @@ module.exports = async function handler(req, res) {
       const startIso = toIso(start);
       const endIso = toIso(end);
 
-      // Generic L2L record APIs use the numeric Site FK (example: 240),
-      // while production reporting uses the configured site code (example: BRMNP3).
-      const dailyForSite = await l2lGet("/api/1.0/reporting/production/daily_summary_data_by_line/", {
-        site: siteCode,
-        start,
-        end,
-      });
-      const dailyRows = Array.isArray(dailyForSite?.data) ? dailyForSite.data : [];
-      const numericSite = dailyRows.find(r => r.site !== undefined && r.site !== null)?.site;
-
-      if (numericSite === undefined || numericSite === null || numericSite === "") {
-        throw new Error("Unable to resolve numeric L2L site id for Scrap Detail.");
-      }
+      // Generic L2L record APIs use the numeric Site FK.
+      const numericSite = await resolveNumericSite(start, end);
 
       let scrapPayload = await l2lGet("/api/1.0/scrapdetail/", {
         site: numericSite,
