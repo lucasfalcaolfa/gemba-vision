@@ -2357,3 +2357,77 @@ body.modal-open{overflow:hidden}
     width:130px;
   }
 }
+
+/* Compact daily heatmap matching reference layout */
+.heatmap-day-filters{
+  grid-template-columns:1fr 1.1fr 1fr .9fr .9fr !important;
+}
+.compact-heat-panel{
+  overflow:hidden;
+}
+.compact-heat-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+}
+.compact-shift-card{
+  min-width:0;
+}
+.compact-heat-scroll{
+  overflow-x:auto;
+  overflow-y:hidden;
+}
+.compact-daily-heat-table{
+  width:max-content;
+  min-width:100%;
+  table-layout:fixed;
+}
+.compact-daily-heat-table thead th{
+  min-width:48px;
+  padding:8px 5px;
+  font-size:8px;
+}
+.compact-daily-heat-table thead th.sticky-col{
+  min-width:135px;
+  width:135px;
+}
+.compact-daily-heat-table tbody td{
+  min-width:48px;
+  width:48px;
+  padding:9px 5px;
+  font-size:9px;
+}
+.compact-daily-heat-table .sticky-col{
+  min-width:135px;
+  width:135px;
+}
+.compact-daily-heat-table .oee-heat-line b{
+  font-size:9px;
+}
+.compact-daily-heat-table .oee-heat-cell b{
+  font-size:9px;
+}
+.compact-shift-card .oee-heat-shift-head{
+  padding:10px 12px;
+}
+.compact-shift-card .oee-heat-shift-head strong{
+  font-size:12px;
+}
+.compact-shift-card .oee-heat-shift-head small{
+  font-size:9px;
+}
+@media(max-width:1450px){
+  .compact-heat-grid{
+    grid-template-columns:1fr;
+  }
+}
+@media(max-width:1000px){
+  .heatmap-day-filters{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+@media(max-width:640px){
+  .heatmap-day-filters{
+    grid-template-columns:1fr !important;
+  }
+}
