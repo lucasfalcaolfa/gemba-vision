@@ -10,7 +10,7 @@ stock:{title:"Controle de Estoque",sub:"Estoque da Fundição — Inacabado e Ac
 function shell(p){return '<div class="page"><div class="page-head"><div><h1>'+p.title+'</h1><p>'+p.sub+'</p></div><div class="refresh">● Atualização: automática</div></div>'+p.html+'</div>'}
 function card(label,value,cls=""){return '<div class="card"><div class="label">'+label+'</div><div class="value '+cls+'">'+value+'</div></div>'}
 function home(){return '<div class="hero-status"><div class="status"><span class="dot green"></span> OPERAÇÃO NORMAL</div><p style="margin:8px 0 0;color:#47616f">Visão consolidada — Segurança, Pessoas, Produção, OEE e Qualidade.</p></div><div class="cards">'+card("OEE Geral","85,4%","good")+card("Eficiência","89,8%","good")+card("Produção","12.480","")+card("Qualidade","98,5%","good")+card("Absenteísmo","3,2%","warn")+'</div><div class="section-grid"><div class="panel"><h2>Produção por linha</h2><table><tr><th>Linha</th><th>Plano</th><th>Real</th><th>Ating.</th><th>Status</th></tr><tr><td>AL1</td><td>4.500</td><td>4.320</td><td>96%</td><td><span class="status"><span class="dot yellow"></span>Atenção</span></td></tr><tr><td>AL2</td><td>4.200</td><td>4.450</td><td>106%</td><td><span class="status"><span class="dot green"></span>OK</span></td></tr><tr><td>AL3</td><td>3.800</td><td>3.710</td><td>98%</td><td><span class="status"><span class="dot green"></span>OK</span></td></tr></table></div><div class="panel"><h2>Momento de Segurança</h2><div class="safety-img" style="min-height:180px"><div><div class="shield">🦺</div><h2>SEGURANÇA EM PRIMEIRO LUGAR</h2><div>Use os EPIs e respeite as áreas demarcadas.</div></div></div></div></div>'}
-function safety(){return '<div class="safety-card"><div class="safety-img"><div><div class="shield">🦺</div><div style="font-size:12px;letter-spacing:2px">MOMENTO DE SEGURANÇA • HOJE</div><h2>SEGURANÇA EM PRIMEIRO LUGAR</h2><p>Use os EPIs corretos, mantenha atenção ao entorno e nunca realize intervenção sem bloqueio seguro.</p></div></div><div class="panel"><h2>Foco do dia</h2><div class="mini"><div class="label">Tema</div><strong>Segurança com máquinas</strong></div><div class="mini" style="margin-top:10px"><div class="label">Comportamento esperado</div><strong style="font-size:16px">Parar, bloquear e verificar antes de intervir.</strong></div><div class="mini" style="margin-top:10px"><div class="label">Responsável</div><strong style="font-size:16px">Liderança da área</strong></div></div></div><div class="panel" style="margin-top:18px"><h2>Histórico dos últimos dias</h2><table><tr><th>Data</th><th>Tema</th><th>Área</th><th>Status</th></tr><tr><td>06/10</td><td>Segurança com máquinas</td><td>Fundição</td><td>🟢 Realizado</td></tr><tr><td>05/10</td><td>Uso de EPI</td><td>Injeção</td><td>🟢 Realizado</td></tr><tr><td>04/10</td><td>Ergonomia</td><td>Acabamento</td><td>🟢 Realizado</td></tr></table></div>'}
+function safety(){return '<div class="panel safety-live-panel"><div class="safety-live-head"><div><span>MOMENTO DE SEGURANÇA</span><h2>Safety Moments — Semana atual</h2><p>O arquivo semanal é carregado pelo nome fixo <b>SafetyMomentWeek_Current.pdf</b>.</p></div><a class="safety-open-pdf" href="SafetyMomentWeek_Current.pdf" target="_blank" rel="noopener">Abrir PDF completo ↗</a></div><div class="safety-day-tabs" id="safetyDayTabs"><button data-day="0">SEG</button><button data-day="1">TER</button><button data-day="2">QUA</button><button data-day="3">QUI</button><button data-day="4">SEX</button><button class="week-view" data-day="all">SEMANA COMPLETA</button></div><div class="safety-status" id="safetyStatus">Carregando Momento de Segurança...</div><div class="safety-viewer"><canvas id="safetyCanvas"></canvas></div><div class="safety-help">Atualização semanal: substitua o arquivo <b>SafetyMomentWeek_Current.pdf</b> no GitHub. A Vercel publica a nova versão automaticamente.</div></div>'}
 const oeeData=[
 {area:"Fundição",linha:"AL1",turno:"A",oee:91.0,disp:94.0,perf:97.0,qual:99.0,ef:91.0,meta:85},
 {area:"Fundição",linha:"AL1",turno:"B",oee:86.0,disp:91.0,perf:95.0,qual:99.0,ef:87.0,meta:85},
@@ -1389,6 +1389,99 @@ function initStock(){
 }
 function people(){return '<div class="cards">'+card("Absenteísmo","3,2%","warn")+card("Presentes","94,8%","good")+card("Faltas","11","bad")+card("Afastamentos","4","warn")+card("Efetivo","342")+'</div><div class="panel"><h2>Absenteísmo por área</h2><table><tr><th>Área</th><th>Efetivo</th><th>Ausentes</th><th>%</th><th>Indicador</th></tr><tr><td>Fundição</td><td>120</td><td>4</td><td>3,3%</td><td><div class="bar"><i style="width:33%"></i></div></td></tr><tr><td>Injeção</td><td>85</td><td>2</td><td>2,4%</td><td><div class="bar"><i style="width:24%"></i></div></td></tr><tr><td>Usinagem</td><td>110</td><td>5</td><td>4,5%</td><td><div class="bar"><i style="width:45%"></i></div></td></tr></table></div>'}
 function quality(){return '<div class="cards">'+card("Qualidade","98,5%","good")+card("Scrap","1,5%","good")+card("Retrabalho","2,1%","warn")+card("PPM","185","warn")+card("NQ","R$ 12,4 mil","bad")+'</div><div class="section-grid"><div class="panel"><h2>Pareto de defeitos</h2><table><tr><th>Defeito</th><th>%</th><th>Representação</th></tr><tr><td>Porosidade</td><td>38%</td><td><div class="bar"><i style="width:38%"></i></div></td></tr><tr><td>Rebarba</td><td>21%</td><td><div class="bar"><i style="width:21%"></i></div></td></tr><tr><td>Trinca</td><td>15%</td><td><div class="bar"><i style="width:15%"></i></div></td></tr><tr><td>Dimensional</td><td>12%</td><td><div class="bar"><i style="width:12%"></i></div></td></tr></table></div><div class="panel"><h2>Não qualidade por processo</h2><div class="kpis"><div class="mini"><div class="label">Injeção</div><strong>42%</strong></div><div class="mini"><div class="label">Acabamento</div><strong>31%</strong></div><div class="mini"><div class="label">Usinagem</div><strong>18%</strong></div></div></div></div>'}
+
+const SAFETY_PDF_URL="SafetyMomentWeek_Current.pdf";
+let safetyPdfDoc=null;
+let safetySourceCanvas=null;
+let safetySelectedDay="all";
+
+function safetyTodayIndex(){
+  const day=new Date().getDay();
+  return day>=1&&day<=5?day-1:"all";
+}
+
+async function initSafety(){
+  const canvas=document.getElementById("safetyCanvas");
+  const tabs=document.getElementById("safetyDayTabs");
+  if(!canvas||!tabs)return;
+
+  safetySelectedDay=safetyTodayIndex();
+  tabs.querySelectorAll("button").forEach(btn=>{
+    const isActive=String(btn.dataset.day)===String(safetySelectedDay);
+    btn.classList.toggle("active",isActive);
+    btn.addEventListener("click",()=>{
+      safetySelectedDay=btn.dataset.day;
+      tabs.querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===btn));
+      renderSafetySelection();
+    });
+  });
+
+  const status=document.getElementById("safetyStatus");
+  if(!window.pdfjsLib){
+    if(status)status.textContent="Não foi possível carregar o leitor de PDF.";
+    return;
+  }
+
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+
+  try{
+    if(status)status.textContent="Carregando PDF semanal...";
+    safetyPdfDoc=await window.pdfjsLib.getDocument({url:SAFETY_PDF_URL,disableStream:false,disableAutoFetch:false}).promise;
+    const page=await safetyPdfDoc.getPage(1);
+    const base=page.getViewport({scale:1});
+    const targetWidth=Math.max(1200,Math.min(2200,(document.getElementById("content")?.clientWidth||1400)*1.6));
+    const scale=targetWidth/base.width;
+    const viewport=page.getViewport({scale});
+
+    safetySourceCanvas=document.createElement("canvas");
+    safetySourceCanvas.width=Math.ceil(viewport.width);
+    safetySourceCanvas.height=Math.ceil(viewport.height);
+    const ctx=safetySourceCanvas.getContext("2d",{alpha:false});
+    await page.render({canvasContext:ctx,viewport}).promise;
+
+    if(status)status.textContent="🟢 PDF semanal carregado";
+    renderSafetySelection();
+  }catch(err){
+    if(status)status.innerHTML='🟠 Arquivo ainda não disponível. Envie <b>SafetyMomentWeek_Current.pdf</b> para o repositório do Gemba Vision.';
+    const c=canvas.getContext("2d");
+    canvas.width=1200;canvas.height=500;
+    c.fillStyle="#f6f8fa";c.fillRect(0,0,canvas.width,canvas.height);
+    c.fillStyle="#516674";c.font="700 28px Arial";c.textAlign="center";
+    c.fillText("Aguardando o PDF semanal do Safety Moment",canvas.width/2,canvas.height/2-10);
+    c.font="18px Arial";
+    c.fillText("Nome esperado: SafetyMomentWeek_Current.pdf",canvas.width/2,canvas.height/2+30);
+  }
+}
+
+function renderSafetySelection(){
+  const canvas=document.getElementById("safetyCanvas");
+  if(!canvas||!safetySourceCanvas)return;
+  const ctx=canvas.getContext("2d",{alpha:false});
+
+  if(String(safetySelectedDay)==="all"){
+    canvas.width=safetySourceCanvas.width;
+    canvas.height=safetySourceCanvas.height;
+    ctx.drawImage(safetySourceCanvas,0,0);
+    return;
+  }
+
+  const day=Math.max(0,Math.min(4,Number(safetySelectedDay)||0));
+  const sourceWidth=safetySourceCanvas.width/5;
+  const sourceX=Math.round(sourceWidth*day);
+  const cropWidth=Math.round(day===4?safetySourceCanvas.width-sourceX:sourceWidth);
+
+  canvas.width=Math.max(700,cropWidth);
+  canvas.height=safetySourceCanvas.height;
+
+  ctx.fillStyle="#fff";
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(
+    safetySourceCanvas,
+    sourceX,0,cropWidth,safetySourceCanvas.height,
+    0,0,canvas.width,canvas.height
+  );
+}
+
 let currentPage="home";
 let l2lRows=[];
 let l2lLastUpdate=null;
@@ -1540,6 +1633,7 @@ function render(page){
   if(page==="stock")initStock();
   if(page==="oee")initOee();
   if(page==="production")initProduction();
+  if(page==="safety")initSafety();
   applyLiveData(page);
 }
 document.querySelectorAll(".nav").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));b.classList.add("active");render(b.dataset.page)}));
