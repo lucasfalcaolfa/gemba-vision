@@ -2,6 +2,7 @@ const pages={
 home:{title:"Visão Geral",sub:"Painel de gestão à vista da operação",html:home()},
 safety:{title:"Momento de Segurança",sub:"Mensagem e foco de segurança do dia",html:safety()},
 oee:{title:"OEE / Eficiência",sub:"Acompanhamento de desempenho por linha e turno",html:oee()},
+heatmap:{title:"Mapa de Calor OEE",sub:"Eficiência diária por turno, linha e período",html:heatmap()},
 production:{title:"Produção em Tempo Real",sub:"Plano x realizado e ritmo da operação",html:production()},
 people:{title:"Absenteísmo",sub:"Acompanhamento de presença e disponibilidade de mão de obra",html:people()},
 quality:{title:"Qualidade / Não Qualidade",sub:"Scrap, retrabalho, defeitos e Pareto",html:quality()},
@@ -24,7 +25,29 @@ const oeeData=[
 ];
 function pct(v){return v.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"}
 function oee(){
-return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Selecione os filtros e clique em Aplicar filtros. Turnos: 1º 07:00–17:00 • 2º 17:00–02:00 • 3º 02:00–07:00.</p></div><div class="oee-filter-actions"><button class="filter-apply" id="oeeApply">✓ Aplicar filtros</button><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div></div><div class="oee-filters oee-filters-live"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno • 07:00–17:00</option><option value="2">2º Turno • 17:00–02:00</option><option value="3">3º Turno • 02:00–07:00</option></select></label><label>Data inicial<input id="oeeStartDate" type="date"></label><label>Data final<input id="oeeEndDate" type="date"></label><label>Hora inicial<input id="oeeStart" type="time" value="00:00"></label><label>Hora final<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Comparativo de eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Modelos com melhor eficiência</h2><div id="oeeChart"></div><div class="footer-note">Ranking conforme os filtros selecionados • atualização automática a cada 1 minuto.</div></div></div><div id="oeeHeatmapMount"></div>';
+return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Selecione os filtros e clique em Aplicar filtros. Turnos: 1º 07:00–17:00 • 2º 17:00–02:00 • 3º 02:00–07:00.</p></div><div class="oee-filter-actions"><button class="filter-apply premium-apply" id="oeeApply"><span>✓</span> Aplicar filtros</button><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div></div><div class="oee-filters oee-filters-live oee-filters-datetime"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno • 07:00–17:00</option><option value="2">2º Turno • 17:00–02:00</option><option value="3">3º Turno • 02:00–07:00</option></select></label><label>Data / hora inicial<input id="oeeStartAt" type="datetime-local"></label><label>Data / hora final<input id="oeeEndAt" type="datetime-local"></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Comparativo de eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Modelos com melhor eficiência</h2><div id="oeeChart"></div><div class="footer-note">Ranking conforme os filtros selecionados • atualização automática a cada 1 minuto.</div></div></div>';
+}
+
+function dateTimeLocalValue(date,time){
+  return (date||todayISO())+"T"+(time||"00:00");
+}
+
+function splitDateTimeLocal(value,fallbackDate,fallbackTime){
+  const raw=String(value||"");
+  if(!raw.includes("T"))return {date:fallbackDate||todayISO(),time:fallbackTime||"00:00"};
+  const [date,timeRaw]=raw.split("T");
+  return {date:date||fallbackDate||todayISO(),time:(timeRaw||fallbackTime||"00:00").slice(0,5)};
+}
+
+const heatmapFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"",endDate:"",start:"00:00",end:"23:59"};
+
+function heatmap(){
+  return '<div class="panel heatmap-filter-panel">'+
+    '<div class="oee-filter-head"><div><span class="heatmap-kicker">ANÁLISE DEDICADA</span><h2>Filtros do mapa de calor</h2><p>Eficiência diária por turno com meta de 75% OEE. Turnos oficiais: 1º 07:00–17:00 • 2º 17:00–02:00 • 3º 02:00–07:00.</p></div><div class="oee-filter-actions"><button class="filter-apply premium-apply" id="heatApply"><span>✓</span> Aplicar filtros</button><button class="filter-reset" id="heatReset">↺ Limpar filtros</button></div></div>'+
+    '<div class="oee-filters oee-filters-live heatmap-filters"><label>Setor<select id="heatArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="heatLine"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="heatShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno • 07:00–17:00</option><option value="2">2º Turno • 17:00–02:00</option><option value="3">3º Turno • 02:00–07:00</option></select></label><label>Data / hora inicial<input id="heatStartAt" type="datetime-local"></label><label>Data / hora final<input id="heatEndAt" type="datetime-local"></label></div>'+
+    '<div class="filter-context" id="heatContext">🟡 L2L: carregando mapa de calor...</div>'+
+  '</div>'+
+  '<div id="oeeHeatmapMount"></div>';
 }
 
 let oeeRows=[];
@@ -130,39 +153,28 @@ function initOee(){
   const area=document.getElementById("oeeArea");
   const line=document.getElementById("oeeLinha");
   const shift=document.getElementById("oeeShift");
-  const startDate=document.getElementById("oeeStartDate");
-  const endDate=document.getElementById("oeeEndDate");
-  const start=document.getElementById("oeeStart");
-  const end=document.getElementById("oeeEnd");
+  const startAt=document.getElementById("oeeStartAt");
+  const endAt=document.getElementById("oeeEndAt");
   const apply=document.getElementById("oeeApply");
   const reset=document.getElementById("oeeReset");
-  if(!area||!line||!shift||!startDate||!endDate||!start||!end||!apply||!reset)return;
+  if(!area||!line||!shift||!startAt||!endAt||!apply||!reset)return;
 
   if(!oeeFilterState.startDate)oeeFilterState.startDate=todayISO();
   if(!oeeFilterState.endDate)oeeFilterState.endDate=oeeFilterState.startDate;
-
   populateOeeFilters();
   area.value=oeeFilterState.area;
   line.value=oeeFilterState.line;
   shift.value=oeeFilterState.shift;
-  startDate.value=oeeFilterState.startDate;
-  endDate.value=oeeFilterState.endDate;
-  start.value=oeeFilterState.start;
-  end.value=oeeFilterState.end;
+  startAt.value=dateTimeLocalValue(oeeFilterState.startDate,oeeFilterState.start);
+  endAt.value=dateTimeLocalValue(oeeFilterState.endDate,oeeFilterState.end);
 
   function refreshLineOptionsForDraft(){
     const source=oeeRows.length?oeeRows:l2lRows;
     const selectedArea=area.value;
-    const lines=[...new Set(
-      source
-        .filter(r=>selectedArea==="Todas"||r.area===selectedArea)
-        .map(r=>r.line)
-        .filter(Boolean)
-    )].sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
-
+    const lines=[...new Set(source.filter(r=>selectedArea==="Todas"||r.area===selectedArea).map(r=>r.line).filter(Boolean))]
+      .sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
     const current=line.value;
-    line.innerHTML='<option value="Todas">Todas as linhas</option>'+
-      lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
+    line.innerHTML='<option value="Todas">Todas as linhas</option>'+lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
     line.value=lines.includes(current)?current:"Todas";
   }
 
@@ -170,55 +182,32 @@ function initOee(){
 
   apply.addEventListener("click",async()=>{
     apply.disabled=true;
-    apply.textContent="⏳ Aplicando...";
-
+    apply.classList.add("loading");
+    apply.innerHTML='<span>⏳</span> Aplicando...';
     try{
-      let newStartDate=startDate.value||todayISO();
-      let newEndDate=endDate.value||newStartDate;
-      let newStart=start.value||"00:00";
-      let newEnd=end.value||"23:59";
-
-      if(newEndDate<newStartDate){
-        newEndDate=newStartDate;
-        endDate.value=newEndDate;
-      }
-
-      if(newStartDate===newEndDate&&newEnd<=newStart){
-        newEnd="23:59";
-        end.value=newEnd;
-      }
-
+      const first=splitDateTimeLocal(startAt.value,todayISO(),"00:00");
+      const last=splitDateTimeLocal(endAt.value,first.date,"23:59");
       oeeFilterState.area=area.value;
       oeeFilterState.line=line.value;
       oeeFilterState.shift=shift.value;
-      oeeFilterState.startDate=newStartDate;
-      oeeFilterState.endDate=newEndDate;
-      oeeFilterState.start=newStart;
-      oeeFilterState.end=newEnd;
-
-      oeeHeatmapRows=[];
-      oeeHourlyHeatmapRows=[];
-      oeeHeatmapKey="";
-
+      oeeFilterState.startDate=first.date;
+      oeeFilterState.endDate=last.date<first.date?first.date:last.date;
+      oeeFilterState.start=first.time;
+      oeeFilterState.end=last.time;
+      if(oeeFilterState.endDate===oeeFilterState.startDate&&oeeFilterState.end<=oeeFilterState.start){
+        oeeFilterState.end="23:59";
+        endAt.value=dateTimeLocalValue(oeeFilterState.endDate,oeeFilterState.end);
+      }
       await refreshOeeRange();
-      await refreshOeeHeatmap(true);
       renderOeeLive();
     }finally{
       apply.disabled=false;
-      apply.textContent="✓ Aplicar filtros";
+      apply.classList.remove("loading");
+      apply.innerHTML='<span>✓</span> Aplicar filtros';
     }
   });
 
   reset.addEventListener("click",async()=>{
-    area.value="Todas";
-    shift.value="Todos";
-    startDate.value=todayISO();
-    endDate.value=todayISO();
-    start.value="00:00";
-    end.value="23:59";
-    refreshLineOptionsForDraft();
-    line.value="Todas";
-
     oeeFilterState.area="Todas";
     oeeFilterState.line="Todas";
     oeeFilterState.shift="Todos";
@@ -226,14 +215,13 @@ function initOee(){
     oeeFilterState.endDate=todayISO();
     oeeFilterState.start="00:00";
     oeeFilterState.end="23:59";
-
-    oeeHeatmapRows=[];
-    oeeHourlyHeatmapRows=[];
-    oeeHeatmapKey="";
-
+    area.value="Todas";
+    shift.value="Todos";
+    refreshLineOptionsForDraft();
+    line.value="Todas";
+    startAt.value=dateTimeLocalValue(oeeFilterState.startDate,oeeFilterState.start);
+    endAt.value=dateTimeLocalValue(oeeFilterState.endDate,oeeFilterState.end);
     await refreshOeeRange();
-    await refreshOeeHeatmap(true);
-    renderOeeLive();
   });
 
   if(!oeeRows.length)refreshOeeRange();
@@ -461,10 +449,10 @@ function pitchesToHourlyRows(pitches){
 }
 
 async function refreshOeeHeatmap(force=false){
-  if(oeeHeatmapLoading||currentPage!=="oee")return;
-  const startDate=oeeFilterState.startDate||todayISO();
-  const endDate=oeeFilterState.endDate||startDate;
-  const key=[startDate,endDate,oeeFilterState.area,oeeFilterState.line].join("|");
+  if(oeeHeatmapLoading||currentPage!=="heatmap")return;
+  const startDate=heatmapFilterState.startDate||todayISO();
+  const endDate=heatmapFilterState.endDate||startDate;
+  const key=[startDate,endDate,heatmapFilterState.area,heatmapFilterState.line].join("|");
   if(!force&&oeeHeatmapRows.length&&oeeHeatmapKey===key){
     renderOeeHeatmap();
     return;
@@ -484,7 +472,7 @@ async function refreshOeeHeatmap(force=false){
     oeeHeatmapRows=aggregateShiftRows(hourly).filter(r=>r.date>=startDate&&r.date<=endDate);
     oeeHeatmapKey=key;
     l2lLastUpdate=new Date();
-    if(currentPage==="oee")renderOeeHeatmap();
+    if(currentPage==="heatmap")renderOeeHeatmap();
   }catch(err){
     if(mount)mount.innerHTML='<section class="panel oee-heat-panel"><div class="empty-state"><strong>Não foi possível carregar o OEE diário por turno.</strong><br>'+stockEsc(err.message||"Falha ao consultar L2L")+'</div></section>';
   }finally{
@@ -561,16 +549,16 @@ function renderOeeHeatmap(){
   if(!mount)return;
 
   let details=oeeHeatmapRows.filter(r=>
-    (oeeFilterState.area==="Todas"||r.area===oeeFilterState.area) &&
-    (oeeFilterState.line==="Todas"||r.line===oeeFilterState.line)
+    (heatmapFilterState.area==="Todas"||r.area===heatmapFilterState.area) &&
+    (heatmapFilterState.line==="Todas"||r.line===heatmapFilterState.line)
   );
 
-  const selectedShift=oeeFilterState.shift;
+  const selectedShift=heatmapFilterState.shift;
   if(selectedShift!=="Todos")details=details.filter(r=>r.shift===selectedShift);
 
   const dates=oeeHeatDateRange(
-    oeeFilterState.startDate||todayISO(),
-    oeeFilterState.endDate||oeeFilterState.startDate||todayISO()
+    heatmapFilterState.startDate||todayISO(),
+    heatmapFilterState.endDate||heatmapFilterState.startDate||todayISO()
   );
 
   const lines=[...new Set(details.map(r=>r.line).filter(Boolean))]
@@ -595,8 +583,8 @@ function renderOeeHeatmap(){
   if(selectedShift==="Todos"||selectedShift==="2")cards.push(oeeDailyShiftCard("2","2º Turno","17:00–02:00","◐",details,lines,dates));
   if(selectedShift==="Todos"||selectedShift==="3")cards.push(oeeDailyShiftCard("3","3º Turno","02:00–07:00","☾",details,lines,dates));
 
-  const startLabel=(oeeFilterState.startDate||todayISO()).split("-").reverse().join("/");
-  const endLabel=(oeeFilterState.endDate||oeeFilterState.startDate||todayISO()).split("-").reverse().join("/");
+  const startLabel=(heatmapFilterState.startDate||todayISO()).split("-").reverse().join("/");
+  const endLabel=(heatmapFilterState.endDate||heatmapFilterState.startDate||todayISO()).split("-").reverse().join("/");
   const periodLabel=startLabel===endLabel?startLabel:startLabel+" → "+endLabel;
 
   mount.innerHTML=`
@@ -630,6 +618,102 @@ function renderOeeHeatmap(){
       </div>
     </section>
   `;
+}
+
+function populateHeatmapFilters(){
+  const area=document.getElementById("heatArea");
+  const line=document.getElementById("heatLine");
+  if(!area||!line)return;
+  const source=oeeRows.length?oeeRows:l2lRows;
+  const areas=[...new Set(source.map(r=>r.area).filter(Boolean))].sort();
+  area.innerHTML='<option value="Todas">Toda a fábrica</option>'+areas.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
+  area.value=areas.includes(heatmapFilterState.area)?heatmapFilterState.area:"Todas";
+  heatmapFilterState.area=area.value;
+  const lines=[...new Set(source.filter(r=>heatmapFilterState.area==="Todas"||r.area===heatmapFilterState.area).map(r=>r.line).filter(Boolean))]
+    .sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
+  line.innerHTML='<option value="Todas">Todas as linhas</option>'+lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
+  line.value=lines.includes(heatmapFilterState.line)?heatmapFilterState.line:"Todas";
+  heatmapFilterState.line=line.value;
+}
+
+function updateHeatmapContext(){
+  const el=document.getElementById("heatContext");
+  if(!el)return;
+  const shift=heatmapFilterState.shift==="Todos"?"Todos os turnos":shiftDisplay(heatmapFilterState.shift);
+  el.textContent=liveStamp()+" • "+(heatmapFilterState.area==="Todas"?"Toda a fábrica":heatmapFilterState.area)+" • "+(heatmapFilterState.line==="Todas"?"Todas as linhas":heatmapFilterState.line)+" • "+shift+" • "+heatmapFilterState.startDate+" "+heatmapFilterState.start+" → "+heatmapFilterState.endDate+" "+heatmapFilterState.end;
+}
+
+function initHeatmap(){
+  const area=document.getElementById("heatArea");
+  const line=document.getElementById("heatLine");
+  const shift=document.getElementById("heatShift");
+  const startAt=document.getElementById("heatStartAt");
+  const endAt=document.getElementById("heatEndAt");
+  const apply=document.getElementById("heatApply");
+  const reset=document.getElementById("heatReset");
+  if(!area||!line||!shift||!startAt||!endAt||!apply||!reset)return;
+
+  if(!heatmapFilterState.startDate)heatmapFilterState.startDate=todayISO();
+  if(!heatmapFilterState.endDate)heatmapFilterState.endDate=heatmapFilterState.startDate;
+  populateHeatmapFilters();
+  shift.value=heatmapFilterState.shift;
+  startAt.value=dateTimeLocalValue(heatmapFilterState.startDate,heatmapFilterState.start);
+  endAt.value=dateTimeLocalValue(heatmapFilterState.endDate,heatmapFilterState.end);
+
+  area.addEventListener("change",()=>{
+    heatmapFilterState.area=area.value;
+    heatmapFilterState.line="Todas";
+    populateHeatmapFilters();
+  });
+
+  apply.addEventListener("click",async()=>{
+    apply.disabled=true;
+    apply.classList.add("loading");
+    apply.innerHTML='<span>⏳</span> Aplicando...';
+    try{
+      const first=splitDateTimeLocal(startAt.value,todayISO(),"00:00");
+      const last=splitDateTimeLocal(endAt.value,first.date,"23:59");
+      heatmapFilterState.area=area.value;
+      heatmapFilterState.line=line.value;
+      heatmapFilterState.shift=shift.value;
+      heatmapFilterState.startDate=first.date;
+      heatmapFilterState.endDate=last.date<first.date?first.date:last.date;
+      heatmapFilterState.start=first.time;
+      heatmapFilterState.end=last.time;
+      oeeHeatmapRows=[];
+      oeeHourlyHeatmapRows=[];
+      oeeHeatmapKey="";
+      updateHeatmapContext();
+      await refreshOeeHeatmap(true);
+      updateHeatmapContext();
+    }finally{
+      apply.disabled=false;
+      apply.classList.remove("loading");
+      apply.innerHTML='<span>✓</span> Aplicar filtros';
+    }
+  });
+
+  reset.addEventListener("click",async()=>{
+    heatmapFilterState.area="Todas";
+    heatmapFilterState.line="Todas";
+    heatmapFilterState.shift="Todos";
+    heatmapFilterState.startDate=todayISO();
+    heatmapFilterState.endDate=todayISO();
+    heatmapFilterState.start="00:00";
+    heatmapFilterState.end="23:59";
+    shift.value="Todos";
+    startAt.value=dateTimeLocalValue(heatmapFilterState.startDate,heatmapFilterState.start);
+    endAt.value=dateTimeLocalValue(heatmapFilterState.endDate,heatmapFilterState.end);
+    populateHeatmapFilters();
+    oeeHeatmapRows=[];
+    oeeHourlyHeatmapRows=[];
+    oeeHeatmapKey="";
+    await refreshOeeHeatmap(true);
+    updateHeatmapContext();
+  });
+
+  updateHeatmapContext();
+  refreshOeeHeatmap();
 }
 
 function renderOeeLive(){
@@ -685,10 +769,6 @@ function renderOeeLive(){
         )
       : '<div class="empty-state"><strong>Modelos não detalhados pelo retorno atual do L2L.</strong><br>O painel já solicita <code>show_products=1</code>; quando o L2L retornar eficiência por produto/modelo, o ranking aparecerá automaticamente.</div>';
   }
-
-  renderOeeHeatmap();
-  const heatKey=[oeeFilterState.startDate||todayISO(),oeeFilterState.endDate||oeeFilterState.startDate||todayISO(),oeeFilterState.area,oeeFilterState.line].join("|");
-  if(!oeeHeatmapRows.length||oeeHeatmapKey!==heatKey)refreshOeeHeatmap();
 }
 
 let productionRows=[];
@@ -2061,6 +2141,7 @@ function render(page){
   document.getElementById("content").innerHTML=shell(pages[page]);
   if(page==="stock")initStock();
   if(page==="oee")initOee();
+  if(page==="heatmap")initHeatmap();
   if(page==="production")initProduction();
   if(page==="safety")initSafety();
   applyLiveData(page);
