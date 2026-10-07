@@ -58,6 +58,177 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  if (report === "stockflow") {
+    const start = String(req.query.start || "").trim();
+    const end = String(req.query.end || "").trim();
+    if (!start || !end) {
+      return res.status(400).json({ success: false, error: "start and end are required for stock flow." });
+    }
+
+    try {
+      const toIso = (value) => {
+        const v = String(value || "").trim().replace(" ", "T");
+        return v.length === 16 ? v + ":00" : v;
+      };
+      const startIso = toIso(start);
+      const endIso = toIso(end);
+
+      // Resolve the numeric site id. Generic record APIs use the numeric FK.
+      const dailyForSite = await l2lGet("/api/1.0/reporting/production/daily_summary_data_by_line/", {
+        site: siteCode,
+        start,
+        end,
+      });
+      const dailyRows = Array.isArray(dailyForSite?.data) ? dailyForSite.data : [];
+      const numericSite = dailyRows.find(r => r.site !== undefined && r.site !== null)?.site;
+      if (numericSite === undefined || numericSite === null || numericSite === "") {
+        throw new Error("Unable to resolve numeric L2L site id for Stock Flow.");
+      }
+
+      const lookupResults = await Promise.allSettled([
+        l2lGet("/api/1.0/lines/", { site: numericSite, limit: 2000 }),
+        l2lGet("/api/1.0/productcomponents/", { site: numericSite, limit: 2000 }),
+        l2lGet("/api/1.0/areas/", { site: numericSite, limit: 2000 }),
+      ]);
+
+      const dataOf = (result) =>
+        result.status === "fulfilled" && Array.isArray(result.value?.data) ? result.value.data : [];
+      const [lines, products, areas] = lookupResults.map(dataOf);
+
+      const byId = (rows) => new Map(rows.map(x => [String(x.id), x]));
+      const productMap = byId(products);
+      const areaMap = byId(areas);
+
+      const label = (obj, fallback = "") =>
+        obj?.code ?? obj?.name ?? obj?.description ?? obj?.externalid ?? fallback;
+
+      const lineMeta = lines.map(line => {
+        const areaId =
+          typeof line.area === "object" ? (line.area?.id ?? line.area?.pk) : line.area;
+        const areaObj = areaMap.get(String(areaId));
+        const areaName =
+          (typeof line.area === "object" ? label(line.area) : "") ||
+          label(areaObj) ||
+          line.area_name ||
+          "";
+        const lineName = label(line, String(line.id));
+        const text = (areaName + " " + lineName + " " + (line.code || "")).toUpperCase();
+
+        let stage = "";
+        if (/JATE|JAT(E|A)?AMENTO|SHOT.?BLAST/.test(text)) stage = "shotblast";
+        else if (/ACAB|FINISH/.test(text)) stage = "finishing";
+        else if (/USI|USIN|MACHIN/.test(text)) stage = "machining";
+        else if (/INJET|INJE(C|Ç)|INJP|\bINJ\b/.test(text)) stage = "injection";
+
+        return {
+          id: line.id,
+          name: lineName,
+          code: line.code || "",
+          area: areaName,
+          stage,
+        };
+      }).filter(x => x.stage);
+
+      const fetchPitchDetails = async (line) => {
+        const payload = await l2lGet("/api/1.0/pitchdetails/", {
+          site: numericSite,
+          line: line.id,
+          start__gte: startIso,
+          end__lte: endIso,
+          end__gte: startIso,
+          limit: 2000,
+          order_by: "end",
+        });
+        const rows = Array.isArray(payload?.data) ? payload.data : [];
+        return rows.map(row => ({ row, line }));
+      };
+
+      // Keep concurrency controlled to avoid overloading L2L and Vercel.
+      const detailSets = [];
+      const batchSize = 6;
+      for (let i = 0; i < lineMeta.length; i += batchSize) {
+        const batch = lineMeta.slice(i, i + batchSize);
+        const settled = await Promise.allSettled(batch.map(fetchPitchDetails));
+        settled.forEach(result => {
+          if (result.status === "fulfilled") detailSets.push(...result.value);
+        });
+      }
+
+      const refId = (value) => {
+        if (value && typeof value === "object") return value.id ?? value.pk ?? value.value ?? null;
+        return value;
+      };
+      const productLabel = (value) => {
+        if (value && typeof value === "object") {
+          return value.code ?? value.name ?? value.description ?? value.externalid ?? String(value.id ?? "");
+        }
+        const found = productMap.get(String(value));
+        return found
+          ? (found.code ?? found.name ?? found.description ?? found.externalid ?? String(found.id))
+          : "";
+      };
+
+      const grouped = new Map();
+      for (const { row, line } of detailSets) {
+        const productId = refId(row.product);
+        const model = productLabel(row.product);
+        if (!model) continue;
+
+        const key = String(productId ?? model);
+        if (!grouped.has(key)) {
+          grouped.set(key, {
+            product_id: productId,
+            model,
+            injection: 0,
+            shotblast: 0,
+            finishing: 0,
+            machining: 0,
+            scrap: 0,
+            lines: { injection: [], shotblast: [], finishing: [], machining: [] },
+          });
+        }
+        const g = grouped.get(key);
+        const actual = Number(row.actual || 0);
+        const scrap = Number(row.scrap || 0);
+        g[line.stage] += Number.isFinite(actual) ? actual : 0;
+        g.scrap += Number.isFinite(scrap) ? scrap : 0;
+        if (line.name && !g.lines[line.stage].includes(line.name)) g.lines[line.stage].push(line.name);
+      }
+
+      const data = Array.from(grouped.values()).map(g => {
+        const beforeShotblast = Math.max(0, g.injection - g.shotblast);
+        const beforeFinishing = Math.max(0, g.shotblast - g.finishing);
+        const finishedAvailable = Math.max(0, g.finishing - g.machining);
+        return {
+          ...g,
+          awaiting_shotblast: beforeShotblast,
+          awaiting_finishing: beforeFinishing,
+          unfinished: beforeShotblast + beforeFinishing,
+          finished: finishedAvailable,
+          total_stock: beforeShotblast + beforeFinishing + finishedAvailable,
+        };
+      }).sort((a, b) => String(a.model).localeCompare(String(b.model)));
+
+      return res.status(200).json({
+        success: true,
+        data,
+        meta: {
+          site: numericSite,
+          start,
+          end,
+          lines_consulted: lineMeta.length,
+          products_found: data.length,
+          stages: ["injection", "shotblast", "finishing", "machining"],
+        },
+      });
+    } catch (error) {
+      return res.status(error.status || 502).json({
+        success: false,
+        error: error.message || "Unable to load L2L stock flow.",
+      });
+    }
+  }
+
   if (report === "scrapdetail") {
     const start = String(req.query.start || "").trim();
     const end = String(req.query.end || "").trim();
