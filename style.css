@@ -2016,85 +2016,65 @@ body.modal-open{overflow:hidden}
 
 
 /* Safety Moments weekly PDF */
-.safety-live-panel{padding:0;overflow:hidden}
-.safety-live-head{
-  display:flex;align-items:flex-start;justify-content:space-between;gap:18px;
-  padding:20px 22px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#fbfcfd)
-}
-.safety-live-head>div:first-child>span{
-  display:block;font-size:9px;font-weight:900;letter-spacing:1.2px;color:#7d8d98;margin-bottom:5px
-}
-.safety-live-head h2{margin:0 0 5px;font-size:21px;color:#10283a}
-.safety-live-head p{margin:0;color:#718391;font-size:11px;line-height:1.45}
+.safety-live-panel{padding:0;overflow:hidden;border-radius:14px}
+.safety-live-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;padding:20px 22px 16px;background:linear-gradient(180deg,#fff,#fbfcfd);border-bottom:1px solid #e3e9ed}
+.safety-live-head>div:first-child>span{display:block;font-size:9px;font-weight:900;letter-spacing:1.2px;color:#61798a;margin-bottom:5px}
+.safety-live-head h2{margin:0 0 6px;font-size:22px;color:#0e2940;line-height:1.15}
+.safety-live-head p{margin:0;color:#738795;font-size:11px}
 .safety-mode-switch{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
-.safety-mode-switch button,.safety-open-pdf{
-  height:38px;border:1px solid #d8e1e7;background:#fff;color:#405463;border-radius:9px;
-  padding:0 13px;font-size:10px;font-weight:900;text-decoration:none;display:inline-flex;align-items:center
-}
-.safety-mode-switch button:hover{background:#eef4f8}
-.safety-mode-switch button.active{background:var(--red);border-color:var(--red);color:#fff}
-.safety-open-pdf{background:#0c2942;border-color:#0c2942;color:#fff}
-.safety-open-pdf:hover{background:#123a59}
-.safety-status{
-  padding:9px 22px;background:#fff;color:#5f7280;font-size:10px;font-weight:800;border-bottom:1px solid #edf1f3
-}
-.safety-dynamic{padding:18px 20px 22px;background:linear-gradient(180deg,#eef3f6 0%,#f6f8fa 100%)}
-.safety-day-cards{
-  display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px
-}
-.safety-day-card{
-  text-align:left;border:1px solid #dce5ea;background:#fff;border-radius:14px;padding:14px;min-height:158px;
-  box-shadow:0 6px 18px rgba(7,27,45,.05);transition:.18s ease;position:relative;overflow:hidden
-}
-.safety-day-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(7,27,45,.08)}
-.safety-day-card.active{border-color:#e2231a;box-shadow:0 0 0 2px rgba(226,35,26,.12),0 10px 24px rgba(7,27,45,.08)}
-.safety-day-card.active:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:#e2231a}
-.safety-day-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.safety-day-card-top>span:first-child{font-size:9px;font-weight:900;letter-spacing:1px;color:#526574}
-.safety-today-badge{font-size:7px;font-weight:900;background:#eaf8f0;color:#18784c;border-radius:999px;padding:4px 6px}
-.safety-day-card strong{display:block;font-size:13px;line-height:1.25;color:#10283a;margin-bottom:8px}
-.safety-day-card p{margin:0;color:#718391;font-size:9px;line-height:1.45;min-height:40px}
-.safety-day-card small{display:block;margin-top:10px;color:#c9302c;font-size:8px;font-weight:900}
-.safety-day-detail{
-  background:#fff;border:1px solid #dce5ea;border-radius:16px;box-shadow:0 10px 28px rgba(7,27,45,.07);overflow:hidden
-}
-.safety-detail-hero{
-  display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:20px 22px;
-  background:linear-gradient(135deg,#0c2942 0%,#123f60 100%);color:#fff
-}
-.safety-detail-eyebrow{display:block;font-size:9px;font-weight:900;letter-spacing:1.1px;color:#b7d0df;margin-bottom:6px}
-.safety-detail-hero h2{margin:0;font-size:25px;line-height:1.18;max-width:900px}
-.safety-detail-number{font-size:52px;line-height:1;font-weight:900;color:rgba(255,255,255,.16)}
-.safety-detail-grid{display:grid;grid-template-columns:.9fr 1.1fr;gap:0}
-.safety-focus-box,.safety-points-box{padding:20px 22px}
-.safety-focus-box{border-right:1px solid #e8eef2;background:#fbfcfd}
-.safety-focus-box>span,.safety-points-box>span,.safety-summary-box>span{
-  display:block;font-size:8px;font-weight:900;letter-spacing:1px;color:#82919c;margin-bottom:8px
-}
-.safety-focus-box p,.safety-summary-box p{margin:0;color:#294252;font-size:14px;line-height:1.55}
-.safety-points-box ul{margin:0;padding-left:19px}
-.safety-points-box li{margin:0 0 8px;color:#294252;font-size:13px;line-height:1.48}
-.safety-summary-box{padding:18px 22px;border-top:1px solid #e8eef2;background:#f7fafb}
-.safety-empty-copy{color:#8a98a3!important;font-style:italic}
+.safety-mode-switch button,.safety-open-pdf{height:38px;border:1px solid #d5e0e7;background:#fff;color:#213d52;border-radius:9px;padding:0 13px;font-size:10px;font-weight:900;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
+.safety-mode-switch button:hover{background:#f1f5f8}
+.safety-mode-switch button.active{background:#e2231a;border-color:#e2231a;color:#fff;box-shadow:0 5px 14px rgba(226,35,26,.18)}
+.safety-open-pdf{background:#0c2d47;border-color:#0c2d47;color:#fff}
+.safety-open-pdf:hover{background:#123d5c}
+.safety-status{padding:8px 22px;background:#fff;border-bottom:1px solid #edf1f3;color:#607684;font-size:9px;font-weight:800}
+.safety-dynamic{padding:16px 18px 20px;background:linear-gradient(180deg,#f2f6f8 0%,#f8fafb 100%)}
+.safety-day-cards{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.safety-day-card{min-height:190px;text-align:left;border:1px solid #dde6eb;background:#fff;border-radius:13px;padding:12px 14px 14px;box-shadow:0 5px 16px rgba(7,27,45,.05);transition:.18s ease;position:relative;overflow:hidden}
+.safety-day-card:hover{transform:translateY(-2px);box-shadow:0 9px 22px rgba(7,27,45,.08)}
+.safety-day-card.active{border-color:#e2231a;background:linear-gradient(180deg,#fff8f7,#fff);box-shadow:0 0 0 1px rgba(226,35,26,.08),0 9px 24px rgba(7,27,45,.08)}
+.safety-day-card-top{display:flex;justify-content:space-between;align-items:center}
+.safety-day-card-top>span:first-child{font-size:9px;font-weight:900;letter-spacing:.8px;color:#173a55}
+.safety-today-badge{font-size:7px;font-weight:900;background:#e2231a;color:#fff;padding:4px 7px;border-radius:999px}
+.safety-day-icon{height:58px;display:flex;align-items:center;justify-content:center;margin:4px 0 7px}
+.safety-day-icon svg{width:58px;height:58px}
+.safety-day-card strong{display:block;color:#0f2a40;font-size:13px;line-height:1.18;margin-bottom:7px;max-height:48px;overflow:hidden}
+.safety-day-card p{margin:0;color:#718391;font-size:9px;line-height:1.38;max-height:52px;overflow:hidden}
+.safety-day-detail{background:transparent;border:0;box-shadow:none;overflow:visible}
+.safety-feature-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:14px}
+.safety-hero-card{min-height:420px;border-radius:15px;overflow:hidden;position:relative;background:url("safety-hero.svg") center/cover no-repeat,#102e46;box-shadow:0 10px 26px rgba(7,27,45,.13)}
+.safety-hero-overlay{position:absolute;inset:0;background:linear-gradient(90deg,rgba(6,26,42,.96) 0%,rgba(6,26,42,.88) 38%,rgba(6,26,42,.36) 68%,rgba(6,26,42,.06) 100%)}
+.safety-hero-content{position:relative;z-index:2;height:100%;box-sizing:border-box;padding:22px;display:flex;flex-direction:column;color:#fff}
+.safety-hero-top{display:flex;align-items:center;gap:12px}
+.safety-weekday-pill{background:#e2231a;border-radius:999px;padding:8px 14px;font-size:9px;font-weight:900;letter-spacing:.4px}
+.safety-week-date{font-size:10px;color:#d3e0e7;font-weight:700}
+.safety-theme-chip{margin-left:auto;display:flex;align-items:center;gap:8px;background:rgba(18,61,92,.9);padding:9px 11px;border-radius:10px}
+.safety-theme-chip>span{font-size:18px}
+.safety-theme-chip small{display:block;color:#b7c9d4;font-size:7px}
+.safety-theme-chip b{display:block;font-size:9px}
+.safety-hero-content h2{margin:auto 0 8px;max-width:64%;font-size:31px;line-height:1.05;color:#fff}
+.safety-hero-content>i{display:block;width:42px;height:4px;background:#e2231a;border-radius:999px;margin-bottom:14px}
+.safety-hero-content>p{margin:0;max-width:58%;font-size:12px;line-height:1.45;color:#edf4f8}
+.safety-reading-stack{display:grid;grid-template-rows:1fr 1.25fr 1fr;gap:12px}
+.safety-reading-card{display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:flex-start;background:#fff;border:1px solid #e0e7ec;border-radius:14px;padding:16px;box-shadow:0 5px 16px rgba(7,27,45,.04)}
+.safety-reading-icon{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:26px;font-weight:900}
+.focus-card .safety-reading-icon{background:#fff0ef;color:#d92c26}
+.points-card .safety-reading-icon{background:#eaf4fb;color:#176fae}
+.action-card .safety-reading-icon{background:#ebf8ef;color:#17844e}
+.safety-reading-card span{display:block;font-size:8px;font-weight:900;letter-spacing:.8px;margin-bottom:5px}
+.focus-card span{color:#d92c26}.points-card span{color:#176fae}.action-card span{color:#17844e}
+.safety-reading-card h3{margin:0 0 7px;color:#10283a;font-size:15px}
+.safety-reading-card p{margin:0;color:#526978;font-size:10px;line-height:1.46}
+.safety-reading-card ul{margin:0;padding-left:18px}
+.safety-reading-card li{margin:0 0 6px;color:#405868;font-size:10px;line-height:1.35}
+.safety-summary-strip{margin-top:14px;display:grid;grid-template-columns:58px 1fr;gap:14px;align-items:center;background:#fff;border:1px solid #e0e7ec;border-radius:14px;padding:14px 16px;box-shadow:0 5px 16px rgba(7,27,45,.04)}
+.safety-summary-icon{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:#f0ecff;color:#5740c8;font-size:22px}
+.safety-summary-strip span{display:block;color:#5740c8;font-size:8px;font-weight:900;letter-spacing:.8px;margin-bottom:4px}
+.safety-summary-strip p{margin:0;color:#405868;font-size:10px;line-height:1.45}
 .safety-weekly{background:#e9eef2;padding:18px}
 .safety-viewer{min-height:500px;overflow:auto;display:flex;justify-content:center}
-#safetyCanvas{
-  display:block;max-width:100%;height:auto;background:#fff;border-radius:8px;box-shadow:0 10px 26px rgba(7,27,45,.14)
-}
-.safety-help{padding:11px 20px;background:#fff;color:#718391;font-size:9px;border-top:1px solid #edf1f3}
-.safety-parse-warning{
-  grid-column:1/-1;background:#fff8e8;border:1px solid #efdfb9;color:#7d6500;border-radius:12px;padding:18px;font-size:11px
-}
-@media(max-width:1100px){
-  .safety-day-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .safety-detail-grid{grid-template-columns:1fr}
-  .safety-focus-box{border-right:0;border-bottom:1px solid #e8eef2}
-}
-@media(max-width:760px){
-  .safety-live-head{flex-direction:column}
-  .safety-mode-switch{justify-content:flex-start}
-  .safety-day-cards{grid-template-columns:1fr}
-  .safety-detail-hero h2{font-size:20px}
-  .safety-detail-number{font-size:38px}
-  .safety-weekly{padding:8px}
-}
+#safetyCanvas{display:block;max-width:100%;height:auto;background:#fff;border-radius:8px;box-shadow:0 10px 26px rgba(7,27,45,.14)}
+.safety-help{padding:10px 20px;background:#fff;color:#718391;font-size:8px;border-top:1px solid #edf1f3}
+.safety-parse-warning{grid-column:1/-1;background:#fff8e8;border:1px solid #efdfb9;color:#7d6500;border-radius:12px;padding:18px;font-size:11px}
+@media(max-width:1200px){.safety-day-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.safety-feature-grid{grid-template-columns:1fr}.safety-hero-card{min-height:390px}}
+@media(max-width:760px){.safety-live-head{flex-direction:column}.safety-mode-switch{justify-content:flex-start}.safety-day-cards{grid-template-columns:1fr}.safety-reading-stack{grid-template-rows:auto}.safety-hero-content h2,.safety-hero-content>p{max-width:82%}.safety-hero-content h2{font-size:26px}.safety-weekly{padding:8px}}
