@@ -565,7 +565,7 @@ function oeeDailyShiftCard(shift,title,timeRange,icon,rows,lines,dates){
       </div>
       <div class="oee-heat-table-wrap compact-heat-scroll">
         <table class="oee-heat-table compact-daily-heat-table">
-          <thead><tr><th class="sticky-col">INJETORA</th>${dates.map(d=>`<th>${d.label}</th>`).join("")}</tr></thead>
+          <thead><tr><th class="sticky-col">LINHA</th>${dates.map(d=>`<th>${d.label}</th>`).join("")}</tr></thead>
           <tbody>
             ${lines.map(line=>{
               const dayCells=dates.map(day=>{
@@ -588,7 +588,6 @@ function renderOeeHeatmap(){
   if(!mount)return;
 
   let details=oeeHeatmapRows.filter(r=>
-    isHeatmapInjectionLine(r.line) &&
     (heatmapFilterState.area==="Todas"||r.area===heatmapFilterState.area) &&
     (heatmapFilterState.line==="Todas"||r.line===heatmapFilterState.line)
   );
@@ -622,7 +621,7 @@ function renderOeeHeatmap(){
   const periodLabel=startLabel===endLabel?startLabel:startLabel+" → "+endLabel;
 
   if(!details.length||!lines.length){
-    mount.innerHTML='<section class="panel oee-heat-panel"><div class="oee-heat-top"><div><span>ANÁLISE DIÁRIA POR TURNO</span><h2>Mapa de calor OEE das injetoras</h2><p>Período '+periodLabel+' • meta de 75%.</p></div></div><div class="empty-state">Nenhuma linha INJETORA AL foi encontrada no L2L para os filtros selecionados.</div></section>';
+    mount.innerHTML='<section class="panel oee-heat-panel"><div class="oee-heat-top"><div><span>ANÁLISE DIÁRIA POR TURNO</span><h2>Mapa de calor OEE por linha</h2><p>Período '+periodLabel+' • meta de 75%.</p></div></div><div class="empty-state">Nenhuma linha foi encontrada no L2L para os filtros selecionados.</div></section>';
     return;
   }
 
@@ -634,11 +633,12 @@ function renderOeeHeatmap(){
   const weekLabel=heatWeekLabel(dates);
   const hasPrev=heatmapWeekIndex>0;
   const hasNext=heatmapWeekIndex<weeks.length-1;
+  const areaLabel=heatmapFilterState.area==="Todas"?"Todas as áreas":heatmapFilterState.area;
 
   mount.innerHTML=`
     <section class="panel oee-heat-panel compact-heat-panel">
       <div class="oee-heat-top">
-        <div><span>ANÁLISE DIÁRIA POR TURNO</span><h2>Mapa de calor OEE das injetoras</h2><p>Eficiência diária • ${periodLabel} • meta de 75% OEE.</p></div>
+        <div><span>ANÁLISE DIÁRIA POR TURNO</span><h2>Mapa de calor OEE por linha</h2><p>${areaLabel} • ${periodLabel} • meta de 75% OEE.</p></div>
         <div class="oee-heat-legend"><div class="oee-heat-legend-title">Escala OEE</div><div class="oee-heat-gradient"></div><div class="oee-heat-legend-labels"><span><b>&lt; 50%</b><small>Crítico</small></span><span><b>50%–74%</b><small>Atenção</small></span><span><b>≥ 75%</b><small>Dentro da meta</small></span></div></div>
       </div>
 
@@ -649,8 +649,8 @@ function renderOeeHeatmap(){
       </div>
 
       <div class="oee-heat-summary">
-        <div><span>Média das injetoras</span><strong>${overall.toFixed(1).replace(".",",")}%</strong></div>
-        <div><span>Injetoras abaixo de 75%</span><strong>${below} <small>de ${lines.length}</small></strong></div>
+        <div><span>Média das linhas</span><strong>${overall.toFixed(1).replace(".",",")}%</strong></div>
+        <div><span>Linhas abaixo de 75%</span><strong>${below} <small>de ${lines.length}</small></strong></div>
         <div><span>Meta / referência</span><strong>75% OEE</strong></div>
       </div>
 
@@ -664,10 +664,13 @@ function populateHeatmapFilters(){
   const line=document.getElementById("heatLine");
   if(!area||!line)return;
 
-  const source=(oeeRows.length?oeeRows:l2lRows).filter(r=>isHeatmapInjectionLine(r.line));
-  const areas=[...new Set(source.map(r=>r.area).filter(Boolean))].sort();
+  const source=oeeRows.length?oeeRows:l2lRows;
+  const areas=[...new Set(source.map(r=>r.area).filter(Boolean))]
+    .sort((a,b)=>String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
 
-  area.innerHTML='<option value="Todas">Todas as áreas com injetoras</option>'+areas.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
+  area.innerHTML='<option value="Todas">Todas as áreas</option>'+
+    areas.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
+
   area.value=areas.includes(heatmapFilterState.area)?heatmapFilterState.area:"Todas";
   heatmapFilterState.area=area.value;
 
@@ -678,7 +681,9 @@ function populateHeatmapFilters(){
       .filter(Boolean)
   )].sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
 
-  line.innerHTML='<option value="Todas">Todas as injetoras</option>'+lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
+  line.innerHTML='<option value="Todas">Todas as linhas</option>'+
+    lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
+
   line.value=lines.includes(heatmapFilterState.line)?heatmapFilterState.line:"Todas";
   heatmapFilterState.line=line.value;
 }
