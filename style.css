@@ -1990,3 +1990,26 @@ body.modal-open{overflow:hidden}
   .oee-heat-top{flex-direction:column}
   .oee-heat-summary{grid-template-columns:1fr}
 }
+
+/* Hourly OEE heatmap refinements */
+.hourly-heat-table{
+  min-width:760px;
+}
+.hourly-heat-table thead th{
+  min-width:58px;
+}
+.hourly-heat-table thead th.sticky-col{
+  min-width:145px;
+}
+.hourly-heat-table .heat-average{
+  border-left:2px solid #d9e2e8;
+  font-weight:900;
+}
+.hourly-heat-grid .oee-heat-shift{
+  min-width:0;
+}
+@media(max-width:1500px){
+  .hourly-heat-grid{
+    grid-template-columns:1fr;
+  }
+}
