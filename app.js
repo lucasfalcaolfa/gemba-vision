@@ -797,16 +797,26 @@ const STOCK_STAGE={
   downstream:/(USI|USIN|MACH|MECAN)/i
 };
 
+let stockRows=[];
+let stockLoading=false;
+const stockFilterState={date:"",model:"Todos"};
+
 function stock(){
-  return '<div class="panel stock-live-head">'+
-    '<div><h2>Estoque calculado com dados do L2L</h2><p>Posição operacional do dia baseada no fluxo real de produção entre Fundição, Acabamento e processo seguinte.</p></div>'+
-    '<div class="stock-live-badge" id="stockLiveStatus">🟡 L2L: carregando...</div>'+
+  return '<div class="panel stock-filter-panel">'+
+    '<div class="stock-filter-head"><div><span>CONTROLE EM TEMPO REAL</span><h2>Estoque da Fundição</h2><p>Selecione a data e o modelo para consultar a posição calculada com os dados do L2L.</p></div><div class="stock-live-badge" id="stockLiveStatus">🟡 L2L: carregando...</div></div>'+
+    '<div class="stock-filter-grid">'+
+      '<label>Data<input id="stockDate" type="date"></label>'+
+      '<label>Modelo<select id="stockModel"><option value="Todos">Todos os modelos</option></select></label>'+
+      '<button type="button" id="stockReset" class="stock-filter-reset">↺ Hoje / Todos</button>'+
+    '</div>'+
+    '<div class="filter-context" id="stockContext">Atualização automática a cada 1 minuto.</div>'+
   '</div>'+
-  '<div class="cards" id="stockCards"></div>'+
-  '<div class="panel"><div class="stock-section-head"><div><span>WIP / INACABADO</span><h2>Estoque da Fundição — Inacabado</h2><p>Produção da Fundição − consumo registrado no Acabamento.</p></div></div><div id="stockInacabado"></div></div>'+
-  '<div class="panel"><div class="stock-section-head"><div><span>PRODUTO ACABADO</span><h2>Estoque da Fundição — Acabado</h2><p>Produção do Acabamento − consumo/saída identificada no processo seguinte.</p></div></div><div id="stockAcabado"></div></div>'+
-  '<div class="panel"><div class="stock-section-head"><div><span>CONSOLIDADO</span><h2>Resumo do Estoque</h2><p>Resumo do saldo operacional calculado com os registros atuais do L2L.</p></div></div><div id="stockResumo"></div></div>'+
-  '<div class="stock-calculation-note"><strong>Importante:</strong> este painel usa movimentos de produção do L2L. Ele representa um <b>saldo operacional calculado do período</b>. Para transformar esse valor em estoque físico oficial, é necessário existir um saldo inicial/contagem física de partida.</div>';
+  '<div class="cards stock-live-kpis" id="stockCards"></div>'+
+  '<div class="stock-selected-grid" id="stockSelected"></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>WIP / INACABADO</span><h2>Estoque Inacabado</h2><p>Produção da Fundição − consumo registrado no Acabamento.</p></div></div><div id="stockInacabado"></div></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>PRODUTO ACABADO</span><h2>Estoque Acabado</h2><p>Produção do Acabamento − saída identificada no processo seguinte.</p></div></div><div id="stockAcabado"></div></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>CONSOLIDADO</span><h2>Resumo do Estoque</h2><p>Resumo calculado para a data e o modelo selecionados.</p></div></div><div id="stockResumo"></div></div>'+
+  '<div class="stock-calculation-note"><strong>Atualização:</strong> o painel consulta novamente o L2L a cada <b>1 minuto</b>. Os valores exibidos são calculados com os movimentos de produção retornados pelo L2L para a data selecionada.</div>';
 }
 
 function stockStage(area){
@@ -847,9 +857,30 @@ function calculateL2LStock(rows){
   return Object.values(flow).map(x=>({
     ...x,
     inacabado:Math.max(0,x.foundry-x.finishing),
-    acabado:Math.max(0,x.finishing-x.downstream),
-    hasDownstream:x.downstream>0
+    acabado:Math.max(0,x.finishing-x.downstream)
   })).sort((a,b)=>a.model.localeCompare(b.model));
+}
+
+function stockEsc(value){
+  return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+}
+
+function populateStockModels(position){
+  const select=document.getElementById("stockModel");
+  if(!select)return;
+  const models=position.map(x=>x.model).filter(Boolean);
+  select.innerHTML='<option value="Todos">Todos os modelos</option>'+models.map(m=>'<option value="'+stockEsc(m)+'">'+stockEsc(m)+'</option>').join("");
+  if(models.includes(stockFilterState.model))select.value=stockFilterState.model;
+  else{
+    stockFilterState.model="Todos";
+    select.value="Todos";
+  }
+}
+
+function stockFilteredPosition(position){
+  return stockFilterState.model==="Todos"
+    ? position
+    : position.filter(x=>x.model===stockFilterState.model);
 }
 
 function stockQtyStatus(qty){
@@ -858,62 +889,126 @@ function stockQtyStatus(qty){
 }
 
 function renderStockTable(rows,type){
-  if(!rows.length)return '<div class="empty-state">Nenhum fluxo de produção compatível foi retornado pelo L2L para este período.</div>';
+  if(!rows.length)return '<div class="empty-state">Nenhum dado encontrado para o modelo/data selecionados.</div>';
   const isWip=type==="inacabado";
   const qtyKey=isWip?"inacabado":"acabado";
   return '<div class="table-scroll"><table class="stock-live-table"><thead><tr><th>Modelo</th>'+
     (isWip?'<th>Produção Fundição</th><th>Consumido no Acabamento</th>':'<th>Produção Acabamento</th><th>Saída processo seguinte</th>')+
-    '<th>Saldo calculado</th><th>Status</th></tr></thead><tbody>'+
+    '<th>Quantidade</th><th>Status</th></tr></thead><tbody>'+
     rows.map(x=>'<tr><td><b>'+stockEsc(x.model)+'</b></td>'+
       (isWip?'<td>'+fmt(x.foundry)+'</td><td>'+fmt(x.finishing)+'</td>':'<td>'+fmt(x.finishing)+'</td><td>'+fmt(x.downstream)+'</td>')+
-      '<td><b>'+fmt(x[qtyKey])+'</b></td><td>'+stockQtyStatus(x[qtyKey])+'</td></tr>').join("")+
+      '<td class="stock-exact-number">'+fmt(x[qtyKey])+'</td><td>'+stockQtyStatus(x[qtyKey])+'</td></tr>').join("")+
     '</tbody></table></div>';
 }
 
-function stockEsc(value){
-  return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+async function refreshStockRange(){
+  if(stockLoading)return;
+  stockLoading=true;
+  const status=document.getElementById("stockLiveStatus");
+  if(status)status.textContent="🟡 Consultando L2L...";
+  try{
+    const day=stockFilterState.date||todayISO();
+    stockRows=await window.L2L.getDaily(day,"00:00","23:59");
+    l2lLastUpdate=new Date();
+    l2lError="";
+    if(currentPage==="stock")updateStock();
+  }catch(err){
+    l2lError=err.message||"Falha ao consultar L2L";
+    if(currentPage==="stock")updateStock();
+  }finally{
+    stockLoading=false;
+  }
 }
 
 function updateStock(){
-  const position=calculateL2LStock(l2lRows);
-  const totalI=position.reduce((s,x)=>s+x.inacabado,0);
-  const totalA=position.reduce((s,x)=>s+x.acabado,0);
-  const foundry=position.reduce((s,x)=>s+x.foundry,0);
-  const finishing=position.reduce((s,x)=>s+x.finishing,0);
-  const downstream=position.reduce((s,x)=>s+x.downstream,0);
+  const source=stockRows.length?stockRows:l2lRows;
+  const position=calculateL2LStock(source);
+  populateStockModels(position);
+  const visible=stockFilteredPosition(position);
+
+  const totalI=visible.reduce((s,x)=>s+x.inacabado,0);
+  const totalA=visible.reduce((s,x)=>s+x.acabado,0);
+  const foundry=visible.reduce((s,x)=>s+x.foundry,0);
+  const finishing=visible.reduce((s,x)=>s+x.finishing,0);
+  const downstream=visible.reduce((s,x)=>s+x.downstream,0);
 
   const status=document.getElementById("stockLiveStatus");
   if(status)status.textContent=liveStamp();
 
+  const context=document.getElementById("stockContext");
+  if(context){
+    const dateLabel=(stockFilterState.date||todayISO()).split("-").reverse().join("/");
+    const modelLabel=stockFilterState.model==="Todos"?"Todos os modelos":stockFilterState.model;
+    context.textContent=liveStamp()+" • "+dateLabel+" • "+modelLabel+" • atualização automática a cada 1 minuto";
+  }
+
   const cards=document.getElementById("stockCards");
   if(cards)cards.innerHTML=
-    card("Inacabado calculado",fmt(totalI),totalI>0?"warn":"")+
-    card("Acabado calculado",fmt(totalA),totalA>0?"good":"")+
+    card("Inacabados",fmt(totalI),totalI>0?"warn":"")+
+    card("Acabados",fmt(totalA),totalA>0?"good":"")+
+    card("Total",fmt(totalI+totalA))+
     card("Produção Fundição",fmt(foundry))+
-    card("Produção Acabamento",fmt(finishing))+
-    card("Saída identificada",fmt(downstream));
+    card("Produção Acabamento",fmt(finishing));
+
+  const selected=document.getElementById("stockSelected");
+  if(selected){
+    if(stockFilterState.model!=="Todos"&&visible.length){
+      const x=visible[0];
+      selected.innerHTML=
+        '<article class="stock-model-focus"><div class="stock-model-focus-head"><div><span>MODELO SELECIONADO</span><h2>'+stockEsc(x.model)+'</h2></div><span class="stock-live-status ok">L2L</span></div>'+
+        '<div class="stock-model-values"><div><span>Inacabados</span><strong>'+fmt(x.inacabado)+'</strong><small>Fundição − Acabamento</small></div><div><span>Acabados</span><strong>'+fmt(x.acabado)+'</strong><small>Acabamento − saída</small></div><div><span>Total</span><strong>'+fmt(x.inacabado+x.acabado)+'</strong><small>Posição calculada</small></div></div></article>';
+    }else selected.innerHTML="";
+  }
 
   const inc=document.getElementById("stockInacabado");
-  if(inc)inc.innerHTML=renderStockTable(position.filter(x=>x.foundry||x.finishing),"inacabado");
+  if(inc)inc.innerHTML=renderStockTable(visible.filter(x=>x.foundry||x.finishing),"inacabado");
 
   const acab=document.getElementById("stockAcabado");
-  if(acab)acab.innerHTML=renderStockTable(position.filter(x=>x.finishing||x.downstream),"acabado");
+  if(acab)acab.innerHTML=renderStockTable(visible.filter(x=>x.finishing||x.downstream),"acabado");
 
   const resumo=document.getElementById("stockResumo");
   if(resumo){
-    const downstreamKnown=downstream>0;
     resumo.innerHTML=
       '<div class="stock-summary-grid">'+
-        '<div><span>Inacabado calculado</span><strong>'+fmt(totalI)+'</strong><small>Fundição − Acabamento</small></div>'+
-        '<div><span>Acabado calculado</span><strong>'+fmt(totalA)+'</strong><small>Acabamento − processo seguinte</small></div>'+
-        '<div><span>Total calculado</span><strong>'+fmt(totalI+totalA)+'</strong><small>Saldo operacional do período</small></div>'+
-        '<div><span>Modelos identificados</span><strong>'+fmt(position.length)+'</strong><small>'+(position.some(x=>x.model!=="GERAL")?"Detalhe de produto disponível":"L2L sem detalhe de produto")+'</small></div>'+
+        '<div><span>Inacabados</span><strong>'+fmt(totalI)+'</strong><small>'+ (stockFilterState.model==="Todos"?"Todos os modelos":stockEsc(stockFilterState.model)) +'</small></div>'+
+        '<div><span>Acabados</span><strong>'+fmt(totalA)+'</strong><small>'+ (stockFilterState.model==="Todos"?"Todos os modelos":stockEsc(stockFilterState.model)) +'</small></div>'+
+        '<div><span>Total</span><strong>'+fmt(totalI+totalA)+'</strong><small>Data selecionada</small></div>'+
+        '<div><span>Modelos na visão</span><strong>'+fmt(visible.length)+'</strong><small>'+(position.some(x=>x.model!=="GERAL")?"Detalhe de produto disponível":"L2L sem detalhe de produto")+'</small></div>'+
       '</div>'+
-      (!downstreamKnown?'<div class="stock-warning">⚠️ O L2L não retornou consumo/saída do processo seguinte neste período. Por isso, o valor de Acabado representa a produção do Acabamento ainda não compensada por uma saída identificada.</div>':'');
+      (downstream===0&&totalA>0?'<div class="stock-warning">⚠️ Não foi identificada saída do processo seguinte para esta seleção. O valor de Acabados está baseado no fluxo disponível no L2L.</div>':'');
   }
 }
 
-function initStock(){updateStock()}
+function initStock(){
+  const date=document.getElementById("stockDate");
+  const model=document.getElementById("stockModel");
+  const reset=document.getElementById("stockReset");
+  if(!date||!model||!reset)return;
+
+  if(!stockFilterState.date)stockFilterState.date=todayISO();
+  date.value=stockFilterState.date;
+
+  date.addEventListener("change",async()=>{
+    stockFilterState.date=date.value||todayISO();
+    stockFilterState.model="Todos";
+    await refreshStockRange();
+  });
+
+  model.addEventListener("change",()=>{
+    stockFilterState.model=model.value;
+    updateStock();
+  });
+
+  reset.addEventListener("click",async()=>{
+    stockFilterState.date=todayISO();
+    stockFilterState.model="Todos";
+    date.value=stockFilterState.date;
+    await refreshStockRange();
+  });
+
+  if(!stockRows.length)refreshStockRange();
+  else updateStock();
+}
 function people(){return '<div class="cards">'+card("Absenteísmo","3,2%","warn")+card("Presentes","94,8%","good")+card("Faltas","11","bad")+card("Afastamentos","4","warn")+card("Efetivo","342")+'</div><div class="panel"><h2>Absenteísmo por área</h2><table><tr><th>Área</th><th>Efetivo</th><th>Ausentes</th><th>%</th><th>Indicador</th></tr><tr><td>Fundição</td><td>120</td><td>4</td><td>3,3%</td><td><div class="bar"><i style="width:33%"></i></div></td></tr><tr><td>Injeção</td><td>85</td><td>2</td><td>2,4%</td><td><div class="bar"><i style="width:24%"></i></div></td></tr><tr><td>Usinagem</td><td>110</td><td>5</td><td>4,5%</td><td><div class="bar"><i style="width:45%"></i></div></td></tr></table></div>'}
 function quality(){return '<div class="cards">'+card("Qualidade","98,5%","good")+card("Scrap","1,5%","good")+card("Retrabalho","2,1%","warn")+card("PPM","185","warn")+card("NQ","R$ 12,4 mil","bad")+'</div><div class="section-grid"><div class="panel"><h2>Pareto de defeitos</h2><table><tr><th>Defeito</th><th>%</th><th>Representação</th></tr><tr><td>Porosidade</td><td>38%</td><td><div class="bar"><i style="width:38%"></i></div></td></tr><tr><td>Rebarba</td><td>21%</td><td><div class="bar"><i style="width:21%"></i></div></td></tr><tr><td>Trinca</td><td>15%</td><td><div class="bar"><i style="width:15%"></i></div></td></tr><tr><td>Dimensional</td><td>12%</td><td><div class="bar"><i style="width:12%"></i></div></td></tr></table></div><div class="panel"><h2>Não qualidade por processo</h2><div class="kpis"><div class="mini"><div class="label">Injeção</div><strong>42%</strong></div><div class="mini"><div class="label">Acabamento</div><strong>31%</strong></div><div class="mini"><div class="label">Usinagem</div><strong>18%</strong></div></div></div></div>'}
 let currentPage="home";
@@ -936,6 +1031,7 @@ async function refreshL2L(){
     applyLiveData(currentPage);
     if(currentPage==="oee")await refreshOeeRange();
     if(currentPage==="production")await refreshProductionRange();
+    if(currentPage==="stock")await refreshStockRange();
   }catch(err){
     l2lError=err.message||"Falha ao consultar L2L";
     applyLiveData(currentPage);
