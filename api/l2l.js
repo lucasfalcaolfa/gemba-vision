@@ -128,13 +128,36 @@ module.exports = async function handler(req, res) {
       }
 
       const rows = (Array.isArray(payload?.data) ? payload.data : []).map(row => {
-        const lineId = row.line && typeof row.line === "object" ? (row.line.id ?? row.line.pk) : row.line;
+        const lineId =
+          row.line && typeof row.line === "object"
+            ? (row.line.id ?? row.line.pk)
+            : row.line;
         const meta = lineMap.get(String(lineId)) || {};
+
+        const pitchAreaId =
+          row.area && typeof row.area === "object"
+            ? (row.area.id ?? row.area.pk)
+            : row.area;
+        const pitchAreaObj = areaMap.get(String(pitchAreaId));
+        const pitchArea =
+          (row.area && typeof row.area === "object"
+            ? (row.area.name ?? row.area.code ?? row.area.description ?? "")
+            : "") ||
+          pitchAreaObj?.name ||
+          pitchAreaObj?.code ||
+          pitchAreaObj?.description ||
+          "";
+
+        const embeddedLine =
+          row.line && typeof row.line === "object"
+            ? (row.line.name ?? row.line.code ?? row.line.description ?? "")
+            : "";
+
         return {
           id: row.id,
           line_id: lineId,
-          line: meta.line ?? (row.line?.name ?? row.line?.code ?? String(lineId ?? "Sem linha")),
-          area: meta.area ?? "",
+          line: meta.line || embeddedLine || String(lineId ?? "Sem linha"),
+          area: meta.area || String(pitchArea || ""),
           pitch_start: row.pitch_start,
           pitch_end: row.pitch_end,
           oee: Number(row.overall_equipment_effectiveness ?? 0),
