@@ -1640,3 +1640,13 @@ body.modal-open{overflow:hidden}
   .stock-model-values{grid-template-columns:1fr}
   .stock-model-values>div+div{border-left:0;border-top:1px solid rgba(255,255,255,.1)}
 }
+
+.stock-filter-grid-range{
+  grid-template-columns:minmax(170px,.8fr) minmax(170px,.8fr) minmax(240px,1.2fr) auto;
+}
+@media(max-width:950px){
+  .stock-filter-grid-range{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+  .stock-filter-grid-range{grid-template-columns:1fr}
+}
