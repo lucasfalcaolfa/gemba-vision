@@ -24,12 +24,12 @@ const oeeData=[
 ];
 function pct(v){return v.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"}
 function oee(){
-return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Filtre os dados reais do L2L por setor, linha, turno, dia e faixa de horário.</p></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div><div class="oee-filters oee-filters-live"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno</option><option value="2">2º Turno</option><option value="3">3º Turno</option></select></label><label>Data<input id="oeeDate" type="date"></label><label>Hora inicial<input id="oeeStart" type="time" value="00:00"></label><label>Hora final<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Comparativo de eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Modelos com melhor eficiência</h2><div id="oeeChart"></div><div class="footer-note">Ranking conforme os filtros selecionados • atualização automática a cada 1 minuto.</div></div></div>';
+return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Filtre os dados reais do L2L por setor, linha, turno, dia e faixa de horário.</p></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div><div class="oee-filters oee-filters-live"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno</option><option value="2">2º Turno</option><option value="3">3º Turno</option></select></label><label>Data inicial<input id="oeeStartDate" type="date"></label><label>Data final<input id="oeeEndDate" type="date"></label><label>Hora inicial<input id="oeeStart" type="time" value="00:00"></label><label>Hora final<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Comparativo de eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Modelos com melhor eficiência</h2><div id="oeeChart"></div><div class="footer-note">Ranking conforme os filtros selecionados • atualização automática a cada 1 minuto.</div></div></div>';
 }
 
 let oeeRows=[];
 let oeeLoading=false;
-const oeeFilterState={area:"Todas",line:"Todas",shift:"Todos",date:"",start:"00:00",end:"23:59"};
+const oeeFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"",endDate:"",start:"00:00",end:"23:59"};
 
 function normalizeShift(value){
   if(value===null||value===undefined||value==="")return "";
@@ -62,7 +62,7 @@ async function refreshOeeRange(){
   if(ctx)ctx.textContent="🟡 Consultando L2L...";
   try{
     const date=oeeFilterState.date||todayISO();
-    oeeRows=await window.L2L.getDaily(date,oeeFilterState.start,oeeFilterState.end);
+    oeeRows=await window.L2L.getRange(oeeFilterState.startDate||date,oeeFilterState.endDate||date,oeeFilterState.start,oeeFilterState.end);
     l2lLastUpdate=new Date();
     l2lError="";
     if(currentPage==="oee"){
@@ -108,14 +108,17 @@ function initOee(){
   const area=document.getElementById("oeeArea");
   const line=document.getElementById("oeeLinha");
   const shift=document.getElementById("oeeShift");
-  const date=document.getElementById("oeeDate");
+  const startDate=document.getElementById("oeeStartDate");
+  const endDate=document.getElementById("oeeEndDate");
   const start=document.getElementById("oeeStart");
   const end=document.getElementById("oeeEnd");
   const reset=document.getElementById("oeeReset");
-  if(!area||!line||!shift||!date||!start||!end||!reset)return;
+  if(!area||!line||!shift||!startDate||!endDate||!start||!end||!reset)return;
 
-  if(!oeeFilterState.date)oeeFilterState.date=todayISO();
-  date.value=oeeFilterState.date;
+  if(!oeeFilterState.startDate)oeeFilterState.startDate=todayISO();
+  if(!oeeFilterState.endDate)oeeFilterState.endDate=oeeFilterState.startDate;
+  startDate.value=oeeFilterState.startDate;
+  endDate.value=oeeFilterState.endDate;
   start.value=oeeFilterState.start;
   end.value=oeeFilterState.end;
   shift.value=oeeFilterState.shift;
@@ -138,8 +141,15 @@ function initOee(){
     renderOeeLive();
   });
 
-  date.addEventListener("change",async()=>{
-    oeeFilterState.date=date.value||todayISO();
+  startDate.addEventListener("change",async()=>{
+    oeeFilterState.startDate=startDate.value||todayISO();
+    if(oeeFilterState.endDate<oeeFilterState.startDate){oeeFilterState.endDate=oeeFilterState.startDate;endDate.value=oeeFilterState.endDate;}
+    await refreshOeeRange();
+  });
+
+  endDate.addEventListener("change",async()=>{
+    oeeFilterState.endDate=endDate.value||oeeFilterState.startDate||todayISO();
+    if(oeeFilterState.endDate<oeeFilterState.startDate){oeeFilterState.startDate=oeeFilterState.endDate;startDate.value=oeeFilterState.startDate;}
     await refreshOeeRange();
   });
 
@@ -165,10 +175,12 @@ function initOee(){
     oeeFilterState.area="Todas";
     oeeFilterState.line="Todas";
     oeeFilterState.shift="Todos";
-    oeeFilterState.date=todayISO();
+    oeeFilterState.startDate=todayISO();
+    oeeFilterState.endDate=oeeFilterState.startDate;
     oeeFilterState.start="00:00";
     oeeFilterState.end="23:59";
-    date.value=oeeFilterState.date;
+    startDate.value=oeeFilterState.startDate;
+    endDate.value=oeeFilterState.endDate;
     start.value=oeeFilterState.start;
     end.value=oeeFilterState.end;
     shift.value=oeeFilterState.shift;
@@ -279,7 +291,7 @@ let productionRows=[];
 let productionLoading=false;
 let prodSectorChartInstance=null;
 let prodLineChartInstance=null;
-const productionFilterState={area:"Todas",line:"Todas",shift:"Todos",date:"",start:"00:00",end:"23:59"};
+const productionFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"",endDate:"",start:"00:00",end:"23:59"};
 
 function production(){
   return '<div class="panel oee-filter-panel">'+
@@ -314,7 +326,7 @@ async function refreshProductionRange(){
   if(ctx)ctx.textContent="🟡 Consultando L2L...";
   try{
     const date=productionFilterState.date||todayISO();
-    productionRows=await window.L2L.getDaily(date,productionFilterState.start,productionFilterState.end);
+    productionRows=await window.L2L.getRange(productionFilterState.startDate||date,productionFilterState.endDate||date,productionFilterState.start,productionFilterState.end);
     l2lLastUpdate=new Date();
     l2lError="";
     if(currentPage==="production"){
@@ -706,14 +718,17 @@ function initProduction(){
   const area=document.getElementById("prodArea");
   const line=document.getElementById("prodLinha");
   const shift=document.getElementById("prodTurno");
-  const date=document.getElementById("prodDate");
+  const startDate=document.getElementById("prodStartDate");
+  const endDate=document.getElementById("prodEndDate");
   const start=document.getElementById("prodStart");
   const end=document.getElementById("prodEnd");
   const reset=document.getElementById("prodReset");
-  if(!area||!line||!shift||!date||!start||!end||!reset)return;
+  if(!area||!line||!shift||!startDate||!endDate||!start||!end||!reset)return;
 
-  if(!productionFilterState.date)productionFilterState.date=todayISO();
-  date.value=productionFilterState.date;
+  if(!productionFilterState.startDate)productionFilterState.startDate=todayISO();
+  if(!productionFilterState.endDate)productionFilterState.endDate=productionFilterState.startDate;
+  startDate.value=productionFilterState.startDate;
+  endDate.value=productionFilterState.endDate;
   start.value=productionFilterState.start;
   end.value=productionFilterState.end;
   shift.value=productionFilterState.shift;
@@ -736,8 +751,15 @@ function initProduction(){
     renderProductionLive();
   });
 
-  date.addEventListener("change",async()=>{
-    productionFilterState.date=date.value||todayISO();
+  startDate.addEventListener("change",async()=>{
+    productionFilterState.startDate=startDate.value||todayISO();
+    if(productionFilterState.endDate<productionFilterState.startDate){productionFilterState.endDate=productionFilterState.startDate;endDate.value=productionFilterState.endDate;}
+    await refreshProductionRange();
+  });
+
+  endDate.addEventListener("change",async()=>{
+    productionFilterState.endDate=endDate.value||productionFilterState.startDate||todayISO();
+    if(productionFilterState.endDate<productionFilterState.startDate){productionFilterState.startDate=productionFilterState.endDate;startDate.value=productionFilterState.startDate;}
     await refreshProductionRange();
   });
 
@@ -755,10 +777,12 @@ function initProduction(){
     productionFilterState.area="Todas";
     productionFilterState.line="Todas";
     productionFilterState.shift="Todos";
-    productionFilterState.date=todayISO();
+    productionFilterState.startDate=todayISO();
+    productionFilterState.endDate=productionFilterState.startDate;
     productionFilterState.start="00:00";
     productionFilterState.end="23:59";
-    date.value=productionFilterState.date;
+    startDate.value=productionFilterState.startDate;
+    endDate.value=productionFilterState.endDate;
     start.value=productionFilterState.start;
     end.value=productionFilterState.end;
     shift.value=productionFilterState.shift;
