@@ -12,6 +12,18 @@ window.L2L = {
     }
     return Array.isArray(payload.data) ? payload.data : [];
   },
+  async getPitchHeat(startDate, endDate) {
+    const first = startDate || new Date().toISOString().slice(0, 10);
+    const last = endDate || first;
+    const start = encodeURIComponent(first + " 00:00");
+    const end = encodeURIComponent(last + " 23:59");
+    const response = await fetch("/api/l2l?report=pitchheat&start=" + start + "&end=" + end);
+    const payload = await response.json();
+    if (!response.ok || payload.success === false) {
+      throw new Error(payload.error || "Falha ao consultar pitches do L2L");
+    }
+    return Array.isArray(payload.data) ? payload.data : [];
+  },
   async getDailyWindow(startDateTime, endDateTime) {
     const start = encodeURIComponent(startDateTime);
     const end = encodeURIComponent(endDateTime);
