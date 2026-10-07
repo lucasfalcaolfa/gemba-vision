@@ -2013,3 +2013,51 @@ body.modal-open{overflow:hidden}
     grid-template-columns:1fr;
   }
 }
+
+
+/* Safety Moments weekly PDF */
+.safety-live-panel{padding:0;overflow:hidden}
+.safety-live-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:18px;
+  padding:18px 20px;border-bottom:1px solid var(--border);background:linear-gradient(180deg,#fff,#fbfcfd)
+}
+.safety-live-head>div>span{
+  display:block;font-size:9px;font-weight:900;letter-spacing:1px;color:#7d8d98;margin-bottom:4px
+}
+.safety-live-head h2{margin:0 0 5px;font-size:20px;color:#10283a}
+.safety-live-head p{margin:0;color:#718391;font-size:11px;line-height:1.45}
+.safety-open-pdf{
+  flex:0 0 auto;text-decoration:none;background:#0c2942;color:#fff;border-radius:9px;
+  padding:10px 13px;font-size:10px;font-weight:800
+}
+.safety-open-pdf:hover{background:#123a59}
+.safety-day-tabs{
+  display:flex;gap:8px;flex-wrap:wrap;padding:14px 20px;background:#f6f8fa;border-bottom:1px solid var(--border)
+}
+.safety-day-tabs button{
+  min-width:58px;height:38px;border:1px solid #d8e1e7;background:#fff;color:#405463;
+  border-radius:9px;font-size:10px;font-weight:900
+}
+.safety-day-tabs button:hover{background:#eef4f8}
+.safety-day-tabs button.active{
+  background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 4px 12px rgba(226,35,26,.18)
+}
+.safety-day-tabs .week-view{margin-left:auto;min-width:128px}
+.safety-status{
+  padding:9px 20px;background:#fff;color:#5f7280;font-size:10px;font-weight:800;border-bottom:1px solid #edf1f3
+}
+.safety-viewer{
+  min-height:500px;background:#e9eef2;padding:18px;overflow:auto;display:flex;justify-content:center
+}
+#safetyCanvas{
+  display:block;max-width:100%;height:auto;background:#fff;border-radius:8px;
+  box-shadow:0 10px 26px rgba(7,27,45,.14)
+}
+.safety-help{
+  padding:11px 20px;background:#fff;color:#718391;font-size:9px;border-top:1px solid #edf1f3
+}
+@media(max-width:760px){
+  .safety-live-head{flex-direction:column}
+  .safety-day-tabs .week-view{margin-left:0}
+  .safety-viewer{padding:8px}
+}
