@@ -92,13 +92,26 @@ module.exports = async function handler(req, res) {
       const areaMap = new Map(areas.map(x => [String(x.id), x]));
 
       const lineMap = new Map(lines.map(line => {
-        const areaId = typeof line.area === "object" ? (line.area?.id ?? line.area?.pk) : line.area;
+        const areaId =
+          typeof line.area === "object"
+            ? (line.area?.id ?? line.area?.pk)
+            : (line.area ?? line.area_id);
         const areaObj = areaMap.get(String(areaId));
-        const area = (typeof line.area === "object" ? (line.area?.name ?? line.area?.code) : "") ??
-          areaObj?.name ?? areaObj?.code ?? line.area_name ?? "";
+        const embeddedArea =
+          typeof line.area === "object"
+            ? (line.area?.name ?? line.area?.code ?? line.area?.description ?? "")
+            : "";
+        const area =
+          embeddedArea ||
+          areaObj?.name ||
+          areaObj?.code ||
+          areaObj?.description ||
+          line.area_name ||
+          line.areaname ||
+          "";
         return [String(line.id), {
           line: line.name ?? line.code ?? line.description ?? String(line.id),
-          area: area || "",
+          area: String(area || ""),
         }];
       }));
 
@@ -109,6 +122,10 @@ module.exports = async function handler(req, res) {
         limit: 2000,
         order_by: "pitch_start",
       });
+
+      if (payload?.success === false) {
+        throw new Error(payload.error || "L2L returned success=false for Pitches.");
+      }
 
       const rows = (Array.isArray(payload?.data) ? payload.data : []).map(row => {
         const lineId = row.line && typeof row.line === "object" ? (row.line.id ?? row.line.pk) : row.line;
@@ -129,7 +146,17 @@ module.exports = async function handler(req, res) {
         };
       }).filter(row => row.pitch_start && row.pitch_end);
 
-      return res.status(200).json({ success: true, data: rows });
+      return res.status(200).json({
+        success: true,
+        data: rows,
+        meta: {
+          numeric_site: numericSite,
+          pitch_count: rows.length,
+          line_count: lines.length,
+          mapped_area_count: [...lineMap.values()].filter(x => x.area).length,
+          areas: [...new Set(rows.map(x => x.area).filter(Boolean))].sort(),
+        },
+      });
     } catch (error) {
       return res.status(error.status || 502).json({
         success: false,
