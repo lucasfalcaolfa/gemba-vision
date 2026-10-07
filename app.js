@@ -1658,15 +1658,52 @@ function escapeSafetyHtml(value){
   return String(value||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 }
 
-function safetyIconSvg(day){
-  const icons=[
-    '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#fff1f0"/><path d="M21 27h22v20H21z" fill="#173a55"/><path d="M24 26c0-7 4-12 8-12s8 5 8 12" fill="#f3a21b"/><path d="M18 27h28" stroke="#173a55" stroke-width="3"/><path d="M15 44l7-12 7 12z" fill="#e2231a"/><circle cx="22" cy="40" r="1.6" fill="#fff"/></svg>',
-    '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="24" cy="35" r="12" fill="#173a55"/><circle cx="24" cy="35" r="5" fill="#fff"/><path d="M40 14l12 5v10c0 9-6 15-12 18-6-3-12-9-12-18V19z" fill="#2b84c6"/><path d="M40 20v20" stroke="#fff" stroke-width="3"/></svg>',
-    '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M17 27c0-8 6-14 15-14s15 6 15 14" fill="#2688c9"/><path d="M12 28h40" stroke="#173a55" stroke-width="3"/><path d="M16 38c0-5 4-8 8-8h16c5 0 8 3 8 8v4H16z" fill="#bfe4f7"/><path d="M44 47l6-14 4 2-5 14zm-5 0 3-16 4 1-2 16z" fill="#173a55"/></svg>',
-    '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="16" y="12" width="32" height="40" rx="4" fill="#eaf2f7" stroke="#173a55" stroke-width="3"/><path d="M25 22h14M25 31h14M25 40h9" stroke="#2b84c6" stroke-width="3"/><path d="M18 20l3 3 5-6M18 29l3 3 5-6M18 38l3 3 5-6" stroke="#e2231a" stroke-width="3" fill="none"/></svg>',
-    '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="22" r="9" fill="#e2231a"/><circle cx="17" cy="28" r="7" fill="#7fb6d8"/><circle cx="47" cy="28" r="7" fill="#7fb6d8"/><path d="M21 51c1-11 5-17 11-17s10 6 11 17z" fill="#173a55"/><path d="M7 51c1-9 4-14 10-14 3 0 6 2 8 5-2 3-3 6-3 9zM42 51c0-3-1-6-3-9 2-3 5-5 8-5 6 0 9 5 10 14z" fill="#315e7c"/></svg>'
-  ];
-  return icons[day]||icons[0];
+function safetyThemeKey(d){
+  const text=[d?.title,d?.focus,d?.summary,d?.action,...(d?.points||[])].join(" ").toLowerCase();
+
+  if(/temporári|temporari|provisóri|provisori|interino|reparo|alternativ|desvio/.test(text))return "temporary";
+  if(/pergunta|question|analis|avali|revis|confirm|verific|check|investig/.test(text))return "analysis";
+  if(/proteç|protec|barreira|sensor|epi|capacete|luva|óculos|oculos|controle|guard|intertrav/.test(text))return "protection";
+  if(/ferrament|dispositivo|equipamento|máquina|maquina|setup|ajuste|manuten|peça|peca/.test(text))return "tools";
+  if(/mudanç|mudanc|processo|fluxo|sequência|sequencia|layout|material|rota|método|metodo/.test(text))return "change";
+  return "safety";
+}
+
+function safetyThemeLabel(key){
+  return ({
+    change:"Mudança de processo",
+    tools:"Ferramentas e dispositivos",
+    protection:"Proteções e controles",
+    temporary:"Mudança temporária",
+    analysis:"Análise antes de executar",
+    safety:"Segurança"
+  })[key]||"Segurança";
+}
+
+function safetyIconSvg(d){
+  const key=safetyThemeKey(d);
+  const icons={
+    change:'<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#fff1f0"/><path d="M17 42h30M20 35h17M27 28h20M20 21h17" stroke="#173a55" stroke-width="4" stroke-linecap="round"/><path d="M38 17l9 4-9 4M26 31l-9 4 9 4" fill="none" stroke="#e2231a" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    tools:'<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#eef5fa"/><path d="M19 43l17-17 8 8-17 17z" fill="#173a55"/><path d="M36 18c4-5 11-6 16-2l-8 8 4 4 8-8c4 6 2 13-3 17-4 3-10 3-14 1l-13 13-9-9 13-13c-1-4 1-8 6-11z" fill="#2b84c6"/></svg>',
+    protection:'<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#eaf4fb"/><path d="M32 12l17 7v12c0 12-7 19-17 23-10-4-17-11-17-23V19z" fill="#2b84c6"/><path d="M32 18v29" stroke="#fff" stroke-width="4"/><path d="M20 31h24" stroke="#173a55" stroke-width="4"/><path d="M23 27c1-7 5-11 9-11s8 4 9 11" fill="#f3a21b"/></svg>',
+    temporary:'<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#fff7e9"/><path d="M25 14h14l8 36H17z" fill="#f3a21b"/><path d="M21 32h22M19 41h26" stroke="#fff" stroke-width="5"/><path d="M12 52h40" stroke="#173a55" stroke-width="4" stroke-linecap="round"/></svg>',
+    analysis:'<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#eef7f2"/><circle cx="29" cy="28" r="13" fill="none" stroke="#173a55" stroke-width="5"/><path d="M39 38l12 12" stroke="#173a55" stroke-width="6" stroke-linecap="round"/><path d="M24 28l4 4 7-9" fill="none" stroke="#1c9b5f" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    safety:'<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#fff1f0"/><path d="M21 27h22v20H21z" fill="#173a55"/><path d="M24 26c0-7 4-12 8-12s8 5 8 12" fill="#f3a21b"/><path d="M18 27h28" stroke="#173a55" stroke-width="3"/><path d="M15 44l7-12 7 12z" fill="#e2231a"/><circle cx="22" cy="40" r="1.6" fill="#fff"/></svg>'
+  };
+  return icons[key]||icons.safety;
+}
+
+function safetyHeroSceneSvg(d){
+  const key=safetyThemeKey(d);
+  const scenes={
+    change:'<svg viewBox="0 0 700 520" aria-hidden="true"><rect width="700" height="520" fill="#24495f"/><g opacity=".25" stroke="#f0b03b" stroke-width="8"><path d="M80 90h540M80 210h540M80 330h540M160 40v430M350 40v430M540 40v430"/></g><g transform="translate(390 80)"><rect x="0" y="80" width="170" height="120" rx="12" fill="#dfe8ec"/><path d="M15 120h140M15 150h90" stroke="#7a929f" stroke-width="9"/><circle cx="35" cy="175" r="13" fill="#e2231a"/><path d="M70 250h130v150H70z" fill="#bcc8cf"/><path d="M55 250c10-70 48-110 80-110s70 40 80 110" fill="#f4f6f7"/><path d="M40 255h190" stroke="#cbd4d9" stroke-width="13" stroke-linecap="round"/><path d="M92 302l-45 82 60 36zM179 301l48 83-62 35z" fill="#a9161c"/><path d="M250 90h70M285 55v70" stroke="#e2231a" stroke-width="10" stroke-linecap="round"/><path d="M250 60l35-30 35 30" fill="none" stroke="#e2231a" stroke-width="10"/></g><g transform="translate(70 345)"><rect x="0" y="0" width="250" height="92" rx="12" fill="#0f2e45" opacity=".9"/><path d="M25 46h70M115 46h110" stroke="#fff" stroke-width="9" stroke-linecap="round"/><path d="M85 25l24 21-24 21" fill="none" stroke="#f3a21b" stroke-width="8"/></g></svg>',
+    tools:'<svg viewBox="0 0 700 520" aria-hidden="true"><rect width="700" height="520" fill="#234b63"/><g opacity=".22" fill="#ecf2f4"><rect x="70" y="70" width="130" height="110"/><rect x="230" y="70" width="130" height="110"/><rect x="390" y="70" width="130" height="110"/></g><g transform="translate(360 115)"><circle cx="110" cy="120" r="82" fill="#dce5e9"/><path d="M110 33c45 0 82 37 82 82h-164c0-45 37-82 82-82z" fill="#f3f5f6"/><path d="M18 118h185" stroke="#c9d4d9" stroke-width="14" stroke-linecap="round"/><path d="M48 235c28-40 66-60 108-60 45 0 84 22 112 64v160H48z" fill="#c8d2d7"/><path d="M55 274l65 125H55zM260 274l-66 125h66z" fill="#aa171c"/><text x="190" y="350" font-family="Arial" font-weight="700" font-size="42" fill="#aa171c">Astemo</text></g><g transform="translate(85 240) rotate(-8)"><path d="M32 0c34 0 62 28 62 62 0 17-7 33-19 44l52 52-23 23-53-53A62 62 0 1 1 32 0zm0 27a35 35 0 1 0 0 70 35 35 0 0 0 0-70z" fill="#e9f1f5"/><path d="M150 10l70 70-28 28-70-70z" fill="#f3a21b"/><path d="M198 74l43-43 18 18-43 43z" fill="#173a55"/></g></svg>',
+    protection:'<svg viewBox="0 0 700 520" aria-hidden="true"><rect width="700" height="520" fill="#234d66"/><g opacity=".22" stroke="#7bb6d8" stroke-width="9"><path d="M70 90h560M70 210h560M70 330h560"/></g><g transform="translate(390 80)"><path d="M125 0l105 42v76c0 98-57 153-105 179-48-26-105-81-105-179V42z" fill="#2d86c3"/><path d="M125 18v245" stroke="#fff" stroke-width="12"/><path d="M65 105h120" stroke="#173a55" stroke-width="14"/><path d="M72 95c4-49 25-76 53-76 28 0 49 27 53 76" fill="#f3a21b"/><path d="M25 322h200v118H25z" fill="#dce6ea"/><path d="M45 350h75M45 382h130" stroke="#173a55" stroke-width="10"/><path d="M156 344l18 18 35-44" fill="none" stroke="#1c9b5f" stroke-width="12"/></g><g transform="translate(90 250)"><rect x="0" y="0" width="210" height="165" rx="18" fill="#eef4f7"/><circle cx="60" cy="70" r="34" fill="#173a55"/><circle cx="60" cy="70" r="16" fill="#fff"/><path d="M120 45h58M120 77h58M120 109h45" stroke="#607d8d" stroke-width="9"/></g></svg>',
+    temporary:'<svg viewBox="0 0 700 520" aria-hidden="true"><rect width="700" height="520" fill="#24485e"/><path d="M70 420h560" stroke="#f3b33f" stroke-width="16" stroke-linecap="round"/><g transform="translate(110 135)"><path d="M65 0h70l52 275H13z" fill="#f3a21b"/><path d="M36 125h128M26 185h150" stroke="#fff" stroke-width="20"/><path d="M0 285h200" stroke="#173a55" stroke-width="18" stroke-linecap="round"/></g><g transform="translate(360 80)"><rect x="0" y="0" width="230" height="145" rx="16" fill="#eef4f6"/><path d="M30 45h170M30 80h110" stroke="#6e8795" stroke-width="11"/><path d="M160 95l30 30 60-70" fill="none" stroke="#e2231a" stroke-width="12"/><path d="M40 210h170v150H40z" fill="#cbd5da"/><path d="M25 210c7-58 42-95 100-95s93 37 100 95" fill="#f4f6f7"/><path d="M10 214h230" stroke="#c7d2d7" stroke-width="14" stroke-linecap="round"/></g></svg>',
+    analysis:'<svg viewBox="0 0 700 520" aria-hidden="true"><rect width="700" height="520" fill="#234a62"/><g opacity=".2" fill="#d8e4e9"><circle cx="130" cy="100" r="45"/><circle cx="570" cy="95" r="38"/><rect x="80" y="360" width="540" height="70" rx="16"/></g><g transform="translate(90 110)"><circle cx="120" cy="120" r="90" fill="#eef4f7"/><circle cx="120" cy="120" r="58" fill="none" stroke="#173a55" stroke-width="20"/><path d="M165 165l82 82" stroke="#173a55" stroke-width="24" stroke-linecap="round"/><path d="M88 120l24 24 50-65" fill="none" stroke="#1c9b5f" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/></g><g transform="translate(380 145)"><rect x="0" y="0" width="220" height="270" rx="20" fill="#edf3f6"/><path d="M35 60h135M35 105h135M35 150h105M35 195h125" stroke="#657f8e" stroke-width="12"/><path d="M170 50l18 18 30-38M170 140l18 18 30-38" fill="none" stroke="#e2231a" stroke-width="10"/></g></svg>',
+    safety:'<svg viewBox="0 0 700 520" aria-hidden="true"><rect width="700" height="520" fill="#234b63"/><g transform="translate(345 70)"><circle cx="140" cy="150" r="100" fill="#dce5e9"/><path d="M40 150c8-80 50-127 100-127s92 47 100 127" fill="#f4f6f7"/><path d="M20 156h240" stroke="#cbd5da" stroke-width="16" stroke-linecap="round"/><path d="M62 275c37-48 84-72 140-72 60 0 110 27 148 81v154H62z" fill="#c8d2d7"/><path d="M68 315l80 123H68zM345 315l-83 123h83z" fill="#aa171c"/></g><g transform="translate(85 190)"><path d="M105 0l95 38v68c0 89-52 139-95 163-43-24-95-74-95-163V38z" fill="#2b84c6"/><path d="M105 22v220" stroke="#fff" stroke-width="11"/><path d="M62 112l28 28 58-76" fill="none" stroke="#f3a21b" stroke-width="13"/></g></svg>'
+  };
+  return scenes[key]||scenes.safety;
 }
 
 function safetyPreviewText(d){
@@ -1688,7 +1725,7 @@ function renderSafetyCards(){
     const todayBadge=d.day===today?'<span class="safety-today-badge">HOJE</span>':"";
     return '<button class="safety-day-card'+active+'" data-safety-day="'+d.day+'">'+
       '<div class="safety-day-card-top"><span>'+d.short+'</span>'+todayBadge+'</div>'+
-      '<div class="safety-day-icon">'+safetyIconSvg(d.day)+'</div>'+
+      '<div class="safety-day-icon">'+safetyIconSvg(d)+'</div>'+
       '<strong>'+escapeSafetyHtml(d.title)+'</strong>'+
       '<p class="safety-card-open">Clique para ver o conteúdo completo do dia</p>'+
     '</button>';
@@ -1740,11 +1777,12 @@ function renderSafetyDetail(){
 
   box.innerHTML=
     '<div class="safety-feature-grid">'+
-      '<section class="safety-hero-card">'+
+      '<section class="safety-hero-card safety-theme-'+safetyThemeKey(d)+'">'+
+        '<div class="safety-hero-visual">'+safetyHeroSceneSvg(d)+'</div>'+
         '<div class="safety-hero-overlay"></div>'+
         '<div class="safety-hero-content">'+
           '<div class="safety-hero-top"><span class="safety-weekday-pill">'+d.label.toUpperCase()+'</span><span class="safety-week-date">'+weekMeta+'</span></div>'+
-          '<div class="safety-theme-chip"><span>◈</span><div><small>Tema da semana</small><b>Segurança</b></div></div>'+
+          '<div class="safety-theme-chip"><span>◈</span><div><small>Tema detectado</small><b>'+escapeSafetyHtml(safetyThemeLabel(safetyThemeKey(d)))+'</b></div></div>'+
           '<h2>'+escapeSafetyHtml(d.title)+'</h2>'+
           '<i></i>'+
           '<p>'+escapeSafetyHtml(heroCopy)+'</p>'+
