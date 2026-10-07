@@ -24,7 +24,7 @@ const oeeData=[
 ];
 function pct(v){return v.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"}
 function oee(){
-return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Selecione os filtros e clique em Aplicar filtros para atualizar todos os indicadores.</p></div><div class="oee-filter-actions"><button class="filter-apply" id="oeeApply">✓ Aplicar filtros</button><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div></div><div class="oee-filters oee-filters-live"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno</option><option value="2">2º Turno</option><option value="3">3º Turno</option></select></label><label>Data inicial<input id="oeeStartDate" type="date"></label><label>Data final<input id="oeeEndDate" type="date"></label><label>Hora inicial<input id="oeeStart" type="time" value="00:00"></label><label>Hora final<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Comparativo de eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Modelos com melhor eficiência</h2><div id="oeeChart"></div><div class="footer-note">Ranking conforme os filtros selecionados • atualização automática a cada 1 minuto.</div></div></div><div id="oeeHeatmapMount"></div>';
+return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Selecione os filtros e clique em Aplicar filtros. Turnos: 1º 07:00–17:00 • 2º 17:00–02:00 • 3º 02:00–07:00.</p></div><div class="oee-filter-actions"><button class="filter-apply" id="oeeApply">✓ Aplicar filtros</button><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div></div><div class="oee-filters oee-filters-live"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno • 07:00–17:00</option><option value="2">2º Turno • 17:00–02:00</option><option value="3">3º Turno • 02:00–07:00</option></select></label><label>Data inicial<input id="oeeStartDate" type="date"></label><label>Data final<input id="oeeEndDate" type="date"></label><label>Hora inicial<input id="oeeStart" type="time" value="00:00"></label><label>Hora final<input id="oeeEnd" type="time" value="23:59"></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Comparativo de eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Modelos com melhor eficiência</h2><div id="oeeChart"></div><div class="footer-note">Ranking conforme os filtros selecionados • atualização automática a cada 1 minuto.</div></div></div><div id="oeeHeatmapMount"></div>';
 }
 
 let oeeRows=[];
@@ -42,6 +42,25 @@ function normalizeShift(value){
   if(/^2/.test(s)||s==="B")return "2";
   if(/^3/.test(s)||s==="C")return "3";
   return s;
+}
+
+const SHIFT_SCHEDULE={
+  "1":{label:"1º Turno",time:"07:00–17:00",hours:[7,8,9,10,11,12,13,14,15,16]},
+  "2":{label:"2º Turno",time:"17:00–02:00",hours:[17,18,19,20,21,22,23,0,1]},
+  "3":{label:"3º Turno",time:"02:00–07:00",hours:[2,3,4,5,6]}
+};
+
+function shiftDisplay(value){
+  const key=normalizeShift(value);
+  const shift=SHIFT_SCHEDULE[key];
+  return shift ? shift.label+" • "+shift.time : "Todos os turnos";
+}
+
+function shiftFromHour(hour){
+  const h=Number(hour);
+  if(h>=7&&h<17)return "1";
+  if(h>=17||h<2)return "2";
+  return "3";
 }
 
 function rowShift(row){
@@ -314,9 +333,7 @@ function nextIsoDay(iso){
 }
 
 function oeeHourShift(hour){
-  if(hour>=6&&hour<=13)return "1";
-  if(hour>=14&&hour<=21)return "2";
-  return "3";
+  return shiftFromHour(hour);
 }
 
 function oeeHourLabel(hour){
@@ -353,7 +370,8 @@ function aggregateShiftRows(hourlyRows){
   const map={};
   hourlyRows.forEach(row=>{
     let businessDate=row.date;
-    if(row.shift==="3"&&Number(row.hour)<6){
+    // 2º turno cruza a meia-noite: 00h e 01h pertencem ao turno iniciado às 17h do dia anterior.
+    if(row.shift==="2"&&Number(row.hour)<2){
       const d=new Date(row.date+"T00:00:00");
       d.setDate(d.getDate()-1);
       businessDate=localIsoDate(d);
@@ -459,7 +477,7 @@ async function refreshOeeHeatmap(force=false){
   }
 
   try{
-    // Consulta um dia extra para completar o 3º turno do último dia (22:00–06:00).
+    // Consulta um dia extra para completar o 2º turno do último dia (17:00–02:00).
     const pitches=await window.L2L.getPitchHeat(startDate,nextIsoDay(endDate));
     const hourly=pitchesToHourlyRows(pitches);
     oeeHourlyHeatmapRows=hourly;
@@ -481,9 +499,7 @@ function oeeHeatClass(value){
 }
 
 function shiftHours(shift){
-  if(shift==="1")return [6,7,8,9,10,11,12,13];
-  if(shift==="2")return [14,15,16,17,18,19,20,21];
-  return [22,23,0,1,2,3,4,5];
+  return SHIFT_SCHEDULE[shift]?.hours||[];
 }
 
 function oeeDailyShiftCard(shift,title,timeRange,icon,rows,lines,dates){
@@ -575,9 +591,9 @@ function renderOeeHeatmap(){
   }
 
   const cards=[];
-  if(selectedShift==="Todos"||selectedShift==="1")cards.push(oeeDailyShiftCard("1","1º Turno","06:00–14:00","☀",details,lines,dates));
-  if(selectedShift==="Todos"||selectedShift==="2")cards.push(oeeDailyShiftCard("2","2º Turno","14:00–22:00","◐",details,lines,dates));
-  if(selectedShift==="Todos"||selectedShift==="3")cards.push(oeeDailyShiftCard("3","3º Turno","22:00–06:00","☾",details,lines,dates));
+  if(selectedShift==="Todos"||selectedShift==="1")cards.push(oeeDailyShiftCard("1","1º Turno","07:00–17:00","☀",details,lines,dates));
+  if(selectedShift==="Todos"||selectedShift==="2")cards.push(oeeDailyShiftCard("2","2º Turno","17:00–02:00","◐",details,lines,dates));
+  if(selectedShift==="Todos"||selectedShift==="3")cards.push(oeeDailyShiftCard("3","3º Turno","02:00–07:00","☾",details,lines,dates));
 
   const startLabel=(oeeFilterState.startDate||todayISO()).split("-").reverse().join("/");
   const endLabel=(oeeFilterState.endDate||oeeFilterState.startDate||todayISO()).split("-").reverse().join("/");
@@ -625,7 +641,7 @@ function renderOeeLive(){
   const groups=groupedByLine(rows);
   const selectedArea=oeeFilterState.area==="Todas"?"Toda a fábrica":oeeFilterState.area;
   const selectedLine=oeeFilterState.line==="Todas"?"Todas as linhas":oeeFilterState.line;
-  const selectedShift=oeeFilterState.shift==="Todos"?"Todos os turnos":oeeFilterState.shift+"º Turno";
+  const selectedShift=oeeFilterState.shift==="Todos"?"Todos os turnos":shiftDisplay(oeeFilterState.shift);
   const shiftNote=oeeFilterState.shift!=="Todos"&&!hasShiftDetail(source)?" • turno não detalhado pelo retorno atual do L2L":"";
 
   const oeeValue=avg(rows,"overall_equipment_effectiveness");
@@ -683,11 +699,11 @@ const productionFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"
 
 function production(){
   return '<div class="panel oee-filter-panel">'+
-    '<div class="oee-filter-head"><div><h2>Filtros de produção</h2><p>Dados reais do L2L para demanda, produção atual e produzido líquido, com atualização automática a cada 1 minuto.</p></div><button class="filter-reset" id="prodReset">↺ Limpar filtros</button></div>'+
+    '<div class="oee-filter-head"><div><h2>Filtros de produção</h2><p>Dados reais do L2L para demanda, produção atual e produzido líquido. Turnos: 1º 07:00–17:00 • 2º 17:00–02:00 • 3º 02:00–07:00 • atualização a cada 1 minuto.</p></div><button class="filter-reset" id="prodReset">↺ Limpar filtros</button></div>'+
     '<div class="oee-filters oee-filters-live">'+
       '<label>Setor<select id="prodArea"><option value="Todas">Toda a fábrica</option></select></label>'+
       '<label>Linha<select id="prodLinha"><option value="Todas">Todas as linhas</option></select></label>'+
-      '<label>Turno<select id="prodTurno"><option value="Todos">Todos os turnos</option><option value="1">1º Turno</option><option value="2">2º Turno</option><option value="3">3º Turno</option></select></label>'+
+      '<label>Turno<select id="prodTurno"><option value="Todos">Todos os turnos</option><option value="1">1º Turno • 07:00–17:00</option><option value="2">2º Turno • 17:00–02:00</option><option value="3">3º Turno • 02:00–07:00</option></select></label>'+
       '<label>Data inicial<input id="prodStartDate" type="date"></label><label>Data final<input id="prodEndDate" type="date"></label>'+
       '<label>Hora inicial<input id="prodStart" type="time" value="00:00"></label>'+
       '<label>Hora final<input id="prodEnd" type="time" value="23:59"></label>'+
@@ -1082,7 +1098,7 @@ function renderProductionLive(){
 
   const selectedArea=productionFilterState.area==="Todas"?"Toda a fábrica":productionFilterState.area;
   const selectedLine=productionFilterState.line==="Todas"?"Todas as linhas":productionFilterState.line;
-  const selectedShift=productionFilterState.shift==="Todos"?"Todos os turnos":productionFilterState.shift+"º Turno";
+  const selectedShift=productionFilterState.shift==="Todos"?"Todos os turnos":shiftDisplay(productionFilterState.shift);
   const ctx=document.getElementById("prodContext");
   if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(productionFilterState.startDate||"")+(productionFilterState.endDate&&productionFilterState.endDate!==productionFilterState.startDate?" → "+productionFilterState.endDate:"")+" • "+productionFilterState.start+"–"+productionFilterState.end+" • "+groups.length+" linha(s)";
 
