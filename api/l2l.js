@@ -58,6 +58,86 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  if (report === "pitchheat") {
+    const start = String(req.query.start || "").trim();
+    const end = String(req.query.end || "").trim();
+    if (!start || !end) {
+      return res.status(400).json({ success: false, error: "start and end are required for pitch heatmap." });
+    }
+
+    try {
+      const toIso = (value) => {
+        const v = String(value || "").trim().replace(" ", "T");
+        return v.length === 16 ? v + ":00" : v;
+      };
+
+      const dailyForSite = await l2lGet("/api/1.0/reporting/production/daily_summary_data_by_line/", {
+        site: siteCode,
+        start,
+        end,
+      });
+      const dailyRows = Array.isArray(dailyForSite?.data) ? dailyForSite.data : [];
+      const numericSite = dailyRows.find(r => r.site !== undefined && r.site !== null)?.site;
+      if (numericSite === undefined || numericSite === null || numericSite === "") {
+        throw new Error("Unable to resolve numeric L2L site id for pitch heatmap.");
+      }
+
+      const [linesResult, areasResult] = await Promise.allSettled([
+        l2lGet("/api/1.0/lines/", { site: numericSite, limit: 2000 }),
+        l2lGet("/api/1.0/areas/", { site: numericSite, limit: 2000 }),
+      ]);
+      const dataOf = (result) => result.status === "fulfilled" && Array.isArray(result.value?.data) ? result.value.data : [];
+      const lines = dataOf(linesResult);
+      const areas = dataOf(areasResult);
+      const areaMap = new Map(areas.map(x => [String(x.id), x]));
+
+      const lineMap = new Map(lines.map(line => {
+        const areaId = typeof line.area === "object" ? (line.area?.id ?? line.area?.pk) : line.area;
+        const areaObj = areaMap.get(String(areaId));
+        const area = (typeof line.area === "object" ? (line.area?.name ?? line.area?.code) : "") ??
+          areaObj?.name ?? areaObj?.code ?? line.area_name ?? "";
+        return [String(line.id), {
+          line: line.name ?? line.code ?? line.description ?? String(line.id),
+          area: area || "",
+        }];
+      }));
+
+      const payload = await l2lGet("/api/1.0/pitches/", {
+        site: numericSite,
+        pitch_start__lte: toIso(end),
+        pitch_end__gte: toIso(start),
+        limit: 2000,
+        order_by: "pitch_start",
+      });
+
+      const rows = (Array.isArray(payload?.data) ? payload.data : []).map(row => {
+        const lineId = row.line && typeof row.line === "object" ? (row.line.id ?? row.line.pk) : row.line;
+        const meta = lineMap.get(String(lineId)) || {};
+        return {
+          id: row.id,
+          line_id: lineId,
+          line: meta.line ?? (row.line?.name ?? row.line?.code ?? String(lineId ?? "Sem linha")),
+          area: meta.area ?? "",
+          pitch_start: row.pitch_start,
+          pitch_end: row.pitch_end,
+          oee: Number(row.overall_equipment_effectiveness ?? 0),
+          planned_production_minutes: Number(row.planned_production_minutes ?? 0),
+          actual: Number(row.actual ?? 0),
+          demand: Number(row.demand ?? 0),
+          scrap: Number(row.scrap ?? 0),
+          shift: row.shift,
+        };
+      }).filter(row => row.pitch_start && row.pitch_end);
+
+      return res.status(200).json({ success: true, data: rows });
+    } catch (error) {
+      return res.status(error.status || 502).json({
+        success: false,
+        error: error.message || "Unable to load pitch heatmap data.",
+      });
+    }
+  }
+
   if (report === "scrapdetail") {
     const start = String(req.query.start || "").trim();
     const end = String(req.query.end || "").trim();
