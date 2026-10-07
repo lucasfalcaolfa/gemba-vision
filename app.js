@@ -10,7 +10,7 @@ stock:{title:"Controle de Estoque",sub:"Estoque da Fundição — Inacabado e Ac
 function shell(p){return '<div class="page"><div class="page-head"><div><h1>'+p.title+'</h1><p>'+p.sub+'</p></div><div class="refresh">● Atualização: automática</div></div>'+p.html+'</div>'}
 function card(label,value,cls=""){return '<div class="card"><div class="label">'+label+'</div><div class="value '+cls+'">'+value+'</div></div>'}
 function home(){return '<div class="hero-status"><div class="status"><span class="dot green"></span> OPERAÇÃO NORMAL</div><p style="margin:8px 0 0;color:#47616f">Visão consolidada — Segurança, Pessoas, Produção, OEE e Qualidade.</p></div><div class="cards">'+card("OEE Geral","85,4%","good")+card("Eficiência","89,8%","good")+card("Produção","12.480","")+card("Qualidade","98,5%","good")+card("Absenteísmo","3,2%","warn")+'</div><div class="section-grid"><div class="panel"><h2>Produção por linha</h2><table><tr><th>Linha</th><th>Plano</th><th>Real</th><th>Ating.</th><th>Status</th></tr><tr><td>AL1</td><td>4.500</td><td>4.320</td><td>96%</td><td><span class="status"><span class="dot yellow"></span>Atenção</span></td></tr><tr><td>AL2</td><td>4.200</td><td>4.450</td><td>106%</td><td><span class="status"><span class="dot green"></span>OK</span></td></tr><tr><td>AL3</td><td>3.800</td><td>3.710</td><td>98%</td><td><span class="status"><span class="dot green"></span>OK</span></td></tr></table></div><div class="panel"><h2>Momento de Segurança</h2><div class="safety-img" style="min-height:180px"><div><div class="shield">🦺</div><h2>SEGURANÇA EM PRIMEIRO LUGAR</h2><div>Use os EPIs e respeite as áreas demarcadas.</div></div></div></div></div>'}
-function safety(){return '<div class="panel safety-live-panel"><div class="safety-live-head"><div><span>MOMENTO DE SEGURANÇA</span><h2>Safety Moments — Semana atual</h2><p>O arquivo semanal é carregado pelo nome fixo <b>SafetyMomentWeek_Current.pdf</b>.</p></div><a class="safety-open-pdf" href="SafetyMomentWeek_Current.pdf" target="_blank" rel="noopener">Abrir PDF completo ↗</a></div><div class="safety-day-tabs" id="safetyDayTabs"><button data-day="0">SEG</button><button data-day="1">TER</button><button data-day="2">QUA</button><button data-day="3">QUI</button><button data-day="4">SEX</button><button class="week-view" data-day="all">SEMANA COMPLETA</button></div><div class="safety-status" id="safetyStatus">Carregando Momento de Segurança...</div><div class="safety-viewer"><canvas id="safetyCanvas"></canvas></div><div class="safety-help">Atualização semanal: substitua o arquivo <b>SafetyMomentWeek_Current.pdf</b> no GitHub. A Vercel publica a nova versão automaticamente.</div></div>'}
+function safety(){return '<div class="panel safety-live-panel"><div class="safety-live-head"><div><span>MOMENTO DE SEGURANÇA</span><h2 id="safetyWeekTitle">Safety Moments — Semana atual</h2><p id="safetyWeekMeta">Carregando conteúdo do PDF semanal...</p></div><div class="safety-mode-switch"><button id="safetyModeDynamic" class="active">Visualização dinâmica</button><button id="safetyModeWeekly">Semanal</button><a class="safety-open-pdf" href="SafetyMomentWeek_Current.pdf" target="_blank" rel="noopener">Abrir PDF ↗</a></div></div><div class="safety-status" id="safetyStatus">Carregando Momento de Segurança...</div><section id="safetyDynamic" class="safety-dynamic"><div id="safetyDayCards" class="safety-day-cards"></div><div id="safetyDayDetail" class="safety-day-detail"></div></section><section id="safetyWeekly" class="safety-weekly" hidden><div class="safety-viewer"><canvas id="safetyCanvas"></canvas></div></section><div class="safety-help">O modo <b>Dinâmico</b> lê o conteúdo do PDF e organiza o dia a dia. O modo <b>Semanal</b> mantém o PDF oficial completo.</div></div>'}
 const oeeData=[
 {area:"Fundição",linha:"AL1",turno:"A",oee:91.0,disp:94.0,perf:97.0,qual:99.0,ef:91.0,meta:85},
 {area:"Fundição",linha:"AL1",turno:"B",oee:86.0,disp:91.0,perf:95.0,qual:99.0,ef:87.0,meta:85},
@@ -1420,28 +1420,213 @@ function quality(){return '<div class="cards">'+card("Qualidade","98,5%","good")
 const SAFETY_PDF_URL="SafetyMomentWeek_Current.pdf";
 let safetyPdfDoc=null;
 let safetySourceCanvas=null;
-let safetySelectedDay="all";
+let safetySelectedDay=0;
+let safetyParsedDays=[];
+let safetyWeekInfo={title:"Safety Moments",week:""};
 
 function safetyTodayIndex(){
   const day=new Date().getDay();
-  return day>=1&&day<=5?day-1:"all";
+  return day>=1&&day<=5?day-1:0;
+}
+
+function normalizeSafetyText(value){
+  return String(value||"").replace(/\s+/g," ").trim();
+}
+
+function groupSafetyTextLines(items){
+  const usable=(items||[]).filter(i=>normalizeSafetyText(i.str));
+  const rows=[];
+  usable.forEach(item=>{
+    const x=Number(item.transform?.[4]||0);
+    const y=Number(item.transform?.[5]||0);
+    const size=Math.abs(Number(item.transform?.[3]||0))||Math.abs(Number(item.height||0))||10;
+    let row=rows.find(r=>Math.abs(r.y-y)<=Math.max(1.5,size*.18));
+    if(!row){
+      row={y,size,items:[]};
+      rows.push(row);
+    }
+    row.y=(row.y+ y)/2;
+    row.size=Math.max(row.size,size);
+    row.items.push({x,str:normalizeSafetyText(item.str),size});
+  });
+  return rows.map(r=>{
+    r.items.sort((a,b)=>a.x-b.x);
+    return {
+      y:r.y,
+      size:r.size,
+      x:r.items.length?r.items[0].x:0,
+      text:normalizeSafetyText(r.items.map(i=>i.str).join(" "))
+    };
+  }).filter(r=>r.text).sort((a,b)=>b.y-a.y);
+}
+
+function safetyDayLabel(text){
+  const t=normalizeSafetyText(text).toLowerCase();
+  if(t.includes("segunda"))return 0;
+  if(t.includes("terça")||t.includes("terca"))return 1;
+  if(t.includes("quarta"))return 2;
+  if(t.includes("quinta"))return 3;
+  if(t.includes("sexta"))return 4;
+  return -1;
+}
+
+function splitSafetySections(lines){
+  const clean=lines.map(normalizeSafetyText).filter(Boolean);
+  const findIndex=(re)=>clean.findIndex(x=>re.test(x));
+  const focusIdx=findIndex(/^foco\b/i);
+  const pointsIdx=findIndex(/^(pontos[ -]?principais|pontos-chave|pontos chave)\b/i);
+  const summaryIdx=findIndex(/^resumo\b/i);
+
+  const titleStart=1;
+  const titleEnd=focusIdx>titleStart?focusIdx:(pointsIdx>titleStart?pointsIdx:Math.min(clean.length,2));
+  const title=clean.slice(titleStart,titleEnd).join(" ")||clean[1]||"Momento de Segurança";
+
+  const focusStart=focusIdx>=0?focusIdx+1:titleEnd;
+  const focusEnd=pointsIdx>focusStart?pointsIdx:(summaryIdx>focusStart?summaryIdx:clean.length);
+  const focus=clean.slice(focusStart,focusEnd).join(" ");
+
+  const pointsStart=pointsIdx>=0?pointsIdx+1:focusEnd;
+  const pointsEnd=summaryIdx>pointsStart?summaryIdx:clean.length;
+  const rawPointLines=clean.slice(pointsStart,pointsEnd);
+  const points=[];
+  let current="";
+  rawPointLines.forEach(line=>{
+    const bullet=/^[•·▪◦\-–—]/.test(line);
+    const stripped=line.replace(/^[•·▪◦\-–—]\s*/,"");
+    if(bullet){
+      if(current)points.push(current);
+      current=stripped;
+    }else if(current){
+      current+=" "+line;
+    }else if(stripped){
+      current=stripped;
+    }
+  });
+  if(current)points.push(current);
+
+  const summary=summaryIdx>=0?clean.slice(summaryIdx+1).join(" "):"";
+  return {title,focus,points,summary};
+}
+
+function extractSafetyWeekInfo(lines,dayHeaderY){
+  const headerLines=lines.filter(l=>l.y>dayHeaderY).map(l=>l.text);
+  let title=headerLines.find(t=>/risco|seguran|mudan|trabalho|preven|aten/i.test(t)&&t.length>8);
+  if(!title) title=headerLines.find(t=>t.length>10&&!/^week\b/i.test(t))||"Safety Moments";
+  const week=headerLines.find(t=>/^week\b/i.test(t)||/semana\b/i.test(t))||"";
+  return {title,week};
+}
+
+function parseSafetyDays(textContent,pageViewport){
+  const lines=groupSafetyTextLines(textContent.items);
+  const dayHeaders=lines.map((line,index)=>({line,index,day:safetyDayLabel(line.text)})).filter(x=>x.day>=0);
+  if(dayHeaders.length<5){
+    return {days:[],weekInfo:{title:"Safety Moments",week:""}};
+  }
+
+  const headersByDay=Array(5).fill(null);
+  dayHeaders.forEach(h=>{if(!headersByDay[h.day])headersByDay[h.day]=h;});
+  if(headersByDay.some(x=>!x))return {days:[],weekInfo:{title:"Safety Moments",week:""}};
+
+  const anchors=headersByDay.map(h=>h.line.x);
+  const boundaries=[0];
+  for(let i=0;i<4;i++) boundaries.push((anchors[i]+anchors[i+1])/2);
+  boundaries.push(pageViewport.width);
+
+  const lowestHeaderY=Math.min(...headersByDay.map(h=>h.line.y));
+  const weekInfo=extractSafetyWeekInfo(lines,Math.max(...headersByDay.map(h=>h.line.y)));
+
+  const days=headersByDay.map((h,day)=>{
+    const colLines=lines.filter(line=>
+      line.y<=h.line.y+2 &&
+      line.x>=boundaries[day]-2 &&
+      line.x<boundaries[day+1]+2
+    );
+    const ordered=[h.line.text,...colLines.filter(l=>l!==h.line).map(l=>l.text)];
+    const unique=ordered.filter((t,i,a)=>t&&a.indexOf(t)===i);
+    const parsed=splitSafetySections(unique);
+    return {
+      day,
+      label:["Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira"][day],
+      short:["SEG","TER","QUA","QUI","SEX"][day],
+      ...parsed
+    };
+  });
+
+  return {days,weekInfo};
+}
+
+function escapeSafetyHtml(value){
+  return String(value||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+}
+
+function renderSafetyCards(){
+  const box=document.getElementById("safetyDayCards");
+  if(!box)return;
+  if(!safetyParsedDays.length){
+    box.innerHTML='<div class="safety-parse-warning">Não consegui separar automaticamente os 5 dias deste PDF. Use o modo <b>Semanal</b>.</div>';
+    return;
+  }
+  const today=safetyTodayIndex();
+  box.innerHTML=safetyParsedDays.map(d=>{
+    const active=d.day===safetySelectedDay?" active":"";
+    const todayBadge=d.day===today?'<span class="safety-today-badge">HOJE</span>':"";
+    const preview=(d.focus||d.summary||"").slice(0,120);
+    return '<button class="safety-day-card'+active+'" data-safety-day="'+d.day+'"><div class="safety-day-card-top"><span>'+d.short+'</span>'+todayBadge+'</div><strong>'+escapeSafetyHtml(d.title)+'</strong><p>'+escapeSafetyHtml(preview)+(preview.length>=120?"…":"")+'</p><small>Ver detalhes →</small></button>';
+  }).join("");
+  box.querySelectorAll("[data-safety-day]").forEach(btn=>btn.addEventListener("click",()=>{
+    safetySelectedDay=Number(btn.dataset.safetyDay);
+    renderSafetyCards();
+    renderSafetyDetail();
+  }));
+}
+
+function renderSafetyDetail(){
+  const box=document.getElementById("safetyDayDetail");
+  if(!box)return;
+  const d=safetyParsedDays.find(x=>x.day===safetySelectedDay);
+  if(!d){
+    box.innerHTML='<div class="safety-parse-warning">Selecione <b>Semanal</b> para visualizar o PDF oficial.</div>';
+    return;
+  }
+  const points=d.points.length
+    ? '<ul>'+d.points.map(p=>'<li>'+escapeSafetyHtml(p)+'</li>').join("")+'</ul>'
+    : '<p class="safety-empty-copy">Sem pontos separados automaticamente.</p>';
+  box.innerHTML='<div class="safety-detail-hero"><div><span class="safety-detail-eyebrow">'+d.label+'</span><h2>'+escapeSafetyHtml(d.title)+'</h2></div><div class="safety-detail-number">0'+(d.day+1)+'</div></div>'+
+    '<div class="safety-detail-grid">'+
+      '<section class="safety-focus-box"><span>FOCO</span><p>'+escapeSafetyHtml(d.focus||"Conteúdo disponível no PDF semanal.")+'</p></section>'+
+      '<section class="safety-points-box"><span>PONTOS PRINCIPAIS</span>'+points+'</section>'+
+    '</div>'+
+    (d.summary?'<section class="safety-summary-box"><span>RESUMO</span><p>'+escapeSafetyHtml(d.summary)+'</p></section>':"");
+}
+
+function showSafetyMode(mode){
+  const dynamic=document.getElementById("safetyDynamic");
+  const weekly=document.getElementById("safetyWeekly");
+  const dynamicBtn=document.getElementById("safetyModeDynamic");
+  const weeklyBtn=document.getElementById("safetyModeWeekly");
+  const isWeekly=mode==="weekly";
+  if(dynamic)dynamic.hidden=isWeekly;
+  if(weekly)weekly.hidden=!isWeekly;
+  if(dynamicBtn)dynamicBtn.classList.toggle("active",!isWeekly);
+  if(weeklyBtn)weeklyBtn.classList.toggle("active",isWeekly);
+  if(isWeekly)renderSafetyWeeklyCanvas();
+}
+
+function renderSafetyWeeklyCanvas(){
+  const canvas=document.getElementById("safetyCanvas");
+  if(!canvas||!safetySourceCanvas)return;
+  canvas.width=safetySourceCanvas.width;
+  canvas.height=safetySourceCanvas.height;
+  const ctx=canvas.getContext("2d",{alpha:false});
+  ctx.drawImage(safetySourceCanvas,0,0);
 }
 
 async function initSafety(){
-  const canvas=document.getElementById("safetyCanvas");
-  const tabs=document.getElementById("safetyDayTabs");
-  if(!canvas||!tabs)return;
-
+  const dynamicBtn=document.getElementById("safetyModeDynamic");
+  const weeklyBtn=document.getElementById("safetyModeWeekly");
+  if(dynamicBtn)dynamicBtn.addEventListener("click",()=>showSafetyMode("dynamic"));
+  if(weeklyBtn)weeklyBtn.addEventListener("click",()=>showSafetyMode("weekly"));
   safetySelectedDay=safetyTodayIndex();
-  tabs.querySelectorAll("button").forEach(btn=>{
-    const isActive=String(btn.dataset.day)===String(safetySelectedDay);
-    btn.classList.toggle("active",isActive);
-    btn.addEventListener("click",()=>{
-      safetySelectedDay=btn.dataset.day;
-      tabs.querySelectorAll("button").forEach(x=>x.classList.toggle("active",x===btn));
-      renderSafetySelection();
-    });
-  });
 
   const status=document.getElementById("safetyStatus");
   if(!window.pdfjsLib){
@@ -1452,61 +1637,38 @@ async function initSafety(){
   window.pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
 
   try{
-    if(status)status.textContent="Carregando PDF semanal...";
+    if(status)status.textContent="Lendo PDF semanal e organizando os dias...";
     safetyPdfDoc=await window.pdfjsLib.getDocument({url:SAFETY_PDF_URL,disableStream:false,disableAutoFetch:false}).promise;
     const page=await safetyPdfDoc.getPage(1);
     const base=page.getViewport({scale:1});
+    const textContent=await page.getTextContent();
+    const parsed=parseSafetyDays(textContent,base);
+    safetyParsedDays=parsed.days;
+    safetyWeekInfo=parsed.weekInfo;
+
     const targetWidth=Math.max(1200,Math.min(2200,(document.getElementById("content")?.clientWidth||1400)*1.6));
     const scale=targetWidth/base.width;
     const viewport=page.getViewport({scale});
-
     safetySourceCanvas=document.createElement("canvas");
     safetySourceCanvas.width=Math.ceil(viewport.width);
     safetySourceCanvas.height=Math.ceil(viewport.height);
     const ctx=safetySourceCanvas.getContext("2d",{alpha:false});
     await page.render({canvasContext:ctx,viewport}).promise;
 
-    if(status)status.textContent="🟢 PDF semanal carregado";
-    renderSafetySelection();
+    const title=document.getElementById("safetyWeekTitle");
+    const meta=document.getElementById("safetyWeekMeta");
+    if(title)title.textContent=safetyWeekInfo.title||"Safety Moments — Semana atual";
+    if(meta)meta.textContent=safetyWeekInfo.week||"Conteúdo organizado automaticamente a partir do PDF semanal.";
+    if(status)status.textContent=safetyParsedDays.length===5?"🟢 PDF semanal lido • visualização dinâmica pronta":"🟡 PDF carregado • use Semanal se algum conteúdo não for separado corretamente";
+
+    renderSafetyCards();
+    renderSafetyDetail();
+    showSafetyMode("dynamic");
   }catch(err){
     if(status)status.innerHTML='🟠 Arquivo ainda não disponível. Envie <b>SafetyMomentWeek_Current.pdf</b> para o repositório do Gemba Vision.';
-    const c=canvas.getContext("2d");
-    canvas.width=1200;canvas.height=500;
-    c.fillStyle="#f6f8fa";c.fillRect(0,0,canvas.width,canvas.height);
-    c.fillStyle="#516674";c.font="700 28px Arial";c.textAlign="center";
-    c.fillText("Aguardando o PDF semanal do Safety Moment",canvas.width/2,canvas.height/2-10);
-    c.font="18px Arial";
-    c.fillText("Nome esperado: SafetyMomentWeek_Current.pdf",canvas.width/2,canvas.height/2+30);
+    const detail=document.getElementById("safetyDayDetail");
+    if(detail)detail.innerHTML='<div class="safety-parse-warning">Aguardando o PDF semanal do Safety Moment.</div>';
   }
-}
-
-function renderSafetySelection(){
-  const canvas=document.getElementById("safetyCanvas");
-  if(!canvas||!safetySourceCanvas)return;
-  const ctx=canvas.getContext("2d",{alpha:false});
-
-  if(String(safetySelectedDay)==="all"){
-    canvas.width=safetySourceCanvas.width;
-    canvas.height=safetySourceCanvas.height;
-    ctx.drawImage(safetySourceCanvas,0,0);
-    return;
-  }
-
-  const day=Math.max(0,Math.min(4,Number(safetySelectedDay)||0));
-  const sourceWidth=safetySourceCanvas.width/5;
-  const sourceX=Math.round(sourceWidth*day);
-  const cropWidth=Math.round(day===4?safetySourceCanvas.width-sourceX:sourceWidth);
-
-  canvas.width=Math.max(700,cropWidth);
-  canvas.height=safetySourceCanvas.height;
-
-  ctx.fillStyle="#fff";
-  ctx.fillRect(0,0,canvas.width,canvas.height);
-  ctx.drawImage(
-    safetySourceCanvas,
-    sourceX,0,cropWidth,safetySourceCanvas.height,
-    0,0,canvas.width,canvas.height
-  );
 }
 
 let currentPage="home";
