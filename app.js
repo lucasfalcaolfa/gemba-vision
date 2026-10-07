@@ -39,13 +39,13 @@ function splitDateTimeLocal(value,fallbackDate,fallbackTime){
   return {date:date||fallbackDate||todayISO(),time:(timeRaw||fallbackTime||"00:00").slice(0,5)};
 }
 
-const heatmapFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"",endDate:"",start:"00:00",end:"23:59"};
+const heatmapFilterState={area:"Todas",line:"Todas",shift:"Todos",month:"",startDate:"",endDate:"",start:"00:00",end:"23:59"};
 
 function heatmap(){
   return '<div class="panel heatmap-filter-panel">'+
-    '<div class="oee-filter-head"><div><span class="heatmap-kicker">ANÁLISE DEDICADA</span><h2>Filtros do mapa de calor</h2><p>Eficiência diária por turno com meta de 75% OEE. Turnos oficiais: 1º 07:00–17:00 • 2º 17:00–02:00 • 3º 02:00–07:00.</p></div><div class="oee-filter-actions"><button class="filter-apply premium-apply" id="heatApply"><span>✓</span> Aplicar filtros</button><button class="filter-reset" id="heatReset">↺ Limpar filtros</button></div></div>'+
-    '<div class="oee-filters oee-filters-live heatmap-filters"><label>Setor<select id="heatArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="heatLine"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="heatShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno • 07:00–17:00</option><option value="2">2º Turno • 17:00–02:00</option><option value="3">3º Turno • 02:00–07:00</option></select></label><label>Data / hora inicial<input id="heatStartAt" type="datetime-local"></label><label>Data / hora final<input id="heatEndAt" type="datetime-local"></label></div>'+
-    '<div class="filter-context" id="heatContext">🟡 L2L: carregando mapa de calor...</div>'+
+    '<div class="oee-filter-head"><div><span class="heatmap-kicker">ANÁLISE MENSAL</span><h2>Mapa de calor OEE por mês</h2><p>Eficiência diária de cada injetora, separada por turno. Meta de referência: 75% OEE.</p></div><div class="oee-filter-actions"><button class="filter-apply premium-apply" id="heatApply"><span>✓</span> Atualizar mapa</button><button class="filter-reset" id="heatReset">↺ Mês atual</button></div></div>'+
+    '<div class="oee-filters oee-filters-live heatmap-month-filters"><label>Setor<select id="heatArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="heatLine"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="heatShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno • 07:00–17:00</option><option value="2">2º Turno • 17:00–02:00</option><option value="3">3º Turno • 02:00–07:00</option></select></label><label>Mês<input id="heatMonth" type="month"></label></div>'+
+    '<div class="filter-context" id="heatContext">🟡 L2L: carregando mapa mensal...</div>'+
   '</div>'+
   '<div id="oeeHeatmapMount"></div>';
 }
@@ -300,6 +300,25 @@ function lineGaugeCard(g){
   '</article>';
 }
 
+function currentMonthValue(){
+  return todayISO().slice(0,7);
+}
+
+function heatMonthRange(month){
+  const value=month||currentMonthValue();
+  const parts=value.split("-").map(Number);
+  const year=parts[0],monthIndex=parts[1]-1;
+  const first=new Date(year,monthIndex,1);
+  const last=new Date(year,monthIndex+1,0);
+  return {start:localIsoDate(first),end:localIsoDate(last),days:last.getDate()};
+}
+
+function heatMonthLabel(month){
+  const range=heatMonthRange(month);
+  const d=new Date(range.start+"T00:00:00");
+  return d.toLocaleDateString("pt-BR",{month:"long",year:"numeric"});
+}
+
 function oeeHeatDateRange(startDate,endDate){
   const out=[];
   const first=new Date((startDate||todayISO())+"T00:00:00");
@@ -497,49 +516,28 @@ function shiftHours(shift){
 
 function oeeDailyShiftCard(shift,title,timeRange,icon,rows,lines,dates){
   return `
-    <article class="oee-heat-shift shift-${shift}">
+    <article class="oee-heat-shift monthly-shift-card shift-${shift}">
       <div class="oee-heat-shift-head">
         <div class="oee-heat-shift-left">
           <span class="oee-heat-icon">${icon}</span>
-          <div>
-            <strong>${title}</strong>
-            <small>${timeRange}</small>
-          </div>
+          <div><strong>${title}</strong><small>${timeRange}</small></div>
         </div>
+        <span class="monthly-shift-meta">${dates.length} dias</span>
       </div>
-
-      <div class="oee-heat-table-wrap">
-        <table class="oee-heat-table daily-heat-table">
-          <thead>
-            <tr>
-              <th class="sticky-col">INJETORA</th>
-              ${dates.map(d=>`<th>${d.label}</th>`).join("")}
-              <th>MÉDIA</th>
-            </tr>
-          </thead>
+      <div class="oee-heat-table-wrap monthly-heat-scroll">
+        <table class="oee-heat-table monthly-heat-table">
+          <thead><tr><th class="sticky-col">INJETORA</th>${dates.map(d=>`<th title="${d.label}">${d.iso.slice(-2)}</th>`).join("")}<th class="monthly-average-head">MÉDIA</th></tr></thead>
           <tbody>
             ${lines.map(line=>{
               const dayCells=dates.map(day=>{
-                const vals=rows
-                  .filter(r=>r.shift===shift&&r.line===line&&r.date===day.iso)
-                  .map(r=>r.oee)
-                  .filter(Number.isFinite);
-
+                const vals=rows.filter(r=>r.shift===shift&&r.line===line&&r.date===day.iso).map(r=>r.oee).filter(Number.isFinite);
                 if(!vals.length)return '<td class="heat-empty">—</td>';
-
                 const value=vals.reduce((a,b)=>a+b,0)/vals.length;
-                return `<td class="oee-heat-cell ${oeeHeatClass(value)}" title="${line} • ${day.label} • ${title}"><b>${Math.round(value)}%</b></td>`;
+                return `<td class="oee-heat-cell ${oeeHeatClass(value)}" title="${line} • ${day.label} • ${title} • ${value.toFixed(1).replace(".",",")}%"><b>${Math.round(value)}%</b></td>`;
               }).join("");
-
-              const shiftVals=rows
-                .filter(r=>r.shift===shift&&r.line===line&&dates.some(d=>d.iso===r.date))
-                .map(r=>r.oee)
-                .filter(Number.isFinite);
+              const shiftVals=rows.filter(r=>r.shift===shift&&r.line===line&&dates.some(d=>d.iso===r.date)).map(r=>r.oee).filter(Number.isFinite);
               const avg=shiftVals.length?shiftVals.reduce((a,b)=>a+b,0)/shiftVals.length:null;
-              const avgCell=avg===null
-                ? '<td class="heat-empty heat-average">—</td>'
-                : `<td class="oee-heat-cell heat-average ${oeeHeatClass(avg)}"><b>${Math.round(avg)}%</b></td>`;
-
+              const avgCell=avg===null?'<td class="heat-empty heat-average">—</td>':`<td class="oee-heat-cell heat-average ${oeeHeatClass(avg)}"><b>${avg.toFixed(1).replace(".",",")}%</b></td>`;
               return `<tr><td class="oee-heat-line sticky-col"><b>${line}</b></td>${dayCells}${avgCell}</tr>`;
             }).join("")}
           </tbody>
@@ -557,29 +555,25 @@ function renderOeeHeatmap(){
     (heatmapFilterState.area==="Todas"||r.area===heatmapFilterState.area) &&
     (heatmapFilterState.line==="Todas"||r.line===heatmapFilterState.line)
   );
-
   const selectedShift=heatmapFilterState.shift;
   if(selectedShift!=="Todos")details=details.filter(r=>r.shift===selectedShift);
 
-  const dates=oeeHeatDateRange(
-    heatmapFilterState.startDate||todayISO(),
-    heatmapFilterState.endDate||heatmapFilterState.startDate||todayISO()
-  );
-
+  const range=heatMonthRange(heatmapFilterState.month);
+  const dates=oeeHeatDateRange(range.start,range.end);
   const lines=[...new Set(details.map(r=>r.line).filter(Boolean))]
     .sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
 
   const values=details.map(r=>r.oee).filter(Number.isFinite);
   const overall=values.length?values.reduce((a,b)=>a+b,0)/values.length:0;
-
   const lineAverages=lines.map(line=>{
     const vals=details.filter(r=>r.line===line).map(r=>r.oee).filter(Number.isFinite);
     return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
   });
   const below=lineAverages.filter(v=>v>0&&v<75).length;
+  const monthLabel=heatMonthLabel(heatmapFilterState.month);
 
   if(!details.length||!lines.length){
-    mount.innerHTML='<section class="panel oee-heat-panel"><div class="oee-heat-top"><div><span>ANÁLISE DIÁRIA POR TURNO</span><h2>Mapa de calor OEE diário</h2><p>Meta de referência: 75% OEE.</p></div></div><div class="empty-state">Nenhum OEE diário por turno foi encontrado para os filtros selecionados.</div></section>';
+    mount.innerHTML='<section class="panel oee-heat-panel"><div class="oee-heat-top"><div><span>ANÁLISE MENSAL POR TURNO</span><h2>Mapa de calor OEE — '+monthLabel+'</h2><p>Meta de referência: 75% OEE.</p></div></div><div class="empty-state">Nenhum OEE diário foi encontrado para este mês e filtros selecionados.</div></section>';
     return;
   }
 
@@ -588,39 +582,18 @@ function renderOeeHeatmap(){
   if(selectedShift==="Todos"||selectedShift==="2")cards.push(oeeDailyShiftCard("2","2º Turno","17:00–02:00","◐",details,lines,dates));
   if(selectedShift==="Todos"||selectedShift==="3")cards.push(oeeDailyShiftCard("3","3º Turno","02:00–07:00","☾",details,lines,dates));
 
-  const startLabel=(heatmapFilterState.startDate||todayISO()).split("-").reverse().join("/");
-  const endLabel=(heatmapFilterState.endDate||heatmapFilterState.startDate||todayISO()).split("-").reverse().join("/");
-  const periodLabel=startLabel===endLabel?startLabel:startLabel+" → "+endLabel;
-
   mount.innerHTML=`
-    <section class="panel oee-heat-panel">
+    <section class="panel oee-heat-panel monthly-heat-panel">
       <div class="oee-heat-top">
-        <div>
-          <span>ANÁLISE DIÁRIA POR TURNO</span>
-          <h2>Mapa de calor OEE diário</h2>
-          <p>Eficiência diária por injetora e turno • período ${periodLabel} • meta de 75%.</p>
-        </div>
-
-        <div class="oee-heat-legend">
-          <div class="oee-heat-legend-title">Escala OEE</div>
-          <div class="oee-heat-gradient"></div>
-          <div class="oee-heat-legend-labels">
-            <span><b>&lt; 50%</b><small>Crítico</small></span>
-            <span><b>50%–74%</b><small>Atenção</small></span>
-            <span><b>≥ 75%</b><small>Dentro da meta</small></span>
-          </div>
-        </div>
+        <div><span>ANÁLISE MENSAL POR TURNO</span><h2>Mapa de calor OEE — ${monthLabel}</h2><p>Cada célula representa a eficiência diária da injetora naquele turno • meta de 75%.</p></div>
+        <div class="oee-heat-legend"><div class="oee-heat-legend-title">Escala OEE</div><div class="oee-heat-gradient"></div><div class="oee-heat-legend-labels"><span><b>&lt; 50%</b><small>Crítico</small></span><span><b>50%–74%</b><small>Atenção</small></span><span><b>≥ 75%</b><small>Dentro da meta</small></span></div></div>
       </div>
-
       <div class="oee-heat-summary">
-        <div><span>Média geral do período</span><strong>${overall.toFixed(1).replace(".",",")}%</strong></div>
+        <div><span>Média geral do mês</span><strong>${overall.toFixed(1).replace(".",",")}%</strong></div>
         <div><span>Linhas abaixo de 75%</span><strong>${below} <small>de ${lines.length}</small></strong></div>
         <div><span>Meta / referência</span><strong>75% OEE</strong></div>
       </div>
-
-      <div class="oee-heat-grid daily-heat-grid">
-        ${cards.join("")}
-      </div>
+      <div class="monthly-heat-grid">${cards.join("")}</div>
     </section>
   `;
 }
@@ -645,25 +618,28 @@ function updateHeatmapContext(){
   const el=document.getElementById("heatContext");
   if(!el)return;
   const shift=heatmapFilterState.shift==="Todos"?"Todos os turnos":shiftDisplay(heatmapFilterState.shift);
-  el.textContent=liveStamp()+" • "+(heatmapFilterState.area==="Todas"?"Toda a fábrica":heatmapFilterState.area)+" • "+(heatmapFilterState.line==="Todas"?"Todas as linhas":heatmapFilterState.line)+" • "+shift+" • "+heatmapFilterState.startDate+" "+heatmapFilterState.start+" → "+heatmapFilterState.endDate+" "+heatmapFilterState.end;
+  el.textContent=liveStamp()+" • "+(heatmapFilterState.area==="Todas"?"Toda a fábrica":heatmapFilterState.area)+" • "+(heatmapFilterState.line==="Todas"?"Todas as linhas":heatmapFilterState.line)+" • "+shift+" • "+heatMonthLabel(heatmapFilterState.month);
 }
 
 function initHeatmap(){
   const area=document.getElementById("heatArea");
   const line=document.getElementById("heatLine");
   const shift=document.getElementById("heatShift");
-  const startAt=document.getElementById("heatStartAt");
-  const endAt=document.getElementById("heatEndAt");
+  const month=document.getElementById("heatMonth");
   const apply=document.getElementById("heatApply");
   const reset=document.getElementById("heatReset");
-  if(!area||!line||!shift||!startAt||!endAt||!apply||!reset)return;
+  if(!area||!line||!shift||!month||!apply||!reset)return;
 
-  if(!heatmapFilterState.startDate)heatmapFilterState.startDate=todayISO();
-  if(!heatmapFilterState.endDate)heatmapFilterState.endDate=heatmapFilterState.startDate;
+  if(!heatmapFilterState.month)heatmapFilterState.month=currentMonthValue();
+  const initialRange=heatMonthRange(heatmapFilterState.month);
+  heatmapFilterState.startDate=initialRange.start;
+  heatmapFilterState.endDate=initialRange.end;
+  heatmapFilterState.start="00:00";
+  heatmapFilterState.end="23:59";
+
   populateHeatmapFilters();
   shift.value=heatmapFilterState.shift;
-  startAt.value=dateTimeLocalValue(heatmapFilterState.startDate,heatmapFilterState.start);
-  endAt.value=dateTimeLocalValue(heatmapFilterState.endDate,heatmapFilterState.end);
+  month.value=heatmapFilterState.month;
 
   area.addEventListener("change",()=>{
     heatmapFilterState.area=area.value;
@@ -674,17 +650,17 @@ function initHeatmap(){
   apply.addEventListener("click",async()=>{
     apply.disabled=true;
     apply.classList.add("loading");
-    apply.innerHTML='<span>⏳</span> Aplicando...';
+    apply.innerHTML='<span>⏳</span> Atualizando...';
     try{
-      const first=splitDateTimeLocal(startAt.value,todayISO(),"00:00");
-      const last=splitDateTimeLocal(endAt.value,first.date,"23:59");
       heatmapFilterState.area=area.value;
       heatmapFilterState.line=line.value;
       heatmapFilterState.shift=shift.value;
-      heatmapFilterState.startDate=first.date;
-      heatmapFilterState.endDate=last.date<first.date?first.date:last.date;
-      heatmapFilterState.start=first.time;
-      heatmapFilterState.end=last.time;
+      heatmapFilterState.month=month.value||currentMonthValue();
+      const range=heatMonthRange(heatmapFilterState.month);
+      heatmapFilterState.startDate=range.start;
+      heatmapFilterState.endDate=range.end;
+      heatmapFilterState.start="00:00";
+      heatmapFilterState.end="23:59";
       oeeHeatmapRows=[];
       oeeHourlyHeatmapRows=[];
       oeeHeatmapKey="";
@@ -694,7 +670,7 @@ function initHeatmap(){
     }finally{
       apply.disabled=false;
       apply.classList.remove("loading");
-      apply.innerHTML='<span>✓</span> Aplicar filtros';
+      apply.innerHTML='<span>✓</span> Atualizar mapa';
     }
   });
 
@@ -702,13 +678,14 @@ function initHeatmap(){
     heatmapFilterState.area="Todas";
     heatmapFilterState.line="Todas";
     heatmapFilterState.shift="Todos";
-    heatmapFilterState.startDate=todayISO();
-    heatmapFilterState.endDate=todayISO();
+    heatmapFilterState.month=currentMonthValue();
+    const range=heatMonthRange(heatmapFilterState.month);
+    heatmapFilterState.startDate=range.start;
+    heatmapFilterState.endDate=range.end;
     heatmapFilterState.start="00:00";
     heatmapFilterState.end="23:59";
     shift.value="Todos";
-    startAt.value=dateTimeLocalValue(heatmapFilterState.startDate,heatmapFilterState.start);
-    endAt.value=dateTimeLocalValue(heatmapFilterState.endDate,heatmapFilterState.end);
+    month.value=heatmapFilterState.month;
     populateHeatmapFilters();
     oeeHeatmapRows=[];
     oeeHourlyHeatmapRows=[];
