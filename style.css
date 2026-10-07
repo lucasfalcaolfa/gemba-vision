@@ -2038,8 +2038,8 @@ body.modal-open{overflow:hidden}
 .safety-today-badge{font-size:7px;font-weight:900;background:#e2231a;color:#fff;padding:4px 7px;border-radius:999px}
 .safety-day-icon{height:58px;display:flex;align-items:center;justify-content:center;margin:4px 0 7px}
 .safety-day-icon svg{width:58px;height:58px}
-.safety-day-card strong{display:block;color:#0f2a40;font-size:13px;line-height:1.18;margin-bottom:7px;max-height:48px;overflow:hidden}
-.safety-day-card p{margin:0;color:#718391;font-size:9px;line-height:1.38;max-height:52px;overflow:hidden}
+.safety-day-card strong{display:block;color:#0f2a40;font-size:13px;line-height:1.22;margin-bottom:7px}
+.safety-day-card p{margin:0;color:#718391;font-size:9px;line-height:1.38}
 .safety-day-detail{background:transparent;border:0;box-shadow:none;overflow:visible}
 .safety-feature-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:14px}
 .safety-hero-card{min-height:420px;border-radius:15px;overflow:hidden;position:relative;background:url("safety-hero.svg") center/cover no-repeat,#102e46;box-shadow:0 10px 26px rgba(7,27,45,.13)}
@@ -2054,7 +2054,7 @@ body.modal-open{overflow:hidden}
 .safety-theme-chip b{display:block;font-size:9px}
 .safety-hero-content h2{margin:auto 0 8px;max-width:64%;font-size:31px;line-height:1.05;color:#fff}
 .safety-hero-content>i{display:block;width:42px;height:4px;background:#e2231a;border-radius:999px;margin-bottom:14px}
-.safety-hero-content>p{margin:0;max-width:60%;font-size:12px;line-height:1.5;color:#edf4f8;max-height:190px;overflow:auto;padding-right:6px}
+.safety-hero-content>p{margin:0;max-width:64%;font-size:12px;line-height:1.5;color:#edf4f8}
 .safety-reading-stack{display:grid;grid-auto-rows:minmax(0,auto);gap:12px}
 .safety-reading-card{display:grid;grid-template-columns:64px 1fr;gap:14px;align-items:flex-start;background:#fff;border:1px solid #e0e7ec;border-radius:14px;padding:16px;box-shadow:0 5px 16px rgba(7,27,45,.04)}
 .safety-reading-icon{width:56px;height:56px;border-radius:50%;display:grid;place-items:center;font-size:26px;font-weight:900}
@@ -2079,11 +2079,18 @@ body.modal-open{overflow:hidden}
 @media(max-width:1200px){.safety-day-cards{grid-template-columns:repeat(3,minmax(0,1fr))}.safety-feature-grid{grid-template-columns:1fr}.safety-hero-card{min-height:390px}}
 @media(max-width:760px){.safety-live-head{flex-direction:column}.safety-mode-switch{justify-content:flex-start}.safety-day-cards{grid-template-columns:1fr}.safety-reading-stack{grid-template-rows:auto}.safety-hero-content h2,.safety-hero-content>p{max-width:82%}.safety-hero-content h2{font-size:26px}.safety-weekly{padding:8px}}
 
+.safety-card-open{margin-top:auto!important;color:#b92722!important;font-weight:800}
 .safety-fulltext{margin-top:14px;background:#fff;border:1px solid #e0e7ec;border-radius:14px;overflow:hidden;box-shadow:0 5px 16px rgba(7,27,45,.04)}
-.safety-fulltext-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:13px 16px;background:#f7fafb;border-bottom:1px solid #e8eef2}
+.safety-fulltext-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:15px 18px;background:#f7fafb;border-bottom:1px solid #e8eef2}
+.safety-fulltext-head>div{display:flex;flex-direction:column;gap:3px}
 .safety-fulltext-head span{font-size:8px;font-weight:900;letter-spacing:.9px;color:#173a55}
+.safety-fulltext-head strong{font-size:13px;color:#10283a}
 .safety-fulltext-head small{font-size:8px;color:#84939e}
-.safety-fulltext-body{padding:16px 18px;columns:2;column-gap:34px}
-.safety-fulltext-body p{break-inside:avoid;margin:0 0 10px;color:#405868;font-size:10px;line-height:1.55}
+.safety-fulltext-body{padding:8px 18px 18px;display:block}
+.safety-complete-section{padding:14px 0;border-bottom:1px solid #edf1f3}
+.safety-complete-section:last-child{border-bottom:0}
+.safety-complete-section h4{margin:0 0 7px;color:#173a55;font-size:9px;letter-spacing:.8px}
+.safety-complete-section p{margin:0;color:#344e60;font-size:11px;line-height:1.62;white-space:normal}
+.safety-complete-section ul{margin:0;padding-left:20px}
+.safety-complete-section li{margin:0 0 7px;color:#344e60;font-size:11px;line-height:1.55}
 .safety-reading-empty{color:#8796a2!important;font-style:italic}
-@media(max-width:900px){.safety-fulltext-body{columns:1}}
