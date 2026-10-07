@@ -29,6 +29,9 @@ return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h
 
 let oeeRows=[];
 let oeeLoading=false;
+let oeeHeatmapRows=[];
+let oeeHeatmapLoading=false;
+let oeeHeatmapKey="";
 const oeeFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"",endDate:"",start:"00:00",end:"23:59"};
 
 function normalizeShift(value){
@@ -262,69 +265,6 @@ function lineGaugeCard(g){
   '</article>';
 }
 
-function oeeHeatDateValue(row){
-  return String(
-    row.date ??
-    row.production_date ??
-    row.start_date ??
-    row.start ??
-    row.end_date ??
-    row.end ??
-    ""
-  ).slice(0,10);
-}
-
-function oeeHeatShiftValue(value){
-  const normalized=normalizeShift(value);
-  if(normalized==="1"||normalized==="2"||normalized==="3")return normalized;
-  const s=String(value??"").toUpperCase();
-  if(/1|A|FIRST|PRIMEIRO/.test(s))return "1";
-  if(/2|B|SECOND|SEGUNDO/.test(s))return "2";
-  if(/3|C|THIRD|TERCEIRO/.test(s))return "3";
-  return "";
-}
-
-function oeeHeatRows(rows){
-  const out=[];
-  rows.forEach(row=>{
-    let shifts=row.shifts;
-    if(shifts && !Array.isArray(shifts) && typeof shifts==="object")shifts=Object.values(shifts);
-    if(Array.isArray(shifts) && shifts.length){
-      shifts.forEach(shift=>{
-        if(!shift||typeof shift!=="object")return;
-        out.push({
-          area:row.area||"",
-          line:row.line||"Sem linha",
-          date:oeeHeatDateValue(shift)||oeeHeatDateValue(row),
-          shift:oeeHeatShiftValue(
-            shift.shift_number ??
-            shift.shift_id ??
-            shift.shift_code ??
-            shift.shift_name ??
-            shift.name ??
-            shift.code ??
-            shift.shift
-          ),
-          oee:n(
-            shift.overall_equipment_effectiveness ??
-            shift.oee ??
-            row.overall_equipment_effectiveness
-          )
-        });
-      });
-    }else{
-      out.push({
-        area:row.area||"",
-        line:row.line||"Sem linha",
-        date:oeeHeatDateValue(row),
-        shift:oeeHeatShiftValue(rowShift(row)),
-        oee:n(row.overall_equipment_effectiveness ?? row.oee)
-      });
-    }
-  });
-  return out.filter(x=>x.date&&x.shift&&x.line);
-}
-
 function oeeHeatDateRange(startDate,endDate){
   const out=[];
   const first=new Date((startDate||todayISO())+"T00:00:00");
@@ -337,6 +277,72 @@ function oeeHeatDateRange(startDate,endDate){
     });
   }
   return out;
+}
+
+function nextIsoDay(iso){
+  const d=new Date(iso+"T00:00:00");
+  d.setDate(d.getDate()+1);
+  return d.toISOString().slice(0,10);
+}
+
+function mergeHeatWindowRows(parts,date,shift){
+  const map={};
+  parts.flat().forEach(row=>{
+    const line=row.line||"Sem linha";
+    const key=(row.area||"")+"|"+line;
+    if(!map[key])map[key]={area:row.area||"",line,date,shift,weighted:0,weight:0,values:[]};
+    const oee=n(row.overall_equipment_effectiveness ?? row.oee);
+    if(!Number.isFinite(oee))return;
+    const weight=Math.max(0,n(row.planned_production_minutes ?? row.production_minutes ?? row.runtime_minutes));
+    if(weight>0){
+      map[key].weighted+=oee*weight;
+      map[key].weight+=weight;
+    }else{
+      map[key].values.push(oee);
+    }
+  });
+  return Object.values(map).map(x=>({
+    area:x.area,
+    line:x.line,
+    date:x.date,
+    shift:x.shift,
+    oee:x.weight>0?x.weighted/x.weight:(x.values.length?x.values.reduce((a,b)=>a+b,0)/x.values.length:0)
+  }));
+}
+
+async function refreshOeeHeatmap(){
+  if(oeeHeatmapLoading||currentPage!=="oee")return;
+  const startDate=oeeFilterState.startDate||todayISO();
+  const endDate=oeeFilterState.endDate||startDate;
+  const key=[startDate,endDate,oeeFilterState.area,oeeFilterState.line].join("|");
+  oeeHeatmapLoading=true;
+  const mount=document.getElementById("oeeHeatmapMount");
+  if(mount&&!oeeHeatmapRows.length){
+    mount.innerHTML='<section class="panel oee-heat-panel"><div class="scrap-loading"><div class="scrap-spinner"></div><strong>Montando mapa de calor por turno...</strong></div></section>';
+  }
+  try{
+    const dates=oeeHeatDateRange(startDate,endDate);
+    const all=[];
+    for(const d of dates){
+      const next=nextIsoDay(d.iso);
+      const [t1,t2,t3a,t3b]=await Promise.all([
+        window.L2L.getDailyWindow(d.iso+" 06:00",d.iso+" 13:59"),
+        window.L2L.getDailyWindow(d.iso+" 14:00",d.iso+" 21:59"),
+        window.L2L.getDailyWindow(d.iso+" 22:00",d.iso+" 23:59"),
+        window.L2L.getDailyWindow(next+" 00:00",next+" 05:59")
+      ]);
+      all.push(...mergeHeatWindowRows([t1],d.iso,"1"));
+      all.push(...mergeHeatWindowRows([t2],d.iso,"2"));
+      all.push(...mergeHeatWindowRows([t3a,t3b],d.iso,"3"));
+    }
+    oeeHeatmapRows=all;
+    oeeHeatmapKey=key;
+    if(currentPage==="oee")renderOeeHeatmap();
+  }catch(err){
+    if(mount)mount.innerHTML='<section class="panel oee-heat-panel"><div class="empty-state"><strong>Não foi possível carregar o mapa de calor.</strong><br>'+stockEsc(err.message||"Falha ao consultar L2L")+'</div></section>';
+  }finally{
+    oeeHeatmapLoading=false;
+  }
 }
 
 function oeeHeatClass(value){
@@ -364,12 +370,18 @@ function oeeHeatShiftCard(shift,title,timeRange,icon,rows,dates,lines){
   '</article>';
 }
 
-function renderOeeHeatmap(rows){
+function renderOeeHeatmap(){
   const mount=document.getElementById("oeeHeatmapMount");
   if(!mount)return;
 
-  const details=oeeHeatRows(rows);
   const dates=oeeHeatDateRange(oeeFilterState.startDate,oeeFilterState.endDate);
+  let details=oeeHeatmapRows.filter(r=>
+    (oeeFilterState.area==="Todas"||r.area===oeeFilterState.area) &&
+    (oeeFilterState.line==="Todas"||r.line===oeeFilterState.line)
+  );
+  const selectedShift=oeeFilterState.shift;
+  if(selectedShift!=="Todos")details=details.filter(r=>r.shift===selectedShift);
+
   const lines=[...new Set(details.map(r=>r.line).filter(Boolean))]
     .sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
 
@@ -382,9 +394,14 @@ function renderOeeHeatmap(rows){
   const below=lineAverages.filter(v=>v>0&&v<75).length;
 
   if(!details.length||!dates.length||!lines.length){
-    mount.innerHTML='<section class="panel oee-heat-panel"><div class="oee-heat-top"><div><span>ANÁLISE POR TURNO</span><h2>Mapa de calor OEE</h2><p>Meta de referência: 75% OEE.</p></div></div><div class="empty-state">O retorno atual do L2L não trouxe detalhe suficiente de turno e data para montar o mapa de calor com os filtros selecionados.</div></section>';
+    mount.innerHTML='<section class="panel oee-heat-panel"><div class="oee-heat-top"><div><span>ANÁLISE POR TURNO</span><h2>Mapa de calor OEE</h2><p>Meta de referência: 75% OEE.</p></div></div><div class="empty-state">Nenhum OEE foi encontrado nas janelas de turno para os filtros selecionados.</div></section>';
     return;
   }
+
+  const cards=[];
+  if(selectedShift==="Todos"||selectedShift==="1")cards.push(oeeHeatShiftCard("1","1º Turno","06:00–14:00","☀",details,dates,lines));
+  if(selectedShift==="Todos"||selectedShift==="2")cards.push(oeeHeatShiftCard("2","2º Turno","14:00–22:00","◐",details,dates,lines));
+  if(selectedShift==="Todos"||selectedShift==="3")cards.push(oeeHeatShiftCard("3","3º Turno","22:00–06:00","☾",details,dates,lines));
 
   mount.innerHTML=
     '<section class="panel oee-heat-panel">'+
@@ -397,11 +414,7 @@ function renderOeeHeatmap(rows){
         '<div><span>Linhas abaixo de 75%</span><strong>'+below+' <small>de '+lines.length+'</small></strong></div>'+
         '<div><span>Meta / referência</span><strong>75% OEE</strong></div>'+
       '</div>'+
-      '<div class="oee-heat-grid">'+
-        oeeHeatShiftCard("1","1º Turno","06:00–14:00","☀",details,dates,lines)+
-        oeeHeatShiftCard("2","2º Turno","14:00–22:00","◐",details,dates,lines)+
-        oeeHeatShiftCard("3","3º Turno","22:00–06:00","☾",details,dates,lines)+
-      '</div>'+
+      '<div class="oee-heat-grid">'+cards.join("")+'</div>'+
     '</section>';
 }
 
@@ -459,7 +472,9 @@ function renderOeeLive(){
       : '<div class="empty-state"><strong>Modelos não detalhados pelo retorno atual do L2L.</strong><br>O painel já solicita <code>show_products=1</code>; quando o L2L retornar eficiência por produto/modelo, o ranking aparecerá automaticamente.</div>';
   }
 
-  renderOeeHeatmap(rows);
+  renderOeeHeatmap();
+  const heatKey=[oeeFilterState.startDate||todayISO(),oeeFilterState.endDate||oeeFilterState.startDate||todayISO(),oeeFilterState.area,oeeFilterState.line].join("|");
+  if(!oeeHeatmapRows.length||oeeHeatmapKey!==heatKey)refreshOeeHeatmap();
 }
 
 let productionRows=[];
