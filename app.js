@@ -10,7 +10,7 @@ stock:{title:"Controle de Estoque",sub:"Estoque da Fundição — Inacabado e Ac
 function shell(p){return '<div class="page"><div class="page-head"><div><h1>'+p.title+'</h1><p>'+p.sub+'</p></div><div class="refresh">● Atualização: automática</div></div>'+p.html+'</div>'}
 function card(label,value,cls=""){return '<div class="card"><div class="label">'+label+'</div><div class="value '+cls+'">'+value+'</div></div>'}
 function home(){return '<div class="hero-status"><div class="status"><span class="dot green"></span> OPERAÇÃO NORMAL</div><p style="margin:8px 0 0;color:#47616f">Visão consolidada — Segurança, Pessoas, Produção, OEE e Qualidade.</p></div><div class="cards">'+card("OEE Geral","85,4%","good")+card("Eficiência","89,8%","good")+card("Produção","12.480","")+card("Qualidade","98,5%","good")+card("Absenteísmo","3,2%","warn")+'</div><div class="section-grid"><div class="panel"><h2>Produção por linha</h2><table><tr><th>Linha</th><th>Plano</th><th>Real</th><th>Ating.</th><th>Status</th></tr><tr><td>AL1</td><td>4.500</td><td>4.320</td><td>96%</td><td><span class="status"><span class="dot yellow"></span>Atenção</span></td></tr><tr><td>AL2</td><td>4.200</td><td>4.450</td><td>106%</td><td><span class="status"><span class="dot green"></span>OK</span></td></tr><tr><td>AL3</td><td>3.800</td><td>3.710</td><td>98%</td><td><span class="status"><span class="dot green"></span>OK</span></td></tr></table></div><div class="panel"><h2>Momento de Segurança</h2><div class="safety-img" style="min-height:180px"><div><div class="shield">🦺</div><h2>SEGURANÇA EM PRIMEIRO LUGAR</h2><div>Use os EPIs e respeite as áreas demarcadas.</div></div></div></div></div>'}
-function safety(){return '<div class="panel safety-live-panel"><div class="safety-live-head"><div><span>MOMENTO DE SEGURANÇA</span><h2 id="safetyWeekTitle">Safety Moments — Semana atual</h2><p id="safetyWeekMeta">Carregando conteúdo do PDF semanal...</p></div><div class="safety-mode-switch"><button id="safetyModeDynamic" class="active">Visualização dinâmica</button><button id="safetyModeWeekly">Semanal</button><a class="safety-open-pdf" href="SafetyMomentWeek_Current.pdf" target="_blank" rel="noopener">Abrir PDF ↗</a></div></div><div class="safety-status" id="safetyStatus">Carregando Momento de Segurança...</div><section id="safetyDynamic" class="safety-dynamic"><div id="safetyDayCards" class="safety-day-cards"></div><div id="safetyDayDetail" class="safety-day-detail"></div></section><section id="safetyWeekly" class="safety-weekly" hidden><div class="safety-viewer"><canvas id="safetyCanvas"></canvas></div></section><div class="safety-help">O modo <b>Dinâmico</b> lê o conteúdo do PDF e organiza o dia a dia. O modo <b>Semanal</b> mantém o PDF oficial completo.</div></div>'}
+function safety(){return '<div class="panel safety-live-panel"><div class="safety-live-head"><div><span>MOMENTO DE SEGURANÇA</span><h2 id="safetyWeekTitle">Safety Moments — Semana atual</h2><p id="safetyWeekMeta">Conteúdo organizado automaticamente a partir do PDF semanal.</p></div><div class="safety-mode-switch"><button id="safetyModeDynamic" class="active">▥ Visualização dinâmica</button><button id="safetyModeWeekly">▣ Semanal</button><a class="safety-open-pdf" href="SafetyMomentWeek_Current.pdf" target="_blank" rel="noopener">▤ Abrir PDF ↗</a></div></div><div class="safety-status" id="safetyStatus">Carregando Momento de Segurança...</div><section id="safetyDynamic" class="safety-dynamic"><div id="safetyDayCards" class="safety-day-cards"></div><div id="safetyDayDetail" class="safety-day-detail"></div></section><section id="safetyWeekly" class="safety-weekly" hidden><div class="safety-viewer"><canvas id="safetyCanvas"></canvas></div></section><div class="safety-help">O modo <b>Dinâmico</b> organiza a leitura do dia. O modo <b>Semanal</b> mantém o PDF oficial completo.</div></div>'}
 const oeeData=[
 {area:"Fundição",linha:"AL1",turno:"A",oee:91.0,disp:94.0,perf:97.0,qual:99.0,ef:91.0,meta:85},
 {area:"Fundição",linha:"AL1",turno:"B",oee:86.0,disp:91.0,perf:95.0,qual:99.0,ef:87.0,meta:85},
@@ -1471,49 +1471,86 @@ function safetyDayLabel(text){
 }
 
 function splitSafetySections(lines){
-  const clean=lines.map(normalizeSafetyText).filter(Boolean);
-  const findIndex=(re)=>clean.findIndex(x=>re.test(x));
-  const focusIdx=findIndex(/^foco\b/i);
-  const pointsIdx=findIndex(/^(pontos[ -]?principais|pontos-chave|pontos chave)\b/i);
-  const summaryIdx=findIndex(/^resumo\b/i);
+  const joined=lines.map(normalizeSafetyText).filter(Boolean).join(" ");
+  const stripped=joined
+    .replace(/^(segunda-feira|terça-feira|terca-feira|quarta-feira|quinta-feira|sexta-feira)\s*/i,"")
+    .replace(/\s+/g," ")
+    .trim();
 
-  const titleStart=1;
-  const titleEnd=focusIdx>titleStart?focusIdx:(pointsIdx>titleStart?pointsIdx:Math.min(clean.length,2));
-  const title=clean.slice(titleStart,titleEnd).join(" ")||clean[1]||"Momento de Segurança";
+  const markers=[
+    {key:"focus",re:/\bFoco\b/i},
+    {key:"points",re:/\b(Pontos[ -]?Principais|Pontos-chave|Pontos chave)\b/i},
+    {key:"summary",re:/\bResumo\b/i},
+    {key:"action",re:/\b(Ação do dia|Acao do dia|Ação|Acao)\b/i}
+  ];
+  const found=markers.map(m=>{
+    const x=stripped.search(m.re);
+    return x>=0?{...m,index:x}:null;
+  }).filter(Boolean).sort((a,b)=>a.index-b.index);
 
-  const focusStart=focusIdx>=0?focusIdx+1:titleEnd;
-  const focusEnd=pointsIdx>focusStart?pointsIdx:(summaryIdx>focusStart?summaryIdx:clean.length);
-  const focus=clean.slice(focusStart,focusEnd).join(" ");
+  const firstMarker=found[0]?.index ?? stripped.length;
+  let title=stripped.slice(0,firstMarker).trim();
+  title=title.replace(/^[•·▪◦\-–—]+/,"").trim();
+  if(title.length>110){
+    const stop=title.search(/[.!?]\s/);
+    title=(stop>12&&stop<110?title.slice(0,stop):title.slice(0,105)).trim();
+  }
+  if(!title)title="Momento de Segurança";
 
-  const pointsStart=pointsIdx>=0?pointsIdx+1:focusEnd;
-  const pointsEnd=summaryIdx>pointsStart?summaryIdx:clean.length;
-  const rawPointLines=clean.slice(pointsStart,pointsEnd);
-  const points=[];
-  let current="";
-  rawPointLines.forEach(line=>{
-    const bullet=/^[•·▪◦\-–—]/.test(line);
-    const stripped=line.replace(/^[•·▪◦\-–—]\s*/,"");
-    if(bullet){
-      if(current)points.push(current);
-      current=stripped;
-    }else if(current){
-      current+=" "+line;
-    }else if(stripped){
-      current=stripped;
-    }
+  const sections={focus:"",points:"",summary:"",action:""};
+  found.forEach((m,i)=>{
+    const labelMatch=stripped.slice(m.index).match(m.re);
+    const start=m.index+(labelMatch?.[0]?.length||0);
+    const end=i+1<found.length?found[i+1].index:stripped.length;
+    sections[m.key]=stripped.slice(start,end).trim();
   });
-  if(current)points.push(current);
 
-  const summary=summaryIdx>=0?clean.slice(summaryIdx+1).join(" "):"";
-  return {title,focus,points,summary};
+  // If the PDF has no explicit section markers, keep the first sentences readable.
+  if(!sections.focus){
+    const rest=stripped.slice(firstMarker===stripped.length?title.length:firstMarker).trim();
+    sections.focus=rest || stripped.slice(title.length).trim();
+  }
+
+  const rawPoints=sections.points;
+  const points=[];
+  if(rawPoints){
+    const explicit=rawPoints.split(/\s*[•·▪◦]\s*|\s+-\s+/).map(x=>x.trim()).filter(Boolean);
+    if(explicit.length>1){
+      explicit.forEach(x=>points.push(x));
+    }else{
+      rawPoints
+        .split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/)
+        .map(x=>x.trim())
+        .filter(x=>x.length>8)
+        .slice(0,5)
+        .forEach(x=>points.push(x));
+    }
+  }
+
+  if(!points.length && sections.focus){
+    sections.focus
+      .split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/)
+      .map(x=>x.trim())
+      .filter(x=>x.length>18)
+      .slice(1,4)
+      .forEach(x=>points.push(x));
+  }
+
+  const focus=(sections.focus||"").replace(/^[•·▪◦\-–—]+/,"").trim();
+  const summary=(sections.summary||"").trim();
+  const action=(sections.action||"").trim();
+  return {title,focus,points,summary,action};
 }
 
 function extractSafetyWeekInfo(lines,dayHeaderY){
   const headerLines=lines.filter(l=>l.y>dayHeaderY).map(l=>l.text);
-  let title=headerLines.find(t=>/risco|seguran|mudan|trabalho|preven|aten/i.test(t)&&t.length>8);
-  if(!title) title=headerLines.find(t=>t.length>10&&!/^week\b/i.test(t))||"Safety Moments";
-  const week=headerLines.find(t=>/^week\b/i.test(t)||/semana\b/i.test(t))||"";
-  return {title,week};
+  const combined=headerLines.join(" ");
+  const weekMatch=combined.match(/\bWeek of\s+[^\s]+(?:\s+\d{4})?/i);
+  let title=combined.replace(/\bWeek of\s+.*$/i,"").trim();
+  if(!title||title.length>120){
+    title=headerLines.find(t=>/risco|seguran|mudan|trabalho|preven|aten/i.test(t)&&t.length>8)||"Safety Moments";
+  }
+  return {title:title||"Safety Moments",week:weekMatch?weekMatch[0]:""};
 }
 
 function parseSafetyDays(textContent,pageViewport){
@@ -1586,6 +1623,23 @@ function escapeSafetyHtml(value){
   return String(value||"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
 }
 
+function safetyIconSvg(day){
+  const icons=[
+    '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="28" fill="#fff1f0"/><path d="M21 27h22v20H21z" fill="#173a55"/><path d="M24 26c0-7 4-12 8-12s8 5 8 12" fill="#f3a21b"/><path d="M18 27h28" stroke="#173a55" stroke-width="3"/><path d="M15 44l7-12 7 12z" fill="#e2231a"/><circle cx="22" cy="40" r="1.6" fill="#fff"/></svg>',
+    '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="24" cy="35" r="12" fill="#173a55"/><circle cx="24" cy="35" r="5" fill="#fff"/><path d="M40 14l12 5v10c0 9-6 15-12 18-6-3-12-9-12-18V19z" fill="#2b84c6"/><path d="M40 20v20" stroke="#fff" stroke-width="3"/></svg>',
+    '<svg viewBox="0 0 64 64" aria-hidden="true"><path d="M17 27c0-8 6-14 15-14s15 6 15 14" fill="#2688c9"/><path d="M12 28h40" stroke="#173a55" stroke-width="3"/><path d="M16 38c0-5 4-8 8-8h16c5 0 8 3 8 8v4H16z" fill="#bfe4f7"/><path d="M44 47l6-14 4 2-5 14zm-5 0 3-16 4 1-2 16z" fill="#173a55"/></svg>',
+    '<svg viewBox="0 0 64 64" aria-hidden="true"><rect x="16" y="12" width="32" height="40" rx="4" fill="#eaf2f7" stroke="#173a55" stroke-width="3"/><path d="M25 22h14M25 31h14M25 40h9" stroke="#2b84c6" stroke-width="3"/><path d="M18 20l3 3 5-6M18 29l3 3 5-6M18 38l3 3 5-6" stroke="#e2231a" stroke-width="3" fill="none"/></svg>',
+    '<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="22" r="9" fill="#e2231a"/><circle cx="17" cy="28" r="7" fill="#7fb6d8"/><circle cx="47" cy="28" r="7" fill="#7fb6d8"/><path d="M21 51c1-11 5-17 11-17s10 6 11 17z" fill="#173a55"/><path d="M7 51c1-9 4-14 10-14 3 0 6 2 8 5-2 3-3 6-3 9zM42 51c0-3-1-6-3-9 2-3 5-5 8-5 6 0 9 5 10 14z" fill="#315e7c"/></svg>'
+  ];
+  return icons[day]||icons[0];
+}
+
+function safetyPreviewText(d){
+  const base=(d.focus||d.summary||d.action||"").replace(/\s+/g," ").trim();
+  if(!base)return "Conteúdo do dia disponível no PDF semanal.";
+  return base.length>105?base.slice(0,102).trim()+"…":base;
+}
+
 function renderSafetyCards(){
   const box=document.getElementById("safetyDayCards");
   if(!box)return;
@@ -1597,8 +1651,12 @@ function renderSafetyCards(){
   box.innerHTML=safetyParsedDays.map(d=>{
     const active=d.day===safetySelectedDay?" active":"";
     const todayBadge=d.day===today?'<span class="safety-today-badge">HOJE</span>':"";
-    const preview=(d.focus||d.summary||"").slice(0,120);
-    return '<button class="safety-day-card'+active+'" data-safety-day="'+d.day+'"><div class="safety-day-card-top"><span>'+d.short+'</span>'+todayBadge+'</div><strong>'+escapeSafetyHtml(d.title)+'</strong><p>'+escapeSafetyHtml(preview)+(preview.length>=120?"…":"")+'</p><small>Ver detalhes →</small></button>';
+    return '<button class="safety-day-card'+active+'" data-safety-day="'+d.day+'">'+
+      '<div class="safety-day-card-top"><span>'+d.short+'</span>'+todayBadge+'</div>'+
+      '<div class="safety-day-icon">'+safetyIconSvg(d.day)+'</div>'+
+      '<strong>'+escapeSafetyHtml(d.title)+'</strong>'+
+      '<p>'+escapeSafetyHtml(safetyPreviewText(d))+'</p>'+
+    '</button>';
   }).join("");
   box.querySelectorAll("[data-safety-day]").forEach(btn=>btn.addEventListener("click",()=>{
     safetySelectedDay=Number(btn.dataset.safetyDay);
@@ -1615,15 +1673,37 @@ function renderSafetyDetail(){
     box.innerHTML='<div class="safety-parse-warning">Selecione <b>Semanal</b> para visualizar o PDF oficial.</div>';
     return;
   }
-  const points=d.points.length
-    ? '<ul>'+d.points.map(p=>'<li>'+escapeSafetyHtml(p)+'</li>').join("")+'</ul>'
-    : '<p class="safety-empty-copy">Sem pontos separados automaticamente.</p>';
-  box.innerHTML='<div class="safety-detail-hero"><div><span class="safety-detail-eyebrow">'+d.label+'</span><h2>'+escapeSafetyHtml(d.title)+'</h2></div><div class="safety-detail-number">0'+(d.day+1)+'</div></div>'+
-    '<div class="safety-detail-grid">'+
-      '<section class="safety-focus-box"><span>FOCO</span><p>'+escapeSafetyHtml(d.focus||"Conteúdo disponível no PDF semanal.")+'</p></section>'+
-      '<section class="safety-points-box"><span>PONTOS PRINCIPAIS</span>'+points+'</section>'+
+
+  const focus=d.focus||"Leia o conteúdo do dia e identifique qualquer mudança ou condição que possa alterar o risco da atividade.";
+  const points=(d.points||[]).filter(Boolean).slice(0,4);
+  const pointHtml=points.length
+    ? '<ul>'+points.map(p=>'<li>'+escapeSafetyHtml(p)+'</li>').join("")+'</ul>'
+    : '<ul><li>Reconheça mudanças no processo, material, ferramenta ou sequência.</li><li>Confirme se os controles existentes continuam eficazes.</li><li>Converse com a equipe antes de executar a atividade.</li></ul>';
+
+  const action=d.action || (points[0] ? "Antes de executar, confirme com a equipe se a mudança introduziu algum novo risco." : "Pare, avalie e confirme os controles antes de executar.");
+  const summary=d.summary || focus;
+  const weekTitle=escapeSafetyHtml(safetyWeekInfo.title||d.title||"Safety Moments");
+  const weekMeta=escapeSafetyHtml(safetyWeekInfo.week||"Semana atual");
+
+  box.innerHTML=
+    '<div class="safety-feature-grid">'+
+      '<section class="safety-hero-card">'+
+        '<div class="safety-hero-overlay"></div>'+
+        '<div class="safety-hero-content">'+
+          '<div class="safety-hero-top"><span class="safety-weekday-pill">'+d.label.toUpperCase()+'</span><span class="safety-week-date">'+weekMeta+'</span></div>'+
+          '<div class="safety-theme-chip"><span>◈</span><div><small>Tema da semana</small><b>Segurança</b></div></div>'+
+          '<h2>'+escapeSafetyHtml(d.title)+'</h2>'+
+          '<i></i>'+
+          '<p>'+escapeSafetyHtml(focus.length>250?focus.slice(0,247)+"…":focus)+'</p>'+
+        '</div>'+
+      '</section>'+
+      '<div class="safety-reading-stack">'+
+        '<section class="safety-reading-card focus-card"><div class="safety-reading-icon">◎</div><div><span>FOCO</span><h3>'+escapeSafetyHtml(d.title)+'</h3><p>'+escapeSafetyHtml(focus)+'</p></div></section>'+
+        '<section class="safety-reading-card points-card"><div class="safety-reading-icon">⚙</div><div><span>PONTOS-CHAVE</span>'+pointHtml+'</div></section>'+
+        '<section class="safety-reading-card action-card"><div class="safety-reading-icon">◉</div><div><span>AÇÃO DO DIA</span><h3>Pense antes de executar</h3><p>'+escapeSafetyHtml(action)+'</p></div></section>'+
+      '</div>'+
     '</div>'+
-    (d.summary?'<section class="safety-summary-box"><span>RESUMO</span><p>'+escapeSafetyHtml(d.summary)+'</p></section>':"");
+    '<section class="safety-summary-strip"><div class="safety-summary-icon">▣</div><div><span>RESUMO</span><p>'+escapeSafetyHtml(summary)+'</p></div></section>';
 }
 
 function showSafetyMode(mode){
