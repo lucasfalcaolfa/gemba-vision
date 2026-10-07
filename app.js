@@ -1433,21 +1433,29 @@ function normalizeSafetyText(value){
   return String(value||"").replace(/\s+/g," ").trim();
 }
 
+function safetyTextItems(items){
+  return (items||[])
+    .map(item=>({
+      text:normalizeSafetyText(item.str),
+      x:Number(item.transform?.[4]||0),
+      y:Number(item.transform?.[5]||0),
+      size:Math.abs(Number(item.transform?.[3]||0))||Math.abs(Number(item.height||0))||10
+    }))
+    .filter(item=>item.text);
+}
+
 function groupSafetyTextLines(items){
-  const usable=(items||[]).filter(i=>normalizeSafetyText(i.str));
+  const usable=safetyTextItems(items);
   const rows=[];
   usable.forEach(item=>{
-    const x=Number(item.transform?.[4]||0);
-    const y=Number(item.transform?.[5]||0);
-    const size=Math.abs(Number(item.transform?.[3]||0))||Math.abs(Number(item.height||0))||10;
-    let row=rows.find(r=>Math.abs(r.y-y)<=Math.max(1.5,size*.18));
+    let row=rows.find(r=>Math.abs(r.y-item.y)<=Math.max(1.8,item.size*.22));
     if(!row){
-      row={y,size,items:[]};
+      row={y:item.y,size:item.size,items:[]};
       rows.push(row);
     }
-    row.y=(row.y+ y)/2;
-    row.size=Math.max(row.size,size);
-    row.items.push({x,str:normalizeSafetyText(item.str),size});
+    row.y=(row.y+item.y)/2;
+    row.size=Math.max(row.size,item.size);
+    row.items.push(item);
   });
   return rows.map(r=>{
     r.items.sort((a,b)=>a.x-b.x);
@@ -1455,7 +1463,32 @@ function groupSafetyTextLines(items){
       y:r.y,
       size:r.size,
       x:r.items.length?r.items[0].x:0,
-      text:normalizeSafetyText(r.items.map(i=>i.str).join(" "))
+      text:normalizeSafetyText(r.items.map(i=>i.text).join(" "))
+    };
+  }).filter(r=>r.text).sort((a,b)=>b.y-a.y);
+}
+
+function groupSafetyColumnLines(items,left,right,maxY){
+  const usable=safetyTextItems(items)
+    .filter(item=>item.x>=left-3&&item.x<right+3&&(maxY===undefined||item.y<=maxY+2));
+  const rows=[];
+  usable.forEach(item=>{
+    let row=rows.find(r=>Math.abs(r.y-item.y)<=Math.max(1.8,item.size*.22));
+    if(!row){
+      row={y:item.y,size:item.size,items:[]};
+      rows.push(row);
+    }
+    row.y=(row.y+item.y)/2;
+    row.size=Math.max(row.size,item.size);
+    row.items.push(item);
+  });
+  return rows.map(r=>{
+    r.items.sort((a,b)=>a.x-b.x);
+    return {
+      y:r.y,
+      size:r.size,
+      x:r.items[0]?.x||0,
+      text:normalizeSafetyText(r.items.map(i=>i.text).join(" "))
     };
   }).filter(r=>r.text).sort((a,b)=>b.y-a.y);
 }
@@ -1471,75 +1504,67 @@ function safetyDayLabel(text){
 }
 
 function splitSafetySections(lines){
-  const joined=lines.map(normalizeSafetyText).filter(Boolean).join(" ");
-  const stripped=joined
-    .replace(/^(segunda-feira|terça-feira|terca-feira|quarta-feira|quinta-feira|sexta-feira)\s*/i,"")
-    .replace(/\s+/g," ")
-    .trim();
+  const clean=lines.map(normalizeSafetyText).filter(Boolean);
+  while(clean.length&&safetyDayLabel(clean[0])>=0)clean.shift();
 
-  const markers=[
-    {key:"focus",re:/\bFoco\b/i},
-    {key:"points",re:/\b(Pontos[ -]?Principais|Pontos-chave|Pontos chave)\b/i},
-    {key:"summary",re:/\bResumo\b/i},
-    {key:"action",re:/\b(Ação do dia|Acao do dia|Ação|Acao)\b/i}
-  ];
-  const found=markers.map(m=>{
-    const x=stripped.search(m.re);
-    return x>=0?{...m,index:x}:null;
-  }).filter(Boolean).sort((a,b)=>a.index-b.index);
+  const markerKey=line=>{
+    const t=line.toLowerCase();
+    if(/^foco\b/.test(t))return "focus";
+    if(/^(pontos[ -]?principais|pontos-chave|pontos chave)\b/.test(t))return "points";
+    if(/^resumo\b/.test(t))return "summary";
+    if(/^(ação do dia|acao do dia|ação|acao)\b/.test(t))return "action";
+    return "";
+  };
 
-  const firstMarker=found[0]?.index ?? stripped.length;
-  let title=stripped.slice(0,firstMarker).trim();
-  title=title.replace(/^[•·▪◦\-–—]+/,"").trim();
-  if(title.length>110){
-    const stop=title.search(/[.!?]\s/);
-    title=(stop>12&&stop<110?title.slice(0,stop):title.slice(0,105)).trim();
-  }
-  if(!title)title="Momento de Segurança";
-
-  const sections={focus:"",points:"",summary:"",action:""};
-  found.forEach((m,i)=>{
-    const labelMatch=stripped.slice(m.index).match(m.re);
-    const start=m.index+(labelMatch?.[0]?.length||0);
-    const end=i+1<found.length?found[i+1].index:stripped.length;
-    sections[m.key]=stripped.slice(start,end).trim();
+  const markers=[];
+  clean.forEach((line,index)=>{
+    const key=markerKey(line);
+    if(key)markers.push({key,index,line});
   });
 
-  // If the PDF has no explicit section markers, keep the first sentences readable.
-  if(!sections.focus){
-    const rest=stripped.slice(firstMarker===stripped.length?title.length:firstMarker).trim();
-    sections.focus=rest || stripped.slice(title.length).trim();
+  const firstMarker=markers[0]?.index??clean.length;
+  let title=clean.slice(0,firstMarker).join(" ").trim();
+  if(!title)title="Momento de Segurança";
+
+  const sections={focus:[],points:[],summary:[],action:[]};
+  markers.forEach((m,i)=>{
+    const next=i+1<markers.length?markers[i+1].index:clean.length;
+    const labelPattern=m.key==="focus"?/^foco\b[:\s-]*/i:
+      m.key==="points"?/^(pontos[ -]?principais|pontos-chave|pontos chave)\b[:\s-]*/i:
+      m.key==="summary"?/^resumo\b[:\s-]*/i:
+      /^(ação do dia|acao do dia|ação|acao)\b[:\s-]*/i;
+    const inline=m.line.replace(labelPattern,"").trim();
+    if(inline)sections[m.key].push(inline);
+    sections[m.key].push(...clean.slice(m.index+1,next));
+  });
+
+  // Some PDFs use title + body without explicit "Foco".
+  if(!sections.focus.length&&firstMarker===clean.length&&clean.length>1){
+    sections.focus=clean.slice(1);
   }
 
-  const rawPoints=sections.points;
   const points=[];
-  if(rawPoints){
-    const explicit=rawPoints.split(/\s*[•·▪◦]\s*|\s+-\s+/).map(x=>x.trim()).filter(Boolean);
-    if(explicit.length>1){
-      explicit.forEach(x=>points.push(x));
-    }else{
-      rawPoints
-        .split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/)
-        .map(x=>x.trim())
-        .filter(x=>x.length>8)
-        .slice(0,5)
-        .forEach(x=>points.push(x));
+  let current="";
+  sections.points.forEach(line=>{
+    const bullet=/^[•·▪◦\-–—]/.test(line);
+    const stripped=line.replace(/^[•·▪◦\-–—]\s*/,"").trim();
+    if(bullet){
+      if(current)points.push(current.trim());
+      current=stripped;
+    }else if(current){
+      current+=" "+stripped;
+    }else if(stripped){
+      current=stripped;
     }
-  }
+  });
+  if(current)points.push(current.trim());
 
-  if(!points.length && sections.focus){
-    sections.focus
-      .split(/(?<=[.!?])\s+(?=[A-ZÁÉÍÓÚÂÊÔÃÕÇ])/)
-      .map(x=>x.trim())
-      .filter(x=>x.length>18)
-      .slice(1,4)
-      .forEach(x=>points.push(x));
-  }
+  const focus=sections.focus.join(" ").replace(/\s+/g," ").trim();
+  const summary=sections.summary.join(" ").replace(/\s+/g," ").trim();
+  const action=sections.action.join(" ").replace(/\s+/g," ").trim();
+  const fullText=clean.join("\n");
 
-  const focus=(sections.focus||"").replace(/^[•·▪◦\-–—]+/,"").trim();
-  const summary=(sections.summary||"").trim();
-  const action=(sections.action||"").trim();
-  return {title,focus,points,summary,action};
+  return {title,focus,points,summary,action,fullText};
 }
 
 function extractSafetyWeekInfo(lines,dayHeaderY){
@@ -1554,67 +1579,75 @@ function extractSafetyWeekInfo(lines,dayHeaderY){
 }
 
 function parseSafetyDays(textContent,pageViewport){
-  const lines=groupSafetyTextLines(textContent.items);
   const labels=["Segunda-feira","Terça-feira","Quarta-feira","Quinta-feira","Sexta-feira"];
   const shorts=["SEG","TER","QUA","QUI","SEX"];
-  const dayHeaders=lines.map((line,index)=>({line,index,day:safetyDayLabel(line.text)})).filter(x=>x.day>=0);
+  const items=safetyTextItems(textContent.items);
+  const allLines=groupSafetyTextLines(textContent.items);
+
+  // Locate weekday headers directly from PDF text items. This avoids mixing
+  // sentences from neighboring columns when several lines share the same Y.
   const headersByDay=Array(5).fill(null);
-  dayHeaders.forEach(h=>{if(!headersByDay[h.day])headersByDay[h.day]=h;});
+  items.forEach(item=>{
+    const day=safetyDayLabel(item.text);
+    if(day>=0&&!headersByDay[day])headersByDay[day]=item;
+  });
 
-  // Prefer the real day-header positions when PDF.js can read them.
   if(headersByDay.every(Boolean)){
-    const anchors=headersByDay.map(h=>h.line.x);
+    const anchors=headersByDay.map(h=>h.x);
     const boundaries=[0];
-    for(let i=0;i<4;i++) boundaries.push((anchors[i]+anchors[i+1])/2);
+    for(let i=0;i<4;i++)boundaries.push((anchors[i]+anchors[i+1])/2);
     boundaries.push(pageViewport.width);
-    const headerY=Math.max(...headersByDay.map(h=>h.line.y));
-    const weekInfo=extractSafetyWeekInfo(lines,headerY);
 
-    const days=headersByDay.map((h,day)=>{
-      const colLines=lines.filter(line=>
-        line.y<=h.line.y+2 &&
-        line.x>=boundaries[day]-2 &&
-        line.x<boundaries[day+1]+2
+    const headerY=Math.max(...headersByDay.map(h=>h.y));
+    const weekInfo=extractSafetyWeekInfo(allLines,headerY);
+
+    const days=headersByDay.map((header,day)=>{
+      const colLines=groupSafetyColumnLines(textContent.items,boundaries[day],boundaries[day+1],header.y+2)
+        .map(l=>l.text)
+        .filter(Boolean);
+
+      // Ensure the weekday is the first logical line, then remove page-level bleed.
+      const cleaned=colLines.filter(text=>
+        !/^week\b/i.test(text)&&
+        !/^safety moments?$/i.test(text)&&
+        !/momento de segurança/i.test(text)&&
+        !/^pequenas mudanças, risco diferente\s+week/i.test(text)
       );
-      const ordered=[h.line.text,...colLines.filter(l=>l!==h.line).map(l=>l.text)];
-      const unique=ordered.filter((t,i,a)=>t&&a.indexOf(t)===i);
-      return {day,label:labels[day],short:shorts[day],...splitSafetySections(unique)};
+      const parsed=splitSafetySections([labels[day],...cleaned.filter(t=>safetyDayLabel(t)<0)]);
+      return {day,label:labels[day],short:shorts[day],...parsed};
     });
+
     return {days,weekInfo};
   }
 
-  // Fallback for PDFs whose text layer does not preserve the weekday headers:
-  // split the page into the same five visual columns used by the official template.
-  const topY=Math.max(...lines.map(l=>l.y),0);
-  const bodyCutoff=topY*0.82;
+  // Fallback: use five equal visual columns and still group text inside each
+  // column independently, so content never crosses into another weekday.
+  const topY=Math.max(...items.map(i=>i.y),0);
+  const bodyCutoff=topY*.82;
   const colWidth=pageViewport.width/5;
   const days=[];
+
   for(let day=0;day<5;day++){
-    const left=day*colWidth;
-    const right=(day+1)*colWidth;
-    const col=lines
-      .filter(l=>l.x>=left-4 && l.x<right+4 && l.y<bodyCutoff)
-      .sort((a,b)=>b.y-a.y)
-      .map(l=>l.text)
-      .filter(Boolean);
+    const colLines=groupSafetyColumnLines(
+      textContent.items,
+      day*colWidth,
+      (day+1)*colWidth,
+      bodyCutoff
+    ).map(l=>l.text);
 
-    // Remove repeated page-level headings that can bleed into a column.
-    const cleaned=col.filter(t=>
-      !/^week\b/i.test(t) &&
-      !/^safety moments?$/i.test(t) &&
-      !/momento de segurança/i.test(t) &&
-      !/pequenas mudanças, risco diferente/i.test(t)
+    const cleaned=colLines.filter(text=>
+      !/^week\b/i.test(text)&&
+      !/^safety moments?$/i.test(text)&&
+      !/momento de segurança/i.test(text)&&
+      !/^pequenas mudanças, risco diferente/i.test(text)
     );
-
-    const withHeader=[labels[day],...cleaned];
-    const parsed=splitSafetySections(withHeader);
-    days.push({day,label:labels[day],short:shorts[day],...parsed});
+    days.push({day,label:labels[day],short:shorts[day],...splitSafetySections([labels[day],...cleaned])});
   }
 
-  const usable=days.filter(d=>d.title||d.focus||d.points.length||d.summary);
+  const usable=days.filter(d=>d.title||d.focus||d.points.length||d.summary||d.action);
   const weekInfo={
-    title:(lines.find(l=>l.y>bodyCutoff&&l.text.length>12&&!/^week\b/i.test(l.text))?.text)||"Safety Moments",
-    week:(lines.find(l=>/^week\b/i.test(l.text))?.text)||""
+    title:(allLines.find(l=>l.y>bodyCutoff&&l.text.length>12&&!/^week\b/i.test(l.text))?.text)||"Safety Moments",
+    week:(allLines.find(l=>/^week\b/i.test(l.text))?.text)||""
   };
   return {days:usable.length>=3?days:[],weekInfo};
 }
@@ -1674,15 +1707,16 @@ function renderSafetyDetail(){
     return;
   }
 
-  const focus=d.focus||"Leia o conteúdo do dia e identifique qualquer mudança ou condição que possa alterar o risco da atividade.";
-  const points=(d.points||[]).filter(Boolean).slice(0,4);
+  const focus=d.focus||"Conteúdo principal disponível no PDF semanal.";
+  const points=(d.points||[]).filter(Boolean);
   const pointHtml=points.length
     ? '<ul>'+points.map(p=>'<li>'+escapeSafetyHtml(p)+'</li>').join("")+'</ul>'
-    : '<ul><li>Reconheça mudanças no processo, material, ferramenta ou sequência.</li><li>Confirme se os controles existentes continuam eficazes.</li><li>Converse com a equipe antes de executar a atividade.</li></ul>';
+    : '<p class="safety-reading-empty">Não há uma lista separada de pontos-chave neste dia.</p>';
+  const action=d.action||"";
+  const summary=d.summary||"";
+  const fullText=(d.fullText||"").split("\n").filter(Boolean);
 
-  const action=d.action || (points[0] ? "Antes de executar, confirme com a equipe se a mudança introduziu algum novo risco." : "Pare, avalie e confirme os controles antes de executar.");
-  const summary=d.summary || focus;
-  const weekTitle=escapeSafetyHtml(safetyWeekInfo.title||d.title||"Safety Moments");
+  const heroCopy=(focus||summary||fullText.join(" ")).replace(/\s+/g," ").trim();
   const weekMeta=escapeSafetyHtml(safetyWeekInfo.week||"Semana atual");
 
   box.innerHTML=
@@ -1694,16 +1728,19 @@ function renderSafetyDetail(){
           '<div class="safety-theme-chip"><span>◈</span><div><small>Tema da semana</small><b>Segurança</b></div></div>'+
           '<h2>'+escapeSafetyHtml(d.title)+'</h2>'+
           '<i></i>'+
-          '<p>'+escapeSafetyHtml(focus.length>250?focus.slice(0,247)+"…":focus)+'</p>'+
+          '<p>'+escapeSafetyHtml(heroCopy)+'</p>'+
         '</div>'+
       '</section>'+
       '<div class="safety-reading-stack">'+
         '<section class="safety-reading-card focus-card"><div class="safety-reading-icon">◎</div><div><span>FOCO</span><h3>'+escapeSafetyHtml(d.title)+'</h3><p>'+escapeSafetyHtml(focus)+'</p></div></section>'+
         '<section class="safety-reading-card points-card"><div class="safety-reading-icon">⚙</div><div><span>PONTOS-CHAVE</span>'+pointHtml+'</div></section>'+
-        '<section class="safety-reading-card action-card"><div class="safety-reading-icon">◉</div><div><span>AÇÃO DO DIA</span><h3>Pense antes de executar</h3><p>'+escapeSafetyHtml(action)+'</p></div></section>'+
+        (action?'<section class="safety-reading-card action-card"><div class="safety-reading-icon">◉</div><div><span>AÇÃO DO DIA</span><h3>Pense antes de executar</h3><p>'+escapeSafetyHtml(action)+'</p></div></section>':'')+
       '</div>'+
     '</div>'+
-    '<section class="safety-summary-strip"><div class="safety-summary-icon">▣</div><div><span>RESUMO</span><p>'+escapeSafetyHtml(summary)+'</p></div></section>';
+    (summary?'<section class="safety-summary-strip"><div class="safety-summary-icon">▣</div><div><span>RESUMO</span><p>'+escapeSafetyHtml(summary)+'</p></div></section>':'')+
+    '<section class="safety-fulltext"><div class="safety-fulltext-head"><span>LEITURA COMPLETA DO DIA</span><small>Texto integral extraído da coluna de '+escapeSafetyHtml(d.label)+'</small></div>'+
+      '<div class="safety-fulltext-body">'+fullText.map(line=>'<p>'+escapeSafetyHtml(line)+'</p>').join("")+'</div>'+
+    '</section>';
 }
 
 function showSafetyMode(mode){
