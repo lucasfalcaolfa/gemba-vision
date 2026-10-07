@@ -452,7 +452,9 @@ async function refreshOeeHeatmap(force=false){
   if(oeeHeatmapLoading||currentPage!=="heatmap")return;
   const startDate=heatmapFilterState.startDate||todayISO();
   const endDate=heatmapFilterState.endDate||startDate;
-  const key=[startDate,endDate,heatmapFilterState.area,heatmapFilterState.line].join("|");
+  const startTime=heatmapFilterState.start||"00:00";
+  const endTime=heatmapFilterState.end||"23:59";
+  const key=[startDate,endDate,startTime,endTime,heatmapFilterState.area,heatmapFilterState.line,heatmapFilterState.shift].join("|");
   if(!force&&oeeHeatmapRows.length&&oeeHeatmapKey===key){
     renderOeeHeatmap();
     return;
@@ -465,8 +467,11 @@ async function refreshOeeHeatmap(force=false){
   }
 
   try{
-    // Consulta um dia extra para completar o 2º turno do último dia (17:00–02:00).
-    const pitches=await window.L2L.getPitchHeat(startDate,nextIsoDay(endDate));
+    // Quando o período termina no fim do dia, consulta até 02:00 do dia seguinte
+    // para completar o 2º turno (17:00–02:00). Em outros horários, respeita a janela exata.
+    const queryEndDate=endTime==="23:59"?nextIsoDay(endDate):endDate;
+    const queryEndTime=endTime==="23:59"?"02:00":endTime;
+    const pitches=await window.L2L.getPitchHeat(startDate,queryEndDate,startTime,queryEndTime);
     const hourly=pitchesToHourlyRows(pitches);
     oeeHourlyHeatmapRows=hourly;
     oeeHeatmapRows=aggregateShiftRows(hourly).filter(r=>r.date>=startDate&&r.date<=endDate);
