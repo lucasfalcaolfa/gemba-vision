@@ -61,8 +61,7 @@ async function refreshOeeRange(){
   const ctx=document.getElementById("oeeContext");
   if(ctx)ctx.textContent="🟡 Consultando L2L...";
   try{
-    const date=oeeFilterState.date||todayISO();
-    oeeRows=await window.L2L.getRange(oeeFilterState.startDate||date,oeeFilterState.endDate||date,oeeFilterState.start,oeeFilterState.end);
+    oeeRows=await window.L2L.getRange(oeeFilterState.startDate||todayISO(),oeeFilterState.endDate||oeeFilterState.startDate||todayISO(),oeeFilterState.start,oeeFilterState.end);
     l2lLastUpdate=new Date();
     l2lError="";
     if(currentPage==="oee"){
@@ -260,7 +259,7 @@ function renderOeeLive(){
   }
 
   const ctx=document.getElementById("oeeContext");
-  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+oeeFilterState.date+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s)"+shiftNote;
+  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(oeeFilterState.startDate||"")+(oeeFilterState.endDate&&oeeFilterState.endDate!==oeeFilterState.startDate?" → "+oeeFilterState.endDate:"")+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s)"+shiftNote;
 
   const table=document.getElementById("oeeTable");
   if(table){
@@ -300,7 +299,7 @@ function production(){
       '<label>Setor<select id="prodArea"><option value="Todas">Toda a fábrica</option></select></label>'+
       '<label>Linha<select id="prodLinha"><option value="Todas">Todas as linhas</option></select></label>'+
       '<label>Turno<select id="prodTurno"><option value="Todos">Todos os turnos</option><option value="1">1º Turno</option><option value="2">2º Turno</option><option value="3">3º Turno</option></select></label>'+
-      '<label>Data<input id="prodDate" type="date"></label>'+
+      '<label>Data inicial<input id="prodStartDate" type="date"></label><label>Data final<input id="prodEndDate" type="date"></label>'+
       '<label>Hora inicial<input id="prodStart" type="time" value="00:00"></label>'+
       '<label>Hora final<input id="prodEnd" type="time" value="23:59"></label>'+
     '</div>'+
@@ -325,8 +324,7 @@ async function refreshProductionRange(){
   const ctx=document.getElementById("prodContext");
   if(ctx)ctx.textContent="🟡 Consultando L2L...";
   try{
-    const date=productionFilterState.date||todayISO();
-    productionRows=await window.L2L.getRange(productionFilterState.startDate||date,productionFilterState.endDate||date,productionFilterState.start,productionFilterState.end);
+    productionRows=await window.L2L.getRange(productionFilterState.startDate||todayISO(),productionFilterState.endDate||productionFilterState.startDate||todayISO(),productionFilterState.start,productionFilterState.end);
     l2lLastUpdate=new Date();
     l2lError="";
     if(currentPage==="production"){
@@ -697,7 +695,7 @@ function renderProductionLive(){
   const selectedLine=productionFilterState.line==="Todas"?"Todas as linhas":productionFilterState.line;
   const selectedShift=productionFilterState.shift==="Todos"?"Todos os turnos":productionFilterState.shift+"º Turno";
   const ctx=document.getElementById("prodContext");
-  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+productionFilterState.date+" • "+productionFilterState.start+"–"+productionFilterState.end+" • "+groups.length+" linha(s)";
+  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(productionFilterState.startDate||"")+(productionFilterState.endDate&&productionFilterState.endDate!==productionFilterState.startDate?" → "+productionFilterState.endDate:"")+" • "+productionFilterState.start+"–"+productionFilterState.end+" • "+groups.length+" linha(s)";
 
   const table=document.getElementById("prodTable");
   if(table){
