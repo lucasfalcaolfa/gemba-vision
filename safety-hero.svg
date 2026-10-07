@@ -1,24 +1,61 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 820">
 <defs>
-  <linearGradient id="bg" x1="0" x2="1"><stop stop-color="#18384e"/><stop offset="1" stop-color="#d6dde0"/></linearGradient>
-  <linearGradient id="shirt" x1="0" x2="1"><stop stop-color="#d8dee2"/><stop offset="1" stop-color="#bfc8cd"/></linearGradient>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#0d2b43"/>
+    <stop offset=".55" stop-color="#27546f"/>
+    <stop offset="1" stop-color="#d9e3e8"/>
+  </linearGradient>
+  <linearGradient id="steel" x1="0" x2="1"><stop stop-color="#edf2f4"/><stop offset="1" stop-color="#aebbc3"/></linearGradient>
+  <linearGradient id="jacket" x1="0" x2="1"><stop stop-color="#dfe5e8"/><stop offset=".6" stop-color="#c6d0d5"/><stop offset="1" stop-color="#aebbc3"/></linearGradient>
+  <linearGradient id="red" x1="0" x2="1"><stop stop-color="#cf2027"/><stop offset="1" stop-color="#8f1318"/></linearGradient>
+  <filter id="shadow"><feDropShadow dx="0" dy="10" stdDeviation="12" flood-color="#092238" flood-opacity=".28"/></filter>
 </defs>
-<rect width="1200" height="700" fill="url(#bg)"/>
-<g opacity=".24" stroke="#f5b438" stroke-width="12">
-  <path d="M720 60v600M890 0v700M1030 80v620M650 180h550M620 360h580M690 540h510"/>
+
+<rect width="1400" height="820" fill="url(#bg)"/>
+<g opacity=".19" fill="none" stroke="#f1b33a" stroke-width="11">
+  <path d="M790 55v705M980 15v745M1170 70v690M720 175h610M700 365h650M735 575h590"/>
 </g>
-<g opacity=".25" fill="#eef4f6"><rect x="750" y="100" width="140" height="90"/><rect x="940" y="230" width="190" height="120"/><rect x="650" y="430" width="170" height="120"/></g>
-<g transform="translate(650 95)">
-  <ellipse cx="250" cy="245" rx="118" ry="108" fill="#c49a7b"/>
-  <path d="M135 245c0-88 43-150 115-150 72 0 116 61 116 150z" fill="#3b2a22"/>
-  <path d="M110 172c12-91 70-144 140-144s128 53 140 144z" fill="#f4f6f7" stroke="#c9d2d7" stroke-width="8"/>
-  <path d="M92 174h316" stroke="#d4dde1" stroke-width="15" stroke-linecap="round"/>
-  <text x="250" y="125" text-anchor="middle" font-family="Arial" font-weight="700" font-size="34" fill="#e2231a">Astemo</text>
-  <path d="M120 315c43-45 86-62 130-62 48 0 96 19 145 68 51 52 75 131 79 225H34c6-103 34-183 86-231z" fill="url(#shirt)"/>
-  <path d="M70 446c98-52 198-77 300-60 38 6 72 18 104 33v127H34c1-35 12-69 36-100z" fill="#c7d0d5"/>
-  <path d="M61 426c33-49 69-78 108-93l61 213H93zM438 423c-35-46-70-74-106-88l-61 211h167z" fill="#b3181d"/>
-  <text x="300" y="482" transform="rotate(-8 300 482)" font-family="Arial" font-weight="700" font-size="48" fill="#b3181d">Astemo</text>
-  <rect x="28" y="365" width="130" height="170" rx="12" fill="#edf2f4" stroke="#728b99" stroke-width="8" transform="rotate(-10 28 365)"/>
-  <path d="M58 396l75-13M54 425l78-13M50 454l78-13M47 483l76-13" stroke="#8aa1ae" stroke-width="5"/>
+<g opacity=".28" fill="#eef5f7">
+  <rect x="760" y="95" width="165" height="100" rx="10"/>
+  <rect x="1025" y="225" width="245" height="130" rx="10"/>
+  <rect x="745" y="445" width="215" height="145" rx="10"/>
+  <rect x="1030" y="500" width="250" height="170" rx="10"/>
+</g>
+<g opacity=".25" stroke="#23465d" stroke-width="9">
+  <path d="M885 95v100M760 145h165M1148 225v130M1025 290h245M850 445v145M745 515h215"/>
+</g>
+
+<g transform="translate(670 70)" filter="url(#shadow)">
+  <ellipse cx="310" cy="278" rx="122" ry="118" fill="#bc8e70"/>
+  <path d="M190 280c2-100 50-167 121-167 82 0 131 73 130 171-39-24-77-35-119-36-48-1-91 10-132 32z" fill="#342922"/>
+  <path d="M159 186c15-100 77-157 151-157 76 0 138 57 153 157z" fill="url(#steel)" stroke="#bcc8ce" stroke-width="8"/>
+  <path d="M137 189h350" stroke="#cbd6db" stroke-width="17" stroke-linecap="round"/>
+  <path d="M218 89h184" stroke="#f8fafb" stroke-width="16" stroke-linecap="round" opacity=".7"/>
+  <text x="310" y="140" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="38" fill="#c82027">Astemo</text>
+
+  <path d="M221 266c35 26 66 39 94 39 32 0 67-14 105-42" fill="none" stroke="#704c3b" stroke-width="8"/>
+  <path d="M176 306c-2 41 20 70 56 87 24 12 49 18 76 18 31 0 61-8 88-23 31-18 51-47 49-82-36 19-78 30-126 31-55 1-103-9-143-31z" fill="#b78669"/>
+
+  <path d="M125 430c49-54 108-83 178-84 78-1 146 29 202 91 58 65 92 162 99 289H30c8-131 40-229 95-296z" fill="url(#jacket)"/>
+  <path d="M57 572c56-77 116-124 180-142l76 296H60z" fill="url(#red)"/>
+  <path d="M575 570c-58-75-116-121-177-139l-78 295h255z" fill="url(#red)"/>
+  <path d="M246 417c22 26 46 38 72 38 28 0 53-13 76-39l-38 310h-76z" fill="#eef2f4"/>
+
+  <g transform="translate(55 500) rotate(-11)">
+    <rect x="0" y="0" width="150" height="198" rx="14" fill="#e9eef1" stroke="#536e80" stroke-width="9"/>
+    <rect x="48" y="-10" width="55" height="24" rx="7" fill="#6b8291"/>
+    <path d="M30 50h90M30 82h90M30 114h76M30 146h85" stroke="#718795" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="24" cy="50" r="4" fill="#cf2027"/><circle cx="24" cy="82" r="4" fill="#cf2027"/><circle cx="24" cy="114" r="4" fill="#cf2027"/>
+  </g>
+
+  <path d="M427 252h45v80h-45z" fill="#1b3344"/>
+  <path d="M437 235c34 10 55 32 66 66" fill="none" stroke="#1b3344" stroke-width="9" stroke-linecap="round"/>
+  <text x="415" y="635" transform="rotate(-7 415 635)" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="58" fill="#b9181f">Astemo</text>
+</g>
+
+<g opacity=".35">
+  <circle cx="1240" cy="110" r="36" fill="#f2b33d"/>
+  <circle cx="1288" cy="150" r="18" fill="#e2231a"/>
+  <rect x="1120" y="620" width="180" height="20" rx="10" fill="#f2b33d"/>
 </g>
 </svg>
