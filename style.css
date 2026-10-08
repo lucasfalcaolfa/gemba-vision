@@ -7117,3 +7117,35 @@ nav.home-quick-nav{
     scroll-margin-top:132px !important;
   }
 }
+
+
+/* Home quick navigation — reliable sticky behavior */
+#content{
+  overflow-x:clip !important;
+  overflow-y:visible !important;
+}
+.page:has(nav.home-quick-nav){
+  overflow:visible !important;
+}
+nav.home-quick-nav{
+  position:-webkit-sticky !important;
+  position:sticky !important;
+  top:78px !important;
+  z-index:45 !important;
+  width:100% !important;
+  background:rgba(255,255,255,.98) !important;
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  box-shadow:0 8px 24px rgba(8,31,49,.14) !important;
+}
+.home-block{
+  scroll-margin-top:142px !important;
+}
+@media(max-width:960px){
+  nav.home-quick-nav{top:70px !important}
+  .home-block{scroll-margin-top:134px !important}
+}
+@media(max-width:640px){
+  nav.home-quick-nav{top:66px !important}
+  .home-block{scroll-margin-top:128px !important}
+}
