@@ -3449,3 +3449,87 @@ body.modal-open{overflow:hidden}
     text-align:left;
   }
 }
+
+/* Products by shift in FND home summary */
+.home-shift-product-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+}
+.home-shift-product-card{
+  border:1px solid #e2e9ed;
+  border-radius:11px;
+  overflow:hidden;
+  background:#fff;
+}
+.home-shift-product-card.shift-1{border-top:3px solid #e9a400}
+.home-shift-product-card.shift-2{border-top:3px solid #28a765}
+.home-shift-product-card.shift-3{border-top:3px solid #6b63e9}
+.home-shift-product-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:8px;
+  padding:10px 11px;
+  background:#f9fbfc;
+  border-bottom:1px solid #edf1f3;
+}
+.home-shift-product-head span{
+  display:block;
+  font-size:9px;
+  font-weight:900;
+  color:#173247;
+}
+.home-shift-product-head strong{
+  display:block;
+  margin-top:2px;
+  font-size:7px;
+  color:#81929d;
+}
+.home-shift-product-head>b{
+  font-size:9px;
+  color:#244c65;
+  white-space:nowrap;
+}
+.home-shift-product-list{
+  display:flex;
+  flex-direction:column;
+}
+.home-shift-product-row{
+  display:grid;
+  grid-template-columns:24px 1fr auto;
+  align-items:center;
+  gap:8px;
+  padding:9px 10px;
+  border-bottom:1px solid #eef2f4;
+}
+.home-shift-product-row:last-child{border-bottom:0}
+.home-shift-product-row>div{
+  min-width:0;
+}
+.home-shift-product-row strong{
+  display:block;
+  font-size:9px;
+  color:#153247;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.home-shift-product-row small{
+  display:block;
+  margin-top:2px;
+  font-size:7px;
+  color:#8998a1;
+}
+.home-shift-product-row>b{
+  font-size:10px;
+  color:#143c57;
+}
+.home-shift-product-empty{
+  padding:16px 10px;
+  text-align:center;
+  color:#94a0a8;
+  font-size:8px;
+}
+@media(max-width:1100px){
+  .home-shift-product-grid{grid-template-columns:1fr}
+}
