@@ -24,6 +24,18 @@ window.L2L = {
     }
     return Array.isArray(payload.data) ? payload.data : [];
   },
+  async getOeeSummaryWindow(startDateTime, endDateTime) {
+    const start = encodeURIComponent(startDateTime);
+    const end = encodeURIComponent(endDateTime);
+    const response = await fetch(
+      "/api/l2l?report=daily&start=" + start + "&end=" + end
+    );
+    const payload = await response.json();
+    if (!response.ok || payload.success === false) {
+      throw new Error(payload.error || "Falha ao consultar resumo OEE do L2L");
+    }
+    return Array.isArray(payload.data) ? payload.data : [];
+  },
   async getDailyWindow(startDateTime, endDateTime) {
     const start = encodeURIComponent(startDateTime);
     const end = encodeURIComponent(endDateTime);
