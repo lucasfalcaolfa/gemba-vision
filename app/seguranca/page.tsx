@@ -1,5 +1,5 @@
-import { GenericPage } from "@/components/pages/GenericPage";
+import { SafetyPage } from "@/components/pages/SafetyPage";
 
 export default function Page() {
-  return <GenericPage title="Momento de Segurança" subtitle="Conteúdo diário de HSE" mode="safety" />;
+  return <SafetyPage />;
 }
