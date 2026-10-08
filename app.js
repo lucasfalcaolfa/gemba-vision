@@ -893,13 +893,18 @@ function renderOeeLive(){
 
   const table=document.getElementById("oeeTable");
   if(table){
-    const lineRank=[...groups].sort((a,b)=>b.performance-a.performance);
-    table.innerHTML=rankingRows(
-      lineRank,
-      g=>g.line,
-      g=>g.performance,
-      g=>(g.area||"Sem setor")+" • OEE "+fmtPct(g.oee)+" • Dispon. "+fmtPct(g.availability)+" • Qualidade "+fmtPct(g.quality)
-    );
+    const lineRank=[...groups].sort((a,b)=>b.oee-a.oee);
+    table.innerHTML=
+      '<div class="oee-live-rank-head"><span><i></i> Atualização automática a cada 1 minuto</span><b>'+liveStamp()+'</b></div>'+
+      rankingRows(
+        lineRank,
+        g=>g.line,
+        g=>g.oee,
+        g=>(g.area||"Sem setor")+
+          " • OA "+fmtPct(g.availability)+
+          " • PPP "+fmtPct(g.performance)+
+          " • Yield "+fmtPct(g.quality)
+      );
   }
 
   const chart=document.getElementById("oeeChart");
