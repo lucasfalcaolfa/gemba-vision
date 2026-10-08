@@ -1,5 +1,5 @@
-import { GenericPage } from "@/components/pages/GenericPage";
+import { HeatmapPage } from "@/components/pages/HeatmapPage";
 
 export default function Page() {
-  return <GenericPage title="Mapa de Calor OEE" subtitle="Eficiência diária por turno, linha e período" mode="heatmap" />;
+  return <HeatmapPage />;
 }
