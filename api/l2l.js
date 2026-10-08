@@ -340,6 +340,14 @@ module.exports = async function handler(req, res) {
             line: label(row.line, lineMap, row.linecode ?? row.lineabbreviation ?? "Sem linha"),
             line_id: refId(row.line),
             machine: row.machinedescription ?? row.machine?.description ?? row.machine?.name ?? row.machinecode ?? "",
+            product: label(
+              row.product ?? row.actual_product ?? row.planned_product ?? row.productcomponent ?? row.product_component,
+              productMap,
+              ""
+            ),
+            product_id: refId(
+              row.product ?? row.actual_product ?? row.planned_product ?? row.productcomponent ?? row.product_component
+            ),
             dispatch_type: label(typeRef, dispatchTypeMap, row.dispatchtypecode ?? row.dispatch_type_code ?? "Dispatch"),
             dispatch_type_id: refId(typeRef),
             description: String(row.description ?? row.problem ?? row.name ?? row.text ?? "").trim(),
