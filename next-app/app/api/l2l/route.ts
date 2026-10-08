@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const legacyHandler = require("@/lib/l2l-handler");
+const legacyHandler = require("../../../lib/l2l-handler");
 
 export const dynamic = "force-dynamic";
 
