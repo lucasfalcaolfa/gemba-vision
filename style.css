@@ -3055,3 +3055,60 @@ body.modal-open{overflow:hidden}
     text-align:left;
   }
 }
+
+/* Emphasize OEE inside each FND machine card */
+.home-machine-status{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:22px;
+  padding:4px 8px;
+  border-radius:999px;
+  font-size:7px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.45px;
+  border:1px solid transparent;
+}
+.home-machine-status.good{
+  background:#edf9f2;
+  color:#23724d;
+  border-color:#d4ebdd;
+}
+.home-machine-status.warn{
+  background:#fff7df;
+  color:#8d6a13;
+  border-color:#f0e0a9;
+}
+.home-machine-status.bad{
+  background:#fff0ef;
+  color:#b23c37;
+  border-color:#f0d1cf;
+}
+.home-machine-oee-main{
+  padding:15px 14px 12px;
+  text-align:center;
+  background:linear-gradient(180deg,#fff 0%,#fbfcfd 100%);
+}
+.home-machine-oee-main>span{
+  display:block;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.8px;
+  color:#80919c;
+  margin-bottom:4px;
+}
+.home-machine-oee-main>strong{
+  display:block;
+  font-size:28px;
+  line-height:1;
+}
+.home-machine-card.good .home-machine-oee-main>strong{color:#23a766}
+.home-machine-card.warn .home-machine-oee-main>strong{color:#c99315}
+.home-machine-card.bad .home-machine-oee-main>strong{color:#ef5350}
+.home-machine-oee-main>small{
+  display:block;
+  margin-top:5px;
+  font-size:7px;
+  color:#98a4ab;
+}
