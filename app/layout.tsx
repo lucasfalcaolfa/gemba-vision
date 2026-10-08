@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AppShell } from "@/components/AppShell";
 
+// Preview deploy trigger
+
 export const metadata: Metadata = {
   title: "Gemba Vision",
   description: "Gestão à vista FND integrada ao L2L",
