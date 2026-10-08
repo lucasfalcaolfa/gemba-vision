@@ -12,16 +12,6 @@ window.L2L = {
     }
     return Array.isArray(payload.data) ? payload.data : [];
   },
-  async getProducts(startDateTime, endDateTime) {
-    const start = encodeURIComponent(startDateTime || "");
-    const end = encodeURIComponent(endDateTime || "");
-    const response = await fetch("/api/l2l?report=products&start=" + start + "&end=" + end);
-    const payload = await response.json();
-    if (!response.ok || payload.success === false) {
-      throw new Error(payload.error || "Falha ao consultar produtos cadastrados no L2L");
-    }
-    return Array.isArray(payload.data) ? payload.data : [];
-  },
   async getPitchHeat(startDate, endDate, startTime = "00:00", endTime = "23:59") {
     const first = startDate || new Date().toISOString().slice(0, 10);
     const last = endDate || first;
