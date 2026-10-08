@@ -4557,3 +4557,48 @@ body.modal-open{
   .home-defect-top5{grid-template-columns:1fr}
   .home-defect-modal-panel{width:calc(100vw - 20px)}
 }
+
+/* Dispatch-driven defect selectors */
+.home-defect-selector-panel{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-bottom:14px;
+  padding:12px;
+  border:1px solid #e0e8ed;
+  border-radius:12px;
+  background:linear-gradient(180deg,#f9fbfc 0%,#fff 100%);
+}
+.home-defect-selector-panel>div{
+  min-width:0;
+}
+.home-defect-selector-panel label{
+  display:block;
+  margin-bottom:5px;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.55px;
+  text-transform:uppercase;
+  color:#758b99;
+}
+.home-defect-selector-panel select{
+  width:100%;
+  min-height:38px;
+  padding:0 10px;
+  border:1px solid #d7e2e8;
+  border-radius:9px;
+  background:#fff;
+  color:#173247;
+  font-size:9px;
+  font-weight:700;
+  outline:none;
+}
+.home-defect-selector-panel select:focus{
+  border-color:#537f98;
+  box-shadow:0 0 0 3px rgba(83,127,152,.1);
+}
+@media(max-width:700px){
+  .home-defect-selector-panel{
+    grid-template-columns:1fr;
+  }
+}
