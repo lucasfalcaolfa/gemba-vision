@@ -11,7 +11,15 @@ stock:{title:"Controle de Estoque",sub:"Estoque da Fundição — Inacabado e Ac
 function shell(p){return '<div class="page"><div class="page-head"><div><h1>'+p.title+'</h1><p>'+p.sub+'</p></div><div class="refresh">● Atualização: automática</div></div>'+p.html+'</div>'}
 function card(label,value,cls=""){return '<div class="card"><div class="label">'+label+'</div><div class="value '+cls+'">'+value+'</div></div>'}
 function home(){
-  return '<section class="home-executive-hero panel">'+
+  return '<nav class="home-quick-nav" aria-label="Resumo da Visão Geral">'+
+    '<a class="home-quick-link home-quick-link-hse" href="#home-hse"><span>HSE</span><b>Segurança</b></a>'+
+    '<a class="home-quick-link" href="#home-result"><span>01</span><b>Resultado</b></a>'+
+    '<a class="home-quick-link" href="#home-production"><span>02</span><b>Produção</b></a>'+
+    '<a class="home-quick-link" href="#home-flow"><span>03</span><b>Produtos</b></a>'+
+    '<a class="home-quick-link" href="#home-efficiency"><span>04</span><b>OEE</b></a>'+
+    '<a class="home-quick-link" href="#home-quality"><span>05</span><b>Não Qualidade</b></a>'+
+    '<a class="home-quick-link" href="#home-events"><span>06</span><b>Ocorrências</b></a>'+
+  '</nav>'+'<section class="home-executive-hero panel">'+
     '<div class="home-executive-main">'+
       '<div class="home-executive-copy">'+
         '<span class="home-executive-kicker">GESTÃO À VISTA • FND</span>'+
@@ -35,15 +43,6 @@ function home(){
     '<div class="home-block-title home-hse-top-title"><div><span>HSE • CONTEÚDO DO DIA</span><h2>Momento de Segurança</h2></div><p id="homeHseDateLabel">Conteúdo de segurança do dia.</p></div>'+
     '<div class="panel home-hse-daily-showcase"><div id="homeHseToday"></div></div>'+
   '</section>'+
-  '<nav class="home-quick-nav" aria-label="Resumo da Visão Geral">'+
-    '<a class="home-quick-link home-quick-link-hse" href="#home-hse"><span>HSE</span><b>Segurança</b></a>'+
-    '<a class="home-quick-link" href="#home-result"><span>01</span><b>Resultado</b></a>'+
-    '<a class="home-quick-link" href="#home-production"><span>02</span><b>Produção</b></a>'+
-    '<a class="home-quick-link" href="#home-flow"><span>03</span><b>Produtos</b></a>'+
-    '<a class="home-quick-link" href="#home-efficiency"><span>04</span><b>OEE</b></a>'+
-    '<a class="home-quick-link" href="#home-quality"><span>05</span><b>Não Qualidade</b></a>'+
-    '<a class="home-quick-link" href="#home-events"><span>06</span><b>Ocorrências</b></a>'+
-  '</nav>'+
   '<section class="home-block" id="home-result">'+
     '<div class="home-block-title"><div><span>01 • RESULTADO DO DIA</span><h2>Resumo executivo</h2></div><p>Principais indicadores da FND para leitura rápida.</p></div>'+
     '<div class="home-yesterday-kpis" id="homeYesterdayKpis"></div>'+
