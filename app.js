@@ -3108,15 +3108,28 @@ function initHomeQuickNavFollow(){
     }
   }
 
-  const onScroll=()=>requestAnimationFrame(update);
+  let ticking=false;
+  const onScroll=()=>{
+    if(ticking)return;
+    ticking=true;
+    requestAnimationFrame(()=>{
+      update();
+      ticking=false;
+    });
+  };
   const onResize=()=>requestAnimationFrame(update);
+  const scrollHost=document.getElementById("content");
 
   window.addEventListener("scroll",onScroll,{passive:true});
+  document.addEventListener("scroll",onScroll,{passive:true,capture:true});
+  if(scrollHost)scrollHost.addEventListener("scroll",onScroll,{passive:true});
   window.addEventListener("resize",onResize);
   update();
 
   homeQuickNavCleanup=()=>{
     window.removeEventListener("scroll",onScroll);
+    document.removeEventListener("scroll",onScroll,true);
+    if(scrollHost)scrollHost.removeEventListener("scroll",onScroll);
     window.removeEventListener("resize",onResize);
     if(placeholder.parentNode)placeholder.remove();
     nav.classList.remove("is-following","is-at-home-end");
