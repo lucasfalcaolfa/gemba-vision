@@ -3058,10 +3058,79 @@ function closeHseImage(){
   document.body.classList.remove("modal-open");
 }
 
+let homeQuickNavCleanup=null;
+
+function initHomeQuickNavFollow(){
+  if(homeQuickNavCleanup){
+    homeQuickNavCleanup();
+    homeQuickNavCleanup=null;
+  }
+
+  const nav=document.querySelector("nav.home-quick-nav");
+  const lastSection=document.getElementById("home-events");
+  if(!nav||!lastSection)return;
+
+  const placeholder=document.createElement("div");
+  placeholder.className="home-quick-nav-placeholder";
+  nav.parentNode.insertBefore(placeholder,nav);
+
+  const getTop=()=>window.innerWidth<=640?66:(window.innerWidth<=960?70:78);
+
+  function update(){
+    if(currentPage!=="home"||!document.body.contains(nav))return;
+
+    const top=getTop();
+    const anchorRect=placeholder.getBoundingClientRect();
+    const endRect=lastSection.getBoundingClientRect();
+    const navHeight=nav.offsetHeight||48;
+    const shouldFollow=anchorRect.top<=top;
+    const reachedEnd=endRect.bottom<=top+navHeight+8;
+
+    if(shouldFollow){
+      placeholder.style.height=navHeight+"px";
+      const rect=placeholder.getBoundingClientRect();
+      nav.style.left=rect.left+"px";
+      nav.style.width=rect.width+"px";
+      nav.style.top=top+"px";
+      nav.classList.add("is-following");
+
+      if(reachedEnd){
+        nav.classList.add("is-at-home-end");
+      }else{
+        nav.classList.remove("is-at-home-end");
+      }
+    }else{
+      placeholder.style.height="0px";
+      nav.style.left="";
+      nav.style.width="";
+      nav.style.top="";
+      nav.classList.remove("is-following","is-at-home-end");
+    }
+  }
+
+  const onScroll=()=>requestAnimationFrame(update);
+  const onResize=()=>requestAnimationFrame(update);
+
+  window.addEventListener("scroll",onScroll,{passive:true});
+  window.addEventListener("resize",onResize);
+  update();
+
+  homeQuickNavCleanup=()=>{
+    window.removeEventListener("scroll",onScroll);
+    window.removeEventListener("resize",onResize);
+    if(placeholder.parentNode)placeholder.remove();
+    nav.classList.remove("is-following","is-at-home-end");
+    nav.style.left="";
+    nav.style.width="";
+    nav.style.top="";
+  };
+}
+
 function initHome(){
   renderHomeYesterday();
   refreshHomeYesterday();
   refreshHseBulletin();
+  initHomeQuickNavFollow();
 }
 
 let currentPage="home";
@@ -3277,6 +3346,10 @@ function applyLiveData(page){
 }
 
 function render(page){
+  if(homeQuickNavCleanup&&page!=="home"){
+    homeQuickNavCleanup();
+    homeQuickNavCleanup=null;
+  }
   if(currentPage==="production"&&page!=="production")destroyProdCharts();
   currentPage=page;
   document.getElementById("content").innerHTML=shell(pages[page]);
