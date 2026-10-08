@@ -4123,3 +4123,35 @@ nav.home-quick-nav .home-quick-link b{
   color:#6f8390;
   font-weight:700;
 }
+
+/* Automatic OEE filters */
+.oee-auto-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:34px;
+  padding:0 11px;
+  border:1px solid #d8e7df;
+  border-radius:9px;
+  background:#f4fbf7;
+  color:#2e6e4e;
+  font-size:8px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.oee-auto-badge i{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#2dbc73;
+  box-shadow:0 0 0 3px rgba(45,188,115,.12);
+}
+.oee-filter-actions{
+  align-items:center;
+}
+@media(max-width:760px){
+  .oee-auto-badge{
+    width:100%;
+    justify-content:center;
+  }
+}
