@@ -58,14 +58,29 @@ function home(){
   '<section class="home-block" id="home-hse">'+
     '<div class="home-block-title"><div><span>07 • HSE SEMANAL</span><h2>Informativo de Segurança</h2></div><p>Conteúdo visual da semana • atualização automática da imagem.</p></div>'+
     '<div class="panel home-hse-panel">'+
-      '<div class="home-hse-head">'+
-        '<div><span>HSE • DIÁLOGO SEMANAL</span><h3>Pequenas Mudanças, Risco Diferente</h3><p>Material oficial exibido na Visão Geral para consulta rápida da equipe.</p></div>'+
-        '<div class="home-hse-live"><i></i><span id="homeHseStatus">Imagem atualizada automaticamente</span></div>'+
+      '<div class="home-hse-hero">'+
+        '<div class="home-hse-hero-copy">'+
+          '<div class="home-hse-eyebrow"><span>HSE</span><b>Boletim semanal de segurança</b></div>'+
+          '<h3>Pequenas Mudanças, Risco Diferente</h3>'+
+          '<p>Conteúdo oficial para apoiar o diálogo diário de segurança e reforçar os principais riscos da semana.</p>'+
+          '<div class="home-hse-meta">'+
+            '<span><i class="dot"></i> Conteúdo vigente</span>'+
+            '<span>Leitura recomendada: início do turno</span>'+
+            '<span id="homeHseStatus">Atualização automática ativa</span>'+
+          '</div>'+
+        '</div>'+
+        '<div class="home-hse-hero-badge"><span>07</span><small>HSE<br>SEMANAL</small></div>'+
       '</div>'+
-      '<button type="button" class="home-hse-image-wrap" onclick="openHseImage()" aria-label="Abrir informativo HSE em tela ampliada">'+
-        '<img id="hseWeeklyImage" src="assets/hse-weekly.jpg" alt="Informativo semanal de HSE">'+
-        '<span>Ampliar informativo ↗</span>'+
-      '</button>'+
+      '<div class="home-hse-content">'+
+        '<div class="home-hse-toolbar">'+
+          '<div><span>INFORMATIVO OFICIAL</span><strong>Visualização da semana</strong></div>'+
+          '<div class="home-hse-toolbar-actions"><span class="home-hse-live"><i></i> Sincronizado</span><button type="button" onclick="openHseImage()">Abrir em tela cheia ↗</button></div>'+
+        '</div>'+
+        '<button type="button" class="home-hse-image-wrap" onclick="openHseImage()" aria-label="Abrir informativo HSE em tela ampliada">'+
+          '<div class="home-hse-image-frame"><img id="hseWeeklyImage" src="assets/hse-weekly.jpg" alt="Informativo semanal de HSE"></div>'+
+          '<div class="home-hse-image-footer"><span>Clique no informativo para ampliar</span><b>Visualizar detalhes →</b></div>'+
+        '</button>'+
+      '</div>'+
     '</div>'+
     '<div class="home-hse-modal" id="homeHseModal" aria-hidden="true">'+
       '<div class="home-hse-modal-backdrop" onclick="closeHseImage()"></div>'+
