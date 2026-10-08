@@ -7576,3 +7576,170 @@ body.home-nav-in-topbar .home-block{
     height:calc(100vh - 108px) !important;
   }
 }
+
+
+/* =========================================================
+   TOPBAR — MANAGEMENT EXECUTIVE FINAL
+   ========================================================= */
+body.home-nav-in-topbar .topbar{
+  height:136px !important;
+  padding:0 28px 60px !important;
+  gap:30px !important;
+  align-items:center !important;
+  background:linear-gradient(90deg,#061c2d 0%,#082a40 52%,#0b334c 100%) !important;
+  border-bottom:1px solid rgba(255,255,255,.08) !important;
+  box-shadow:0 8px 26px rgba(2,18,29,.22) !important;
+}
+body.home-nav-in-topbar .brand{
+  flex:0 0 270px !important;
+  height:76px !important;
+  padding-left:4px !important;
+}
+body.home-nav-in-topbar .brand:before{
+  left:-28px !important;
+  top:0 !important;
+  width:300px !important;
+  height:76px !important;
+  background:linear-gradient(112deg,#5b132d 0%,#35162a 56%,rgba(8,31,49,0) 100%) !important;
+}
+body.home-nav-in-topbar .brand-logo{
+  width:188px !important;
+  transform:translateY(4px) !important;
+}
+body.home-nav-in-topbar .brand:after{
+  left:60px !important;
+  top:55px !important;
+  font-size:10px !important;
+  opacity:.9 !important;
+}
+body.home-nav-in-topbar .title{
+  font-size:24px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  letter-spacing:2.4px !important;
+  color:#fff !important;
+}
+body.home-nav-in-topbar .title:after{
+  content:"FND • GESTÃO À VISTA" !important;
+  margin-top:8px !important;
+  color:#8faabb !important;
+  font-size:7px !important;
+  letter-spacing:1.15px !important;
+}
+body.home-nav-in-topbar .clock{
+  min-width:190px !important;
+  padding:8px 0 8px 20px !important;
+  border-left:1px solid rgba(255,255,255,.12) !important;
+}
+body.home-nav-in-topbar .clock span{
+  margin-bottom:5px !important;
+  color:#9fb5c2 !important;
+  font-size:8px !important;
+  font-weight:700 !important;
+}
+body.home-nav-in-topbar .clock b{
+  font-size:20px !important;
+  font-weight:900 !important;
+  letter-spacing:.7px !important;
+  color:#fff !important;
+}
+
+nav.home-quick-nav.home-quick-nav-topbar{
+  position:fixed !important;
+  top:80px !important;
+  left:28px !important;
+  right:28px !important;
+  width:auto !important;
+  min-height:48px !important;
+  margin:0 !important;
+  padding:5px !important;
+  display:grid !important;
+  grid-template-columns:repeat(7,minmax(0,1fr)) !important;
+  gap:5px !important;
+  z-index:120 !important;
+  border:1px solid rgba(155,194,213,.20) !important;
+  border-radius:12px !important;
+  background:rgba(7,36,54,.97) !important;
+  box-shadow:0 10px 26px rgba(1,15,24,.24),inset 0 1px 0 rgba(255,255,255,.035) !important;
+  backdrop-filter:blur(10px) !important;
+  -webkit-backdrop-filter:blur(10px) !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  transform:none !important;
+  transition:opacity .2s ease,transform .2s ease,visibility .2s ease !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link{
+  min-width:0 !important;
+  min-height:37px !important;
+  padding:5px 10px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:8px !important;
+  border:1px solid transparent !important;
+  border-radius:8px !important;
+  text-decoration:none !important;
+  background:transparent !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link span{
+  min-width:25px !important;
+  height:25px !important;
+  padding:0 6px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border-radius:7px !important;
+  background:#15506f !important;
+  color:#fff !important;
+  font-size:7px !important;
+  font-weight:900 !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link b{
+  color:#dfeaf0 !important;
+  font-size:8px !important;
+  font-weight:800 !important;
+  white-space:nowrap !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link:hover{
+  background:rgba(255,255,255,.055) !important;
+  border-color:rgba(255,255,255,.08) !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link.is-current{
+  background:linear-gradient(180deg,rgba(28,91,121,.34),rgba(19,70,95,.28)) !important;
+  border-color:rgba(126,188,219,.22) !important;
+  box-shadow:inset 0 -2px 0 #7bc1e5 !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link-hse{
+  background:rgba(32,167,101,.10) !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link-hse span,
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link-hse.is-current span{
+  background:#20a765 !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar.is-at-home-end{
+  opacity:0 !important;
+  visibility:hidden !important;
+  transform:translateY(-10px) !important;
+  pointer-events:none !important;
+}
+body.home-nav-in-topbar .app{min-height:calc(100vh - 136px) !important}
+body.home-nav-in-topbar .sidebar{
+  top:136px !important;
+  height:calc(100vh - 136px) !important;
+}
+body.home-nav-in-topbar .home-block{scroll-margin-top:154px !important}
+@media(max-width:1100px){
+  body.home-nav-in-topbar .topbar{height:126px !important;padding:0 16px 54px !important;gap:18px !important}
+  body.home-nav-in-topbar .brand{flex-basis:220px !important}
+  body.home-nav-in-topbar .clock{min-width:150px !important}
+  nav.home-quick-nav.home-quick-nav-topbar{top:73px !important;left:16px !important;right:16px !important;display:flex !important;overflow-x:auto !important}
+  nav.home-quick-nav.home-quick-nav-topbar .home-quick-link{flex:0 0 auto !important;min-width:132px !important}
+  body.home-nav-in-topbar .sidebar{top:126px !important;height:calc(100vh - 126px) !important}
+}
+@media(max-width:640px){
+  body.home-nav-in-topbar .topbar{height:110px !important;padding:0 8px 47px !important}
+  body.home-nav-in-topbar .title{font-size:16px !important}
+  body.home-nav-in-topbar .clock{display:none !important}
+  nav.home-quick-nav.home-quick-nav-topbar{top:63px !important;left:8px !important;right:8px !important}
+  body.home-nav-in-topbar .sidebar{top:110px !important;height:calc(100vh - 110px) !important}
+}
