@@ -1,6 +1,9 @@
 name: Validate Next.js migration
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - migration/nextjs
