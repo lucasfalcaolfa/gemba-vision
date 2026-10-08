@@ -1,5 +1,5 @@
-import { GenericPage } from "@/components/pages/GenericPage";
+import { QualityPage } from "@/components/pages/QualityPage";
 
 export default function Page() {
-  return <GenericPage title="Qualidade / Não Qualidade" subtitle="Defeitos de produto e scrap" mode="quality" />;
+  return <QualityPage />;
 }
