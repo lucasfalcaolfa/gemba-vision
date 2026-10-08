@@ -3609,3 +3609,132 @@ body.modal-open{overflow:hidden}
     text-align:left;
   }
 }
+
+/* Executive home final organization */
+.home-quick-nav{
+  position:sticky;
+  top:8px;
+  z-index:8;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:0 0 18px;
+  padding:8px 10px;
+  border:1px solid #dfe7ec;
+  border-radius:12px;
+  background:rgba(255,255,255,.94);
+  box-shadow:0 7px 18px rgba(12,38,56,.06);
+  backdrop-filter:blur(8px);
+}
+.home-quick-nav a{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:30px;
+  padding:0 11px;
+  border-radius:8px;
+  text-decoration:none;
+  font-size:8px;
+  font-weight:900;
+  color:#496579;
+  background:#f6f9fb;
+  border:1px solid transparent;
+  transition:.15s ease;
+}
+.home-quick-nav a:hover{
+  color:#123d5c;
+  background:#eef5f8;
+  border-color:#d9e5eb;
+}
+.home-block{
+  scroll-margin-top:70px;
+}
+.home-production-panel,
+.home-products-panel,
+.home-wide-panel{
+  padding:16px 18px;
+}
+.home-production-panel{
+  background:linear-gradient(180deg,#fff 0%,#fbfcfd 100%);
+}
+.home-products-panel{
+  background:linear-gradient(180deg,#fff 0%,#fafcfd 100%);
+}
+.home-yesterday-kpis{
+  grid-template-columns:repeat(5,minmax(0,1fr));
+}
+.home-exec-kpi{
+  box-shadow:0 5px 16px rgba(7,27,45,.045);
+}
+.home-exec-kpi strong{
+  font-size:22px;
+}
+.home-process-products-stack{
+  gap:18px;
+}
+.home-process-products{
+  box-shadow:0 4px 12px rgba(13,38,55,.035);
+}
+.home-process-products-head{
+  padding:14px 15px;
+}
+.home-process-products.injection .home-process-products-head{
+  background:linear-gradient(180deg,#f5fbfd 0%,#fbfdfe 100%);
+}
+.home-process-products.finishing .home-process-products-head{
+  background:linear-gradient(180deg,#faf7fd 0%,#fdfcff 100%);
+}
+.home-machine-grid{
+  gap:14px;
+}
+.home-machine-card{
+  min-height:190px;
+}
+.home-machine-oee-main{
+  padding:18px 14px 14px;
+}
+.home-machine-oee-main>strong{
+  font-size:30px;
+}
+.home-defect-table{
+  width:100%;
+}
+.home-defect-table thead th{
+  background:#f6f9fb;
+  color:#5e7585;
+  font-size:8px;
+  letter-spacing:.35px;
+}
+.home-defect-table tbody tr:hover{
+  background:#fafcfd;
+}
+.home-events-grid-pro{
+  gap:18px;
+}
+.home-event-card,
+.home-countermeasure-card{
+  box-shadow:0 3px 10px rgba(11,35,51,.035);
+}
+@media(max-width:1250px){
+  .home-yesterday-kpis{
+    grid-template-columns:repeat(3,minmax(0,1fr));
+  }
+}
+@media(max-width:900px){
+  .home-yesterday-kpis{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+  .home-quick-nav{
+    position:static;
+  }
+}
+@media(max-width:580px){
+  .home-yesterday-kpis{
+    grid-template-columns:1fr;
+  }
+  .home-quick-nav{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
