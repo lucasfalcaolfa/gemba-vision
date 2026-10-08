@@ -4123,3 +4123,29 @@ nav.home-quick-nav .home-quick-link b{
   color:#6f8390;
   font-weight:700;
 }
+
+/* Registered L2L product catalog inside OEE ranking */
+.product-catalog-ranking{
+  max-height:560px;
+  overflow:auto;
+  padding-right:3px;
+}
+.product-catalog-ranking .rank-row.no-oee{
+  opacity:.78;
+}
+.rank-neutral{
+  color:#8797a1 !important;
+}
+.product-catalog-ranking .rank-row.no-oee .rank-track{
+  background:#eef2f4;
+}
+.product-catalog-ranking .rank-row.no-oee .rank-track i{
+  background:#cfd8de;
+}
+.product-catalog-ranking::-webkit-scrollbar{
+  width:7px;
+}
+.product-catalog-ranking::-webkit-scrollbar-thumb{
+  background:#c8d3da;
+  border-radius:999px;
+}
