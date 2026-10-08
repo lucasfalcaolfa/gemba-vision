@@ -149,6 +149,7 @@ function populateOeeFilters(){
   const lineEl=document.getElementById("oeeLinha");
   if(!areaEl||!lineEl)return;
 
+  const source=oeeRows.length?oeeRows:l2lRows;
   const areas=[...new Set(source.map(r=>r.area).filter(Boolean))].sort();
   areaEl.innerHTML='<option value="Todas">Toda a fábrica</option>'+areas.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
   areaEl.value=areas.includes(oeeFilterState.area)?oeeFilterState.area:"Todas";
@@ -224,7 +225,7 @@ function initOee(){
         oeeFilterState.start="02:00";
         oeeFilterState.end="07:00";
       }
-      if(oeeFilterState.endDate===oeeFilterState.startDate&&oeeFilterState.end<=oeeFilterState.start){
+      if(oeeFilterState.shift==="Todos"&&oeeFilterState.endDate===oeeFilterState.startDate&&oeeFilterState.end<=oeeFilterState.start){
         oeeFilterState.end="23:59";
         endAt.value=dateTimeLocalValue(oeeFilterState.endDate,oeeFilterState.end);
       }
