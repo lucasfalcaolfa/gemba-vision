@@ -2531,33 +2531,101 @@ function openHomeDefectDetail(index){
       return db-da;
     });
 
-  title.textContent=defect.defect||"Detalhes do defeito";
-  context.textContent=processLabel+" • "+fmt(defect.qty)+" ocorrência(s)/peça(s) • "+rows.length+" registro(s)";
+  const defectLines=new Set(defect.lines.map(v=>String(v||"").trim().toUpperCase()));
+  const defectModels=new Set(defect.models.map(v=>String(v||"").trim().toUpperCase()));
+
+  const dispatches=(homeYesterdayContext?.dispatches||[])
+    .filter(d=>homeProcessFromLine(d.line)===process)
+    .filter(d=>{
+      const line=String(d.line||"").trim().toUpperCase();
+      const product=String(d.product||"").trim().toUpperCase();
+      const text=(String(d.description||"")+" "+String(d.reason||"")).toUpperCase();
+      return defectLines.has(line)||defectModels.has(product)||text.includes(normalizedName);
+    });
 
   const lineGroups=groupScrap(rows,r=>r.line||"Sem linha");
   const modelGroups=groupScrap(rows,r=>r.product||"Sem modelo");
+
+  const dispatchLocationMap={};
+  const dispatchProductMap={};
+
+  dispatches.forEach(d=>{
+    const location=[d.line,d.machine].filter(Boolean).join(" • ")||"Sem localização";
+    dispatchLocationMap[location]=(dispatchLocationMap[location]||0)+1;
+
+    const product=String(d.product||"").trim();
+    if(product)dispatchProductMap[product]=(dispatchProductMap[product]||0)+1;
+  });
+
+  const dispatchLocations=Object.entries(dispatchLocationMap)
+    .map(([key,events])=>({key,events}))
+    .sort((a,b)=>b.events-a.events||a.key.localeCompare(b.key,"pt-BR",{numeric:true,sensitivity:"base"}));
+
+  const dispatchProducts=Object.entries(dispatchProductMap)
+    .map(([key,events])=>({key,events}))
+    .sort((a,b)=>b.events-a.events||a.key.localeCompare(b.key,"pt-BR",{numeric:true,sensitivity:"base"}));
+
+  const locationOptions=(dispatchLocations.length?dispatchLocations:lineGroups.map(g=>({key:g.key,events:g.events})))
+    .map(x=>'<option value="'+stockEsc(x.key)+'">'+stockEsc(x.key)+' ('+x.events+')</option>').join("");
+
+  const productOptions=(dispatchProducts.length?dispatchProducts:modelGroups.map(g=>({key:g.key,events:g.events})))
+    .map(x=>'<option value="'+stockEsc(x.key)+'">'+stockEsc(x.key)+' ('+x.events+')</option>').join("");
+
+  title.textContent=defect.defect||"Detalhes do defeito";
+  context.textContent=processLabel+" • "+fmt(defect.qty)+" ocorrência(s)/peça(s) • "+rows.length+" registro(s) • "+dispatches.length+" Dispatch(es) relacionados";
 
   body.innerHTML=
     '<div class="home-defect-modal-kpis">'+
       '<div><span>Quantidade total</span><strong>'+fmt(defect.qty)+'</strong></div>'+
       '<div><span>Linhas afetadas</span><strong>'+defect.lines.length+'</strong></div>'+
       '<div><span>Modelos envolvidos</span><strong>'+defect.models.length+'</strong></div>'+
-      '<div><span>Registros L2L</span><strong>'+rows.length+'</strong></div>'+
+      '<div><span>Dispatches relacionados</span><strong>'+dispatches.length+'</strong></div>'+
+    '</div>'+
+    '<div class="home-defect-selector-panel">'+
+      '<div><label>Onde ocorreu</label><select id="homeDefectLocationSelect"><option value="">Todas as localizações</option>'+locationOptions+'</select></div>'+
+      '<div><label>Produto / Modelo</label><select id="homeDefectProductSelect"><option value="">Todos os produtos</option>'+productOptions+'</select></div>'+
     '</div>'+
     '<div class="home-defect-modal-grid">'+
-      '<section><div class="home-defect-modal-section-head"><span>POR LINHA</span><h3>Onde ocorreu</h3></div>'+
-        (lineGroups.length?'<div class="home-defect-breakdown">'+lineGroups.map(x=>'<div><span>'+stockEsc(x.name)+'</span><b>'+fmt(x.qty)+'</b></div>').join("")+'</div>':'<div class="empty-state">Sem linha identificada.</div>')+
+      '<section><div class="home-defect-modal-section-head"><span>DISPATCH / LOCALIZAÇÃO</span><h3>Onde ocorreu</h3></div>'+
+        ((dispatchLocations.length||lineGroups.length)?'<div class="home-defect-breakdown">'+
+          (dispatchLocations.length
+            ? dispatchLocations.map(x=>'<div><span>'+stockEsc(x.key)+'</span><b>'+x.events+' Dispatch(es)</b></div>').join("")
+            : lineGroups.map(x=>'<div><span>'+stockEsc(x.key)+'</span><b>'+fmt(x.qty)+'</b></div>').join(""))+
+        '</div>':'<div class="empty-state">Sem localização identificada.</div>')+
       '</section>'+
-      '<section><div class="home-defect-modal-section-head"><span>POR MODELO</span><h3>Produtos afetados</h3></div>'+
-        (modelGroups.length?'<div class="home-defect-breakdown">'+modelGroups.map(x=>'<div><span>'+stockEsc(x.name)+'</span><b>'+fmt(x.qty)+'</b></div>').join("")+'</div>':'<div class="empty-state">Sem modelo identificado.</div>')+
+      '<section><div class="home-defect-modal-section-head"><span>DISPATCH / PRODUTO</span><h3>Produtos afetados</h3></div>'+
+        ((dispatchProducts.length||modelGroups.length)?'<div class="home-defect-breakdown">'+
+          (dispatchProducts.length
+            ? dispatchProducts.map(x=>'<div><span>'+stockEsc(x.key)+'</span><b>'+x.events+' Dispatch(es)</b></div>').join("")
+            : modelGroups.map(x=>'<div><span>'+stockEsc(x.key)+'</span><b>'+fmt(x.qty)+'</b></div>').join(""))+
+        '</div>':'<div class="empty-state">Sem produto identificado.</div>')+
       '</section>'+
     '</div>'+
     '<div class="home-defect-modal-section-head records"><span>REGISTROS</span><h3>Detalhamento das ocorrências</h3></div>'+
-    (rows.length
-      ? '<div class="table-scroll"><table class="home-defect-detail-table"><thead><tr><th>Data/Hora</th><th>Linha</th><th>Modelo</th><th>Qtd.</th></tr></thead><tbody>'+
-          rows.map(r=>'<tr><td>'+stockEsc(r.date?new Date(r.date).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"-")+'</td><td>'+stockEsc(r.line||"-")+'</td><td>'+stockEsc(r.product||"-")+'</td><td><b>'+fmt(r.scrap||1)+'</b></td></tr>').join("")+
-        '</tbody></table></div>'
-      : '<div class="empty-state">Nenhum registro detalhado encontrado para este defeito.</div>');
+    '<div id="homeDefectRecords">'+
+      (rows.length
+        ? '<div class="table-scroll"><table class="home-defect-detail-table"><thead><tr><th>Data/Hora</th><th>Linha</th><th>Modelo</th><th>Qtd.</th></tr></thead><tbody>'+
+            rows.map(r=>'<tr data-line="'+stockEsc(String(r.line||""))+'" data-product="'+stockEsc(String(r.product||""))+'"><td>'+stockEsc(r.date?new Date(r.date).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"-")+'</td><td>'+stockEsc(r.line||"-")+'</td><td>'+stockEsc(r.product||"-")+'</td><td><b>'+fmt(r.scrap||1)+'</b></td></tr>').join("")+
+          '</tbody></table></div>'
+        : '<div class="empty-state">Nenhum registro detalhado encontrado para este defeito.</div>')+
+    '</div>';
+
+  const locationSelect=document.getElementById("homeDefectLocationSelect");
+  const productSelect=document.getElementById("homeDefectProductSelect");
+
+  const applySelection=()=>{
+    const location=String(locationSelect?.value||"").toUpperCase();
+    const product=String(productSelect?.value||"").toUpperCase();
+    document.querySelectorAll("#homeDefectRecords tbody tr").forEach(tr=>{
+      const line=String(tr.dataset.line||"").toUpperCase();
+      const model=String(tr.dataset.product||"").toUpperCase();
+      const visible=(!location||location.includes(line)||line.includes(location.split(" • ")[0]))&&(!product||model===product);
+      tr.style.display=visible?"":"none";
+    });
+  };
+
+  if(locationSelect)locationSelect.addEventListener("change",applySelection);
+  if(productSelect)productSelect.addEventListener("change",applySelection);
 
   modal.classList.add("open");
   modal.setAttribute("aria-hidden","false");
