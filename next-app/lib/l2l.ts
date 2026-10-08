@@ -25,17 +25,15 @@ export const l2l = {
   },
 
   oeeShiftRange(startDate: string, endDate: string, shift: Shift) {
-    const shiftWindow = shift === "1"
-      ? ["07:00", "17:00"]
-      : shift === "2"
-        ? ["17:00", "02:00"]
-        : shift === "3"
-          ? ["02:00", "07:00"]
-          : ["00:00", "23:59"];
-    return this.dailyWindow(
-      `${startDate} ${shiftWindow[0]}`,
-      `${endDate} ${shiftWindow[1]}`
-    );
+    const addDay = (iso: string, days = 1) => {
+      const d = new Date(iso + "T00:00:00");
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0, 10);
+    };
+    if (shift === "1") return this.dailyWindow(startDate + " 07:00", endDate + " 17:00");
+    if (shift === "2") return this.dailyWindow(startDate + " 17:00", addDay(endDate) + " 02:00");
+    if (shift === "3") return this.dailyWindow(startDate + " 02:00", endDate + " 07:00");
+    return this.dailyWindow(startDate + " 00:00", endDate + " 23:59");
   },
 
   scrap(start: string, end: string) {
