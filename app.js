@@ -3070,15 +3070,8 @@ function initHomeQuickNavFollow(){
   const topbar=document.querySelector(".topbar");
   if(!nav||!topbar)return;
 
-  const topbarParent=topbar.parentNode;
-  const stack=document.createElement("div");
-  stack.className="home-header-stack";
-
-  topbarParent.insertBefore(stack,topbar);
-  stack.appendChild(topbar);
-  stack.appendChild(nav);
-
   document.body.classList.add("home-nav-in-topbar");
+  topbar.appendChild(nav);
   nav.classList.add("home-quick-nav-topbar");
   nav.classList.remove("is-at-home-end");
 
@@ -3088,8 +3081,8 @@ function initHomeQuickNavFollow(){
     .filter(item=>item.section);
 
   function updateActiveSection(){
-    const headerHeight=stack.offsetHeight||136;
-    const marker=headerHeight+20;
+    const headerHeight=topbar.offsetHeight||136;
+    const marker=headerHeight+16;
     let active=sections[0]||null;
 
     sections.forEach(item=>{
@@ -3121,12 +3114,7 @@ function initHomeQuickNavFollow(){
     document.removeEventListener("scroll",onScroll,true);
     window.removeEventListener("resize",onScroll);
     document.body.classList.remove("home-nav-in-topbar");
-    nav.classList.remove("home-quick-nav-topbar","is-at-home-end");
-    if(stack.parentNode){
-      stack.parentNode.insertBefore(topbar,stack);
-      stack.remove();
-    }
-    if(nav.parentNode)nav.remove();
+    if(nav.parentNode===topbar)nav.remove();
   };
 }
 function initHome(){
