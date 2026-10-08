@@ -3533,3 +3533,79 @@ body.modal-open{overflow:hidden}
 @media(max-width:1100px){
   .home-shift-product-grid{grid-template-columns:1fr}
 }
+
+/* Separate Injection vs Finishing products on Home */
+.home-process-products-stack{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.home-process-products{
+  border:1px solid #e1e8ec;
+  border-radius:12px;
+  overflow:hidden;
+  background:#fff;
+}
+.home-process-products.injection{
+  border-left:4px solid #1687a7;
+}
+.home-process-products.finishing{
+  border-left:4px solid #8a62d0;
+}
+.home-process-products-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  padding:12px 13px;
+  background:#f9fbfc;
+  border-bottom:1px solid #e9eef1;
+}
+.home-process-products-head>div:first-child>span{
+  display:block;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.7px;
+  color:#82949f;
+}
+.home-process-products-head h3{
+  margin:2px 0 0;
+  font-size:13px;
+  color:#143146;
+}
+.home-process-products-head p{
+  margin:3px 0 0;
+  font-size:8px;
+  color:#84939c;
+}
+.home-process-products-head>div:last-child{
+  text-align:right;
+  white-space:nowrap;
+}
+.home-process-products-head>div:last-child strong{
+  font-size:16px;
+  color:#173247;
+}
+.home-process-products-head>div:last-child small{
+  margin-left:3px;
+  font-size:7px;
+  color:#8b99a2;
+}
+.home-process-products-head>div:last-child b{
+  display:block;
+  margin-top:2px;
+  font-size:9px;
+  color:#47687d;
+}
+.home-process-products .home-shift-product-grid{
+  padding:10px;
+}
+@media(max-width:760px){
+  .home-process-products-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .home-process-products-head>div:last-child{
+    text-align:left;
+  }
+}
