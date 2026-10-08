@@ -7318,3 +7318,57 @@ nav.home-quick-nav.home-quick-nav-topbar.is-at-home-end{
   transform:translateY(-12px) scale(.995) !important;
   pointer-events:none !important;
 }
+
+
+/* Home quick navigation — final viewport follow fix */
+body.home-nav-in-topbar .topbar{
+  position:sticky !important;
+  top:0 !important;
+  height:124px !important;
+  padding-bottom:54px !important;
+  overflow:visible !important;
+  z-index:80 !important;
+}
+
+nav.home-quick-nav.home-quick-nav-topbar{
+  position:fixed !important;
+  top:76px !important;
+  left:20px !important;
+  right:20px !important;
+  bottom:auto !important;
+  width:auto !important;
+  margin:0 !important;
+  z-index:90 !important;
+  background:linear-gradient(180deg,rgba(13,51,75,.99),rgba(8,40,61,.99)) !important;
+  border:1px solid rgba(255,255,255,.13) !important;
+  box-shadow:0 8px 22px rgba(2,18,29,.18) !important;
+  backdrop-filter:blur(8px) !important;
+  -webkit-backdrop-filter:blur(8px) !important;
+}
+
+nav.home-quick-nav.home-quick-nav-topbar.is-at-home-end{
+  opacity:0 !important;
+  visibility:hidden !important;
+  transform:translateY(-12px) scale(.995) !important;
+  pointer-events:none !important;
+}
+
+body.home-nav-in-topbar .home-block{
+  scroll-margin-top:142px !important;
+}
+
+@media(max-width:960px){
+  nav.home-quick-nav.home-quick-nav-topbar{
+    top:69px !important;
+    left:12px !important;
+    right:12px !important;
+  }
+}
+
+@media(max-width:640px){
+  nav.home-quick-nav.home-quick-nav-topbar{
+    top:63px !important;
+    left:8px !important;
+    right:8px !important;
+  }
+}
