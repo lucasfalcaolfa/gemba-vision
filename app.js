@@ -2347,13 +2347,12 @@ function renderHomeYesterday(){
   const defectsEl=document.getElementById("homeYesterdayDefects");
   if(defectsEl){
     defectsEl.innerHTML=defects.length
-      ? '<div class="home-defect-summary">'+
+      ? '<div class="home-defect-summary home-defect-summary-two">'+
           '<div><span>Total</span><strong>'+fmt(defectQty)+'</strong><small>ocorrências/peças</small></div>'+
           '<div><span>Principal defeito</span><strong>'+stockEsc(topDefect?.defect||"-")+'</strong><small>'+fmt(topDefect?.qty||0)+' registro(s)</small></div>'+
-          '<div><span>Principal causa</span><strong>'+stockEsc(topDefect?.cause||"-")+'</strong><small>maior impacto do dia</small></div>'+
         '</div>'+
-        '<div class="table-scroll"><table class="home-defect-table"><thead><tr><th>Prioridade</th><th>Defeito</th><th>Causa</th><th>Linha(s)</th><th>Modelo(s)</th><th>Qtd.</th></tr></thead><tbody>'+
-        defects.map((d,i)=>'<tr><td><span class="defect-priority p'+Math.min(3,i+1)+'">'+(i+1)+'</span></td><td><span class="defect-chip">'+stockEsc(d.defect)+'</span></td><td><span class="cause-chip">'+stockEsc(d.cause)+'</span></td><td>'+stockEsc(d.lines.join(", ")||"-")+'</td><td>'+stockEsc(d.models.join(", ")||"-")+'</td><td><b>'+fmt(d.qty)+'</b></td></tr>').join("")+
+        '<div class="table-scroll"><table class="home-defect-table"><thead><tr><th>Prioridade</th><th>Defeito</th><th>Linha(s)</th><th>Modelo(s)</th><th>Qtd.</th></tr></thead><tbody>'+
+        defects.map((d,i)=>'<tr><td><span class="defect-priority p'+Math.min(3,i+1)+'">'+(i+1)+'</span></td><td><span class="defect-chip">'+stockEsc(d.defect)+'</span></td><td>'+stockEsc(d.lines.join(", ")||"-")+'</td><td>'+stockEsc(d.models.join(", ")||"-")+'</td><td><b>'+fmt(d.qty)+'</b></td></tr>').join("")+
         '</tbody></table></div>'
       : '<div class="empty-state home-empty-good"><strong>Sem não qualidade registrada.</strong><br>Nenhum defeito/scrap da FND foi encontrado no L2L para o dia anterior.</div>';
   }
