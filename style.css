@@ -7792,3 +7792,79 @@ nav.home-quick-nav.home-quick-nav-topbar .home-quick-link b{
     min-width:128px !important;
   }
 }
+
+
+/* =========================================================
+   HOME HEADER — KEEP THE ENTIRE HEADER + QUICK NAV TOGETHER
+   ========================================================= */
+body.home-nav-in-topbar .topbar{
+  position:fixed !important;
+  top:0 !important;
+  left:0 !important;
+  right:0 !important;
+  width:100% !important;
+  height:136px !important;
+  z-index:120 !important;
+  overflow:visible !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar{
+  position:absolute !important;
+  top:auto !important;
+  left:28px !important;
+  right:28px !important;
+  bottom:8px !important;
+  width:auto !important;
+  z-index:121 !important;
+  box-shadow:none !important;
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+}
+body.home-nav-in-topbar .app{
+  margin-top:136px !important;
+  min-height:calc(100vh - 136px) !important;
+}
+body.home-nav-in-topbar .sidebar{
+  top:136px !important;
+  height:calc(100vh - 136px) !important;
+}
+body.home-nav-in-topbar .home-block{
+  scroll-margin-top:154px !important;
+}
+@media(max-width:1100px){
+  body.home-nav-in-topbar .topbar{
+    height:126px !important;
+  }
+  nav.home-quick-nav.home-quick-nav-topbar{
+    top:auto !important;
+    left:16px !important;
+    right:16px !important;
+    bottom:7px !important;
+  }
+  body.home-nav-in-topbar .app{
+    margin-top:126px !important;
+    min-height:calc(100vh - 126px) !important;
+  }
+  body.home-nav-in-topbar .sidebar{
+    top:126px !important;
+    height:calc(100vh - 126px) !important;
+  }
+}
+@media(max-width:640px){
+  body.home-nav-in-topbar .topbar{
+    height:110px !important;
+  }
+  nav.home-quick-nav.home-quick-nav-topbar{
+    top:auto !important;
+    left:8px !important;
+    right:8px !important;
+    bottom:6px !important;
+  }
+  body.home-nav-in-topbar .app{
+    margin-top:110px !important;
+    min-height:calc(100vh - 110px) !important;
+  }
+  body.home-nav-in-topbar .sidebar{
+    top:110px !important;
+    height:calc(100vh - 110px) !important;
+  }
+}
