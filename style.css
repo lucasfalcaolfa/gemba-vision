@@ -7743,3 +7743,52 @@ body.home-nav-in-topbar .home-block{scroll-margin-top:154px !important}
   nav.home-quick-nav.home-quick-nav-topbar{top:63px !important;left:8px !important;right:8px !important}
   body.home-nav-in-topbar .sidebar{top:110px !important;height:calc(100vh - 110px) !important}
 }
+
+
+/* =========================================================
+   TOPBAR QUICK NAV — CENTERED STANDARD ITEMS
+   ========================================================= */
+nav.home-quick-nav.home-quick-nav-topbar{
+  min-height:56px !important;
+  padding:6px !important;
+  gap:6px !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link{
+  min-width:0 !important;
+  min-height:43px !important;
+  padding:4px 8px 5px !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:3px !important;
+  text-align:center !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link span{
+  min-width:28px !important;
+  width:auto !important;
+  height:20px !important;
+  padding:0 7px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border-radius:6px !important;
+  font-size:7px !important;
+  line-height:1 !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link b{
+  display:block !important;
+  width:100% !important;
+  color:#dfeaf0 !important;
+  font-size:8px !important;
+  line-height:1.1 !important;
+  font-weight:800 !important;
+  text-align:center !important;
+  white-space:nowrap !important;
+}
+@media(max-width:1100px){
+  nav.home-quick-nav.home-quick-nav-topbar .home-quick-link{
+    flex:0 0 128px !important;
+    min-width:128px !important;
+  }
+}
