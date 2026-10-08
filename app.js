@@ -10,7 +10,19 @@ stock:{title:"Controle de Estoque",sub:"Estoque da Fundição — Inacabado e Ac
 };
 function shell(p){return '<div class="page"><div class="page-head"><div><h1>'+p.title+'</h1><p>'+p.sub+'</p></div><div class="refresh">● Atualização: automática</div></div>'+p.html+'</div>'}
 function card(label,value,cls=""){return '<div class="card"><div class="label">'+label+'</div><div class="value '+cls+'">'+value+'</div></div>'}
-function home(){return '<div class="hero-status"><div class="status"><span class="dot green"></span> OPERAÇÃO NORMAL</div><p style="margin:8px 0 0;color:#47616f">Visão consolidada — Segurança, Pessoas, Produção, OEE e Qualidade.</p></div><div class="cards">'+card("OEE Geral","85,4%","good")+card("Eficiência","89,8%","good")+card("Produção","12.480","")+card("Qualidade","98,5%","good")+card("Absenteísmo","3,2%","warn")+'</div><div class="section-grid"><div class="panel"><h2>Produção por linha</h2><table><tr><th>Linha</th><th>Plano</th><th>Real</th><th>Ating.</th><th>Status</th></tr><tr><td>AL1</td><td>4.500</td><td>4.320</td><td>96%</td><td><span class="status"><span class="dot yellow"></span>Atenção</span></td></tr><tr><td>AL2</td><td>4.200</td><td>4.450</td><td>106%</td><td><span class="status"><span class="dot green"></span>OK</span></td></tr><tr><td>AL3</td><td>3.800</td><td>3.710</td><td>98%</td><td><span class="status"><span class="dot green"></span>OK</span></td></tr></table></div><div class="panel"><h2>Momento de Segurança</h2><div class="safety-img" style="min-height:180px"><div><div class="shield">🦺</div><h2>SEGURANÇA EM PRIMEIRO LUGAR</h2><div>Use os EPIs e respeite as áreas demarcadas.</div></div></div></div></div>'}
+function home(){
+  return '<div class="home-yesterday-hero panel">'+
+    '<div><span>RESUMO EXECUTIVO • FND</span><h2 id="homeYesterdayTitle">Dia anterior</h2><p>Demanda, produção, modelos, eficiência por máquina e não qualidade somente da Fundição.</p></div>'+
+    '<div class="home-yesterday-status" id="homeYesterdayStatus">🟡 Consultando L2L...</div>'+
+  '</div>'+
+  '<div class="home-yesterday-kpis" id="homeYesterdayKpis"></div>'+
+  '<div class="home-yesterday-grid">'+
+    '<section class="panel"><div class="home-section-head"><div><span>PRODUÇÃO</span><h2>Demanda x Produção Real</h2></div></div><div id="homeYesterdayProduction"></div></section>'+
+    '<section class="panel"><div class="home-section-head"><div><span>MODELOS</span><h2>Modelos produzidos</h2></div></div><div id="homeYesterdayModels"></div></section>'+
+  '</div>'+
+  '<section class="panel"><div class="home-section-head"><div><span>EFICIÊNCIA</span><h2>OEE por máquina — FND</h2><p>Valores oficiais do L2L para o dia anterior.</p></div></div><div id="homeYesterdayOee"></div></section>'+
+  '<section class="panel"><div class="home-section-head"><div><span>NÃO QUALIDADE</span><h2>Defeitos e causas — FND</h2><p>Descrição dos defeitos registrados no L2L no dia anterior.</p></div></div><div id="homeYesterdayDefects"></div></section>';
+}
 function safety(){return '<div class="panel safety-live-panel"><div class="safety-live-head"><div><span>MOMENTO DE SEGURANÇA</span><h2 id="safetyWeekTitle">Safety Moments — Semana atual</h2><p id="safetyWeekMeta">Conteúdo organizado automaticamente a partir do PDF semanal.</p></div><div class="safety-mode-switch"><button id="safetyModeDynamic" class="active">▥ Visualização dinâmica</button><button id="safetyModeWeekly">▣ Semanal</button><a class="safety-open-pdf" href="SafetyMomentWeek_Current.pdf" target="_blank" rel="noopener">▤ Abrir PDF ↗</a></div></div><div class="safety-status" id="safetyStatus">Carregando Momento de Segurança...</div><section id="safetyDynamic" class="safety-dynamic"><div id="safetyDayCards" class="safety-day-cards"></div><div id="safetyDayDetail" class="safety-day-detail"></div></section><section id="safetyWeekly" class="safety-weekly" hidden><div class="safety-viewer"><canvas id="safetyCanvas"></canvas></div></section><div class="safety-help">O modo <b>Dinâmico</b> organiza a leitura do dia. O modo <b>Semanal</b> mantém o PDF oficial completo.</div></div>'}
 const oeeData=[
 {area:"Fundição",linha:"AL1",turno:"A",oee:91.0,disp:94.0,perf:97.0,qual:99.0,ef:91.0,meta:85},
@@ -2093,6 +2105,185 @@ async function initSafety(){
   }
 }
 
+let homeYesterdayRows=[];
+let homeYesterdayProductRows=[];
+let homeYesterdayScrapRows=[];
+let homeYesterdayLoading=false;
+
+function previousDayISO(){
+  const d=new Date();
+  d.setDate(d.getDate()-1);
+  return localIsoDate(d);
+}
+
+function isFndArea(value){
+  const text=String(value||"").trim().toUpperCase();
+  return text==="FND"||text.startsWith("FND_")||text.includes("FUNDI");
+}
+
+function homeFndRows(rows){
+  return (Array.isArray(rows)?rows:[]).filter(r=>isFndArea(r.area));
+}
+
+function homeProductSummary(rows){
+  const map={};
+  homeFndRows(rows).forEach(row=>{
+    let products=row.products;
+    if(!products)return;
+    if(!Array.isArray(products)&&typeof products==="object")products=Object.values(products);
+    if(!Array.isArray(products))return;
+
+    products.forEach(p=>{
+      if(!p||typeof p!=="object")return;
+      const name=String(
+        p.product_name??p.product??p.name??p.model??p.product_code??p.part_number??p.description??""
+      ).trim();
+      if(!name)return;
+
+      if(!map[name])map[name]={name,actual:0,demand:0,lines:new Set()};
+      map[name].actual+=n(p.actual??p.production_actual??p.quantity??p.qty??0);
+      map[name].demand+=n(p.demand??p.production_demand??0);
+      if(row.line)map[name].lines.add(row.line);
+    });
+  });
+
+  return Object.values(map)
+    .map(x=>({...x,lineCount:x.lines.size}))
+    .sort((a,b)=>b.actual-a.actual||a.name.localeCompare(b.name,"pt-BR",{numeric:true,sensitivity:"base"}));
+}
+
+function homeDefectRows(rows){
+  return (Array.isArray(rows)?rows:[]).filter(r=>{
+    if(isFndArea(r.area))return true;
+    const line=String(r.line||"").toUpperCase();
+    return line.includes("INJETORA AL")||line.startsWith("FND_");
+  });
+}
+
+function homeDefectSummary(rows){
+  const map={};
+  homeDefectRows(rows).forEach(r=>{
+    const defect=String(r.defect||"Sem descrição").trim()||"Sem descrição";
+    const cause=String(r.cause||"Sem causa registrada").trim()||"Sem causa registrada";
+    const key=defect+"|"+cause;
+    if(!map[key])map[key]={defect,cause,qty:0,lines:new Set(),models:new Set()};
+    map[key].qty+=n(r.scrap||1);
+    if(r.line)map[key].lines.add(String(r.line));
+    if(r.product)map[key].models.add(String(r.product));
+  });
+  return Object.values(map)
+    .map(x=>({...x,lines:[...x.lines],models:[...x.models]}))
+    .sort((a,b)=>b.qty-a.qty);
+}
+
+function renderHomeYesterday(){
+  if(currentPage!=="home")return;
+
+  const day=previousDayISO();
+  const dateLabel=day.split("-").reverse().join("/");
+  const title=document.getElementById("homeYesterdayTitle");
+  if(title)title.textContent="Resumo de "+dateLabel+" • FND";
+
+  const fndRows=homeFndRows(homeYesterdayRows);
+  const groups=sortOeeCardsByLine(groupedByLine(fndRows));
+  const demand=total(fndRows,"demand");
+  const actual=total(fndRows,"actual");
+  const scrap=total(fndRows,"scrap");
+  const net=Math.max(0,actual-scrap);
+  const attainment=demand?actual/demand*100:0;
+  const avgOee=groups.length?groups.reduce((s,g)=>s+n(g.oee),0)/groups.length:0;
+
+  const products=homeProductSummary(homeYesterdayProductRows);
+  const defects=homeDefectSummary(homeYesterdayScrapRows);
+  const defectQty=defects.reduce((s,x)=>s+x.qty,0);
+
+  const status=document.getElementById("homeYesterdayStatus");
+  if(status)status.textContent=liveStamp()+" • FND • "+dateLabel;
+
+  const kpis=document.getElementById("homeYesterdayKpis");
+  if(kpis)kpis.innerHTML=
+    '<div class="home-exec-kpi"><span>Demanda</span><strong>'+fmt(demand)+'</strong><small>Dia anterior</small></div>'+
+    '<div class="home-exec-kpi"><span>Produção real</span><strong>'+fmt(actual)+'</strong><small>'+fmtPct(attainment)+' da demanda</small></div>'+
+    '<div class="home-exec-kpi"><span>Produzido líquido</span><strong>'+fmt(net)+'</strong><small>Produção − scrap</small></div>'+
+    '<div class="home-exec-kpi"><span>OEE médio FND</span><strong>'+fmtPct(avgOee)+'</strong><small>'+groups.length+' máquina(s)</small></div>'+
+    '<div class="home-exec-kpi"><span>Defeitos</span><strong>'+fmt(defectQty)+'</strong><small>'+defects.length+' tipo(s)/causa(s)</small></div>';
+
+  const prod=document.getElementById("homeYesterdayProduction");
+  if(prod){
+    const pct=Math.max(0,Math.min(140,attainment));
+    prod.innerHTML=
+      '<div class="home-production-compare">'+
+        '<div class="home-prod-numbers"><div><span>Demanda</span><strong>'+fmt(demand)+'</strong></div><div><span>Produção real</span><strong>'+fmt(actual)+'</strong></div><div><span>Atingimento</span><strong class="'+(attainment>=100?"good":attainment>=95?"warn":"bad")+'">'+fmtPct(attainment)+'</strong></div></div>'+
+        '<div class="home-prod-track"><i style="width:'+Math.min(100,pct)+'%"></i></div>'+
+      '</div>';
+  }
+
+  const models=document.getElementById("homeYesterdayModels");
+  if(models){
+    models.innerHTML=products.length
+      ? '<div class="home-model-list">'+products.map((p,i)=>
+          '<div class="home-model-row"><span class="home-model-pos">'+(i+1)+'</span><div><strong>'+stockEsc(p.name)+'</strong><small>'+p.lineCount+' linha(s)</small></div><b>'+fmt(p.actual)+'</b></div>'
+        ).join("")+'</div>'
+      : '<div class="empty-state">O L2L não retornou detalhamento de modelos para a FND no dia anterior.</div>';
+  }
+
+  const oee=document.getElementById("homeYesterdayOee");
+  if(oee){
+    oee.innerHTML=groups.length
+      ? '<div class="home-machine-grid">'+groups.map(g=>{
+          const cls=g.oee>=85?"good":g.oee>=70?"warn":"bad";
+          return '<article class="home-machine-card">'+
+            '<div class="home-machine-head"><div><span>'+stockEsc(g.area||"FND")+'</span><h3>'+stockEsc(g.line)+'</h3></div><b class="'+cls+'">'+fmtPct(g.oee)+'</b></div>'+
+            '<div class="home-machine-metrics"><div><span>OA</span><strong>'+fmtPct(g.availability)+'</strong></div><div><span>PPP</span><strong>'+fmtPct(g.performance)+'</strong></div><div><span>Yield</span><strong>'+fmtPct(g.quality)+'</strong></div><div><span>Produção</span><strong>'+fmt(g.actual)+' / '+fmt(g.demand)+'</strong></div></div>'+
+          '</article>';
+        }).join("")+'</div>'
+      : '<div class="empty-state">Nenhuma máquina da FND encontrada no resumo do dia anterior.</div>';
+  }
+
+  const defectsEl=document.getElementById("homeYesterdayDefects");
+  if(defectsEl){
+    defectsEl.innerHTML=defects.length
+      ? '<div class="table-scroll"><table class="home-defect-table"><thead><tr><th>Defeito</th><th>Causa</th><th>Linha(s)</th><th>Modelo(s)</th><th>Qtd.</th></tr></thead><tbody>'+
+        defects.map(d=>'<tr><td><span class="defect-chip">'+stockEsc(d.defect)+'</span></td><td><span class="cause-chip">'+stockEsc(d.cause)+'</span></td><td>'+stockEsc(d.lines.join(", ")||"-")+'</td><td>'+stockEsc(d.models.join(", ")||"-")+'</td><td><b>'+fmt(d.qty)+'</b></td></tr>').join("")+
+        '</tbody></table></div>'
+      : '<div class="empty-state">Nenhum defeito/scrap da FND encontrado no L2L para o dia anterior.</div>';
+  }
+}
+
+async function refreshHomeYesterday(){
+  if(homeYesterdayLoading)return;
+  homeYesterdayLoading=true;
+  const status=document.getElementById("homeYesterdayStatus");
+  if(status)status.textContent="🟡 Consultando resumo FND do dia anterior...";
+
+  const day=previousDayISO();
+  try{
+    const [summaryResult,productResult,scrapResult]=await Promise.allSettled([
+      window.L2L.getOeeSummaryWindow(day+" 00:00",day+" 23:59"),
+      window.L2L.getDaily(day,"00:00","23:59"),
+      window.L2L.getScrapDetails(day,"00:00","23:59")
+    ]);
+
+    homeYesterdayRows=summaryResult.status==="fulfilled"?summaryResult.value:[];
+    homeYesterdayProductRows=productResult.status==="fulfilled"?productResult.value:[];
+    homeYesterdayScrapRows=scrapResult.status==="fulfilled"?scrapResult.value:[];
+
+    if(summaryResult.status==="rejected")throw summaryResult.reason;
+    l2lLastUpdate=new Date();
+    if(currentPage==="home")renderHomeYesterday();
+  }catch(err){
+    if(status)status.textContent="🔴 Não foi possível carregar o resumo FND: "+(err.message||"falha no L2L");
+    if(currentPage==="home")renderHomeYesterday();
+  }finally{
+    homeYesterdayLoading=false;
+  }
+}
+
+function initHome(){
+  renderHomeYesterday();
+  refreshHomeYesterday();
+}
+
 let currentPage="home";
 let l2lRows=[];
 let l2lLastUpdate=null;
@@ -2111,6 +2302,7 @@ async function refreshL2L(){
     l2lLastUpdate=new Date();
     l2lError="";
     applyLiveData(currentPage);
+    if(currentPage==="home")await refreshHomeYesterday();
     if(currentPage==="oee"){
       await refreshOeeRange();
       await refreshOeeHeatmap(true);
@@ -2272,21 +2464,7 @@ function applyLiveData(page){
   const refresh=document.querySelector(".refresh");
   if(refresh)refresh.textContent=liveStamp();
 
-  if(page==="home"){
-    const groups=groupedByLine(l2lRows);
-    const demand=total(l2lRows,"demand"),actual=total(l2lRows,"actual"),scrap=total(l2lRows,"scrap");
-    const homeGroups=groupedByLine(l2lRows); const oeeAvg=homeGroups.length?homeGroups.reduce((s,g)=>s+g.oee,0)/homeGroups.length:0, perf=homeGroups.length?homeGroups.reduce((s,g)=>s+g.performance,0)/homeGroups.length:0, qual=homeGroups.length?homeGroups.reduce((s,g)=>s+g.quality,0)/homeGroups.length:0;
-    const cards=document.querySelectorAll(".cards .card .value");
-    if(cards[0])cards[0].textContent=fmtPct(oeeAvg);
-    if(cards[1])cards[1].textContent=fmtPct(perf);
-    if(cards[2])cards[2].textContent=fmt(actual);
-    if(cards[3])cards[3].textContent=fmtPct(qual);
-    const table=document.querySelector(".section-grid .panel table");
-    if(table){
-      table.innerHTML='<tr><th>Linha</th><th>Plano</th><th>Real</th><th>Ating.</th><th>Status</th></tr>'+
-      groups.slice(0,12).map(g=>{const p=g.demand?g.actual/g.demand*100:0;return '<tr><td>'+g.line+'</td><td>'+fmt(g.demand)+'</td><td>'+fmt(g.actual)+'</td><td>'+fmtPct(p)+'</td><td><span class="status"><span class="dot '+(p>=100?"green":p>=95?"yellow":"red")+'"></span>'+(p>=100?"OK":p>=95?"Atenção":"Crítico")+'</span></td></tr>'}).join("");
-    }
-  }
+  if(page==="home")renderHomeYesterday();
 
   if(page==="production")renderProductionLive();
 
@@ -2308,6 +2486,7 @@ function render(page){
   if(currentPage==="production"&&page!=="production")destroyProdCharts();
   currentPage=page;
   document.getElementById("content").innerHTML=shell(pages[page]);
+  if(page==="home")initHome();
   if(page==="stock")initStock();
   if(page==="oee")initOee();
   if(page==="heatmap")initHeatmap();
