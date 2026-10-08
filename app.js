@@ -1346,47 +1346,58 @@ async function openScrapDetails(lineOverride="", areaOverride=""){
       };
     });
 
-    const normalizedExisting=new Set(rows.map(r=>[
-      String(r.line||"").toUpperCase(),
-      String(r.product||"").toUpperCase(),
-      String(r.defect||"").toUpperCase(),
-      r.date?new Date(r.date).toISOString().slice(0,16):""
-    ].join("|")));
+    // Esta visão é exclusiva para defeitos de produto.
+    // Dispatches operacionais (paradas, limpeza, manutenção etc.) não viram ocorrências.
+    // Eles são usados apenas como apoio para enriquecer registros reais de Scrap Detail.
+    const operationalTerms=[
+      "LIMPEZA","LIMPAR","CLEAN","PARADA","DOWNTIME","MANUTENCAO","MANUTENÇÃO",
+      "PREVENTIVA","CORRETIVA","SETUP","AJUSTE","TROCA DE FERRAMENTA","TROCA FERRAMENTA",
+      "FALTA DE MATERIAL","FALTA MATERIAL","FALTA DE OPERADOR","FALTA OPERADOR",
+      "LUBRIFICACAO","LUBRIFICAÇÃO","AQUECIMENTO","QUEBRA DE MAQUINA","QUEBRA DE MÁQUINA"
+    ];
 
-    const dispatchRows=dispatches
-      .filter(d=>String(d.description||d.reason||d.dispatch_type||"").trim())
-      .map(d=>{
-        const pitch=matchPitch(d.line,d.created,pitches);
-        const product=String(d.product||"").trim()||String(pitch?.product||"").trim()||"Sem modelo";
-        const defect=String(d.description||"").trim()||String(d.dispatch_type||"").trim()||"Ocorrência L2L";
-        const cause=String(d.reason||"").trim();
-        return {
-          id:"dispatch-"+String(d.id||d.number||Math.random()),
-          date:d.created||d.completed||null,
-          defect,
-          product,
-          shift:shiftFromDate(d.created||d.completed),
-          line:d.line||"Sem linha",
-          line_id:d.line_id||null,
-          area:resolveScrapArea({line:d.line,area:""}),
-          cause,
-          scrap:1,
-          source:"Dispatch"
-        };
-      })
-      .filter(r=>{
-        const key=[
-          String(r.line||"").toUpperCase(),
-          String(r.product||"").toUpperCase(),
-          String(r.defect||"").toUpperCase(),
-          r.date?new Date(r.date).toISOString().slice(0,16):""
-        ].join("|");
-        return !normalizedExisting.has(key);
-      });
+    const cleanText=value=>String(value||"")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g,"")
+      .toUpperCase();
 
-    // Always include Dispatch occurrences so the manager can see defects/occurrences
-    // even when Scrap Detail is incomplete.
-    rows=rows.concat(dispatchRows);
+    const isOperationalEvent=d=>{
+      const text=cleanText([
+        d.dispatch_type,
+        d.description,
+        d.reason,
+        d.machine
+      ].filter(Boolean).join(" "));
+      return operationalTerms.some(term=>text.includes(cleanText(term)));
+    };
+
+    rows=rows.map(r=>{
+      const sameLineDispatches=dispatches
+        .filter(d=>String(d.line||"")===String(r.line||""))
+        .filter(d=>!isOperationalEvent(d));
+
+      if(!sameLineDispatches.length)return r;
+
+      const when=r.date?new Date(r.date).getTime():NaN;
+      const nearest=sameLineDispatches
+        .map(d=>({
+          d,
+          diff:Number.isNaN(when)?0:Math.abs(when-new Date(d.created||d.completed||0).getTime())
+        }))
+        .filter(x=>Number.isFinite(x.diff))
+        .sort((a,b)=>a.diff-b.diff)[0]?.d;
+
+      if(!nearest)return r;
+
+      return {
+        ...r,
+        product:(r.product&&r.product!=="Sem modelo")
+          ? r.product
+          : (nearest.product||r.product||"Sem modelo"),
+        cause:r.cause||nearest.reason||"",
+        source:"Scrap Detail"
+      };
+    });
 
     rows=rows.filter(r=>
       (activeArea==="Todas"||!activeArea||String(r.area)===String(activeArea)) &&
@@ -1404,7 +1415,7 @@ async function openScrapDetails(lineOverride="", areaOverride=""){
     if(title)title.textContent=contextLine && contextLine!=="Todas" ? 'Scrap / Defeitos — '+contextLine : 'Scrap / Defeitos';
 
     if(!rows.length){
-      body.innerHTML='<div class="scrap-empty"><strong>Nenhum defeito ou ocorrência detalhada foi encontrado neste período.</strong><p>Foram consultados Scrap Detail, Dispatches e Pitches do L2L. Se existir apenas quantidade agregada de Scrap sem registro associado, o L2L não disponibiliza o produto/defeito individual para essa ocorrência.</p></div>';
+      body.innerHTML='<div class="scrap-empty"><strong>Nenhum defeito ou ocorrência detalhada foi encontrado neste período.</strong><p>Foram considerados apenas registros de defeito de produto do Scrap Detail. Eventos operacionais como limpeza, manutenção e paradas não são exibidos nesta visão.</p></div>';
       return;
     }
 
@@ -1446,9 +1457,9 @@ async function openScrapDetails(lineOverride="", areaOverride=""){
         scrapGroupCards("Defeitos por produto",byModel)+
         scrapGroupCards("Ranking de defeitos",byDefect)+
       '</div>'+
-      '<section class="scrap-occurrence-section"><div class="scrap-occurrence-head"><div><span>DETALHAMENTO L2L</span><h3>Todas as ocorrências</h3></div><small>Scrap Detail + Dispatches + Pitches</small></div>'+
-        '<div class="scrap-table-wrap"><table class="scrap-detail-table"><thead><tr><th>Data / Hora</th><th>Turno</th><th>Linha</th><th>Produto / Modelo</th><th>Defeito</th><th>Causa / Motivo</th><th>Fonte</th><th>Qtd.</th></tr></thead><tbody>'+
-        rows.map(r=>'<tr><td>'+stockEsc(scrapDateTime(r.date))+'</td><td><span class="scrap-shift-chip">'+stockEsc(r.shift||"Sem turno")+'</span></td><td><b>'+stockEsc(r.line||"-")+'</b></td><td><strong>'+stockEsc(r.product||"Sem modelo")+'</strong></td><td><span class="defect-chip">'+stockEsc(r.defect||"Sem categoria")+'</span></td><td>'+stockEsc(r.cause||"Não informada")+'</td><td><span class="scrap-source-chip '+(r.source==="Dispatch"?"dispatch":"detail")+'">'+stockEsc(r.source||"L2L")+'</span></td><td><b>'+fmt(r.scrap||1)+'</b></td></tr>').join("")+
+      '<section class="scrap-occurrence-section"><div class="scrap-occurrence-head"><div><span>DETALHAMENTO L2L</span><h3>Defeitos de produto</h3></div><small>Somente registros de qualidade / scrap</small></div>'+
+        '<div class="scrap-table-wrap"><table class="scrap-detail-table"><thead><tr><th>Data / Hora</th><th>Turno</th><th>Linha</th><th>Produto / Modelo</th><th>Defeito</th><th>Causa / Motivo</th><th>Qtd.</th></tr></thead><tbody>'+
+        rows.map(r=>'<tr><td>'+stockEsc(scrapDateTime(r.date))+'</td><td><span class="scrap-shift-chip">'+stockEsc(r.shift||"Sem turno")+'</span></td><td><b>'+stockEsc(r.line||"-")+'</b></td><td><strong>'+stockEsc(r.product||"Sem modelo")+'</strong></td><td><span class="defect-chip">'+stockEsc(r.defect||"Sem categoria")+'</span></td><td>'+stockEsc(r.cause||"Não informada")+'</td><td><b>'+fmt(r.scrap||1)+'</b></td></tr>').join("")+
       '</tbody></table></div></section>';
   }catch(err){
     body.innerHTML='<div class="scrap-empty error"><strong>Não foi possível carregar os defeitos do L2L.</strong><p>'+stockEsc(err.message||"Erro ao consultar o L2L.")+'</p></div>';
