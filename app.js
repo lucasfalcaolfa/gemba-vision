@@ -2196,6 +2196,7 @@ let homeProcessFilter="injecao";
 let homeYesterdayRows=[];
 let homeYesterdayProductRows=[];
 let homeYesterdayScrapRows=[];
+let homeCurrentDefects=[];
 let homeYesterdayContext={pitches:[],dispatches:[]};
 let homeYesterdayLoading=false;
 
@@ -2507,6 +2508,70 @@ function toggleHomeDefects(button){
   }
 }
 
+function openHomeDefectDetail(index){
+  const defect=homeCurrentDefects[index];
+  if(!defect)return;
+
+  const modal=document.getElementById("homeDefectModal");
+  const body=document.getElementById("homeDefectModalBody");
+  const title=document.getElementById("homeDefectModalTitle");
+  const context=document.getElementById("homeDefectModalContext");
+  if(!modal||!body||!title||!context)return;
+
+  const process=homeProcessFilter;
+  const processLabel=homeProcessLabel(process);
+  const normalizedName=String(defect.defect||"").trim().toUpperCase();
+
+  const rows=homeDefectRows(homeYesterdayScrapRows)
+    .filter(r=>homeProcessFromLine(r.line)===process)
+    .filter(r=>String(r.defect||"").trim().toUpperCase()===normalizedName)
+    .sort((a,b)=>{
+      const da=a.date?new Date(a.date).getTime():0;
+      const db=b.date?new Date(b.date).getTime():0;
+      return db-da;
+    });
+
+  title.textContent=defect.defect||"Detalhes do defeito";
+  context.textContent=processLabel+" • "+fmt(defect.qty)+" ocorrência(s)/peça(s) • "+rows.length+" registro(s)";
+
+  const lineGroups=groupScrap(rows,r=>r.line||"Sem linha");
+  const modelGroups=groupScrap(rows,r=>r.product||"Sem modelo");
+
+  body.innerHTML=
+    '<div class="home-defect-modal-kpis">'+
+      '<div><span>Quantidade total</span><strong>'+fmt(defect.qty)+'</strong></div>'+
+      '<div><span>Linhas afetadas</span><strong>'+defect.lines.length+'</strong></div>'+
+      '<div><span>Modelos envolvidos</span><strong>'+defect.models.length+'</strong></div>'+
+      '<div><span>Registros L2L</span><strong>'+rows.length+'</strong></div>'+
+    '</div>'+
+    '<div class="home-defect-modal-grid">'+
+      '<section><div class="home-defect-modal-section-head"><span>POR LINHA</span><h3>Onde ocorreu</h3></div>'+
+        (lineGroups.length?'<div class="home-defect-breakdown">'+lineGroups.map(x=>'<div><span>'+stockEsc(x.name)+'</span><b>'+fmt(x.qty)+'</b></div>').join("")+'</div>':'<div class="empty-state">Sem linha identificada.</div>')+
+      '</section>'+
+      '<section><div class="home-defect-modal-section-head"><span>POR MODELO</span><h3>Produtos afetados</h3></div>'+
+        (modelGroups.length?'<div class="home-defect-breakdown">'+modelGroups.map(x=>'<div><span>'+stockEsc(x.name)+'</span><b>'+fmt(x.qty)+'</b></div>').join("")+'</div>':'<div class="empty-state">Sem modelo identificado.</div>')+
+      '</section>'+
+    '</div>'+
+    '<div class="home-defect-modal-section-head records"><span>REGISTROS</span><h3>Detalhamento das ocorrências</h3></div>'+
+    (rows.length
+      ? '<div class="table-scroll"><table class="home-defect-detail-table"><thead><tr><th>Data/Hora</th><th>Linha</th><th>Modelo</th><th>Qtd.</th></tr></thead><tbody>'+
+          rows.map(r=>'<tr><td>'+stockEsc(r.date?new Date(r.date).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"-")+'</td><td>'+stockEsc(r.line||"-")+'</td><td>'+stockEsc(r.product||"-")+'</td><td><b>'+fmt(r.scrap||1)+'</b></td></tr>').join("")+
+        '</tbody></table></div>'
+      : '<div class="empty-state">Nenhum registro detalhado encontrado para este defeito.</div>');
+
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden","false");
+  document.body.classList.add("modal-open");
+}
+
+function closeHomeDefectDetail(){
+  const modal=document.getElementById("homeDefectModal");
+  if(!modal)return;
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden","true");
+  document.body.classList.remove("modal-open");
+}
+
 function renderHomeYesterday(){
   if(currentPage!=="home")return;
 
@@ -2542,6 +2607,7 @@ function renderHomeYesterday(){
   const bestMachine=groups.length?[...groups].sort((a,b)=>b.oee-a.oee)[0]:null;
   const criticalMachines=groups.filter(g=>g.oee<70).length;
   const topDefect=defects[0]||null;
+  homeCurrentDefects=defects;
 
   const status=document.getElementById("homeYesterdayStatus");
   if(status)status.textContent=liveStamp()+" • "+processLabel+" • "+dateLabel+" 07:00 → "+endLabel+" 07:00";
@@ -2622,12 +2688,19 @@ function renderHomeYesterday(){
           '<div><span>Principal defeito</span><strong>'+stockEsc(topDefect?.defect||"-")+'</strong><small>'+fmt(topDefect?.qty||0)+' registro(s)</small></div>'+
         '</div>'+
         '<div class="home-defect-top5">'+
-          defects.slice(0,5).map((d,i)=>'<article class="home-defect-top-card"><span class="defect-priority p'+Math.min(3,i+1)+'">'+(i+1)+'</span><div><strong>'+stockEsc(d.defect)+'</strong><small>'+stockEsc(d.lines.join(", ")||"-")+(d.models.length?' • '+stockEsc(d.models.join(", ")):'')+'</small></div><b>'+fmt(d.qty)+'</b></article>').join("")+
+          defects.slice(0,5).map((d,i)=>'<button type="button" class="home-defect-top-card" onclick="openHomeDefectDetail('+i+')" aria-label="Abrir detalhes do defeito '+stockEsc(d.defect)+'"><span class="defect-priority p'+Math.min(3,i+1)+'">'+(i+1)+'</span><div><strong>'+stockEsc(d.defect)+'</strong><small>'+stockEsc(d.lines.join(", ")||"-")+(d.models.length?' • '+stockEsc(d.models.join(", ")):'')+'</small><em>Ver detalhes ↗</em></div><b>'+fmt(d.qty)+'</b></button>').join("")+
         '</div>'+
         '<div class="table-scroll home-defect-more" id="homeDefectMore" hidden><table class="home-defect-table"><thead><tr><th>Prioridade</th><th>Defeito</th><th>Linha(s)</th><th>Modelo(s)</th><th>Qtd.</th></tr></thead><tbody>'+
         defects.slice(5).map((d,i)=>'<tr><td><span class="defect-priority p3">'+(i+6)+'</span></td><td><span class="defect-chip">'+stockEsc(d.defect)+'</span></td><td>'+stockEsc(d.lines.join(", ")||"-")+'</td><td>'+stockEsc(d.models.join(", ")||"-")+'</td><td><b>'+fmt(d.qty)+'</b></td></tr>').join("")+
         '</tbody></table></div>'+
-        (defects.length>5?'<button class="home-defect-toggle" type="button" onclick="toggleHomeDefects(this)"><span>Mostrar mais defeitos</span><b>⌄</b></button>':'')
+        (defects.length>5?'<button class="home-defect-toggle" type="button" onclick="toggleHomeDefects(this)"><span>Mostrar mais defeitos</span><b>⌄</b></button>':'')+
+        '<div class="home-defect-modal" id="homeDefectModal" aria-hidden="true">'+
+          '<div class="home-defect-modal-backdrop" onclick="closeHomeDefectDetail()"></div>'+
+          '<section class="home-defect-modal-panel" role="dialog" aria-modal="true" aria-labelledby="homeDefectModalTitle">'+
+            '<div class="home-defect-modal-head"><div><span>DETALHAMENTO DO DEFEITO</span><h2 id="homeDefectModalTitle">Defeito</h2><p id="homeDefectModalContext"></p></div><button type="button" onclick="closeHomeDefectDetail()" aria-label="Fechar">×</button></div>'+
+            '<div id="homeDefectModalBody"></div>'+
+          '</section>'+
+        '</div>'
       : '<div class="empty-state home-empty-good"><strong>Sem não qualidade registrada em '+processLabel+'.</strong><br>Nenhum defeito/scrap foi encontrado para o processo selecionado.</div>';
   }
 
