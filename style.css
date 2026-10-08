@@ -7868,3 +7868,86 @@ body.home-nav-in-topbar .home-block{
     height:calc(100vh - 110px) !important;
   }
 }
+
+
+/* =========================================================
+   HOME HEADER STACK — HEADER + QUICK NAV MOVE AS ONE BLOCK
+   ========================================================= */
+.home-header-stack{
+  position:sticky !important;
+  top:0 !important;
+  z-index:140 !important;
+  width:100% !important;
+  background:#08283d !important;
+  box-shadow:0 8px 24px rgba(2,18,29,.20) !important;
+}
+.home-header-stack .topbar{
+  position:relative !important;
+  top:auto !important;
+  left:auto !important;
+  right:auto !important;
+  width:100% !important;
+  height:78px !important;
+  padding:0 28px !important;
+  z-index:1 !important;
+  box-shadow:none !important;
+}
+.home-header-stack nav.home-quick-nav.home-quick-nav-topbar{
+  position:relative !important;
+  top:auto !important;
+  left:auto !important;
+  right:auto !important;
+  bottom:auto !important;
+  width:calc(100% - 56px) !important;
+  min-height:58px !important;
+  margin:0 28px !important;
+  padding:6px !important;
+  z-index:2 !important;
+  border-radius:12px 12px 0 0 !important;
+  box-shadow:none !important;
+  transform:none !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+}
+body.home-nav-in-topbar .app{
+  margin-top:0 !important;
+  min-height:calc(100vh - 136px) !important;
+}
+body.home-nav-in-topbar .sidebar{
+  top:136px !important;
+  height:calc(100vh - 136px) !important;
+}
+body.home-nav-in-topbar .home-block{
+  scroll-margin-top:156px !important;
+}
+@media(max-width:1100px){
+  .home-header-stack .topbar{
+    height:70px !important;
+    padding:0 16px !important;
+  }
+  .home-header-stack nav.home-quick-nav.home-quick-nav-topbar{
+    width:calc(100% - 32px) !important;
+    margin:0 16px !important;
+    min-height:56px !important;
+  }
+  body.home-nav-in-topbar .sidebar{
+    top:126px !important;
+    height:calc(100vh - 126px) !important;
+  }
+}
+@media(max-width:640px){
+  .home-header-stack .topbar{
+    height:60px !important;
+    padding:0 8px !important;
+  }
+  .home-header-stack nav.home-quick-nav.home-quick-nav-topbar{
+    width:calc(100% - 16px) !important;
+    margin:0 8px !important;
+    min-height:50px !important;
+  }
+  body.home-nav-in-topbar .sidebar{
+    top:110px !important;
+    height:calc(100vh - 110px) !important;
+  }
+}
