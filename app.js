@@ -3108,10 +3108,10 @@ function initHomeQuickNavFollow(){
     );
 
     const atRealEnd=viewportBottom>=pageBottom-24;
-    const lastRect=lastSection.getBoundingClientRect();
-    const lastContentEnding=lastRect.bottom<=window.innerHeight+12;
 
-    nav.classList.toggle("is-at-home-end",atRealEnd||lastContentEnding);
+    // A barra acompanha toda a rolagem da Home e só desaparece
+    // quando o usuário realmente alcança o fim da página.
+    nav.classList.toggle("is-at-home-end",atRealEnd);
     updateActiveSection();
   }
 
