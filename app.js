@@ -11,17 +11,29 @@ stock:{title:"Controle de Estoque",sub:"Estoque da Fundição — Inacabado e Ac
 function shell(p){return '<div class="page"><div class="page-head"><div><h1>'+p.title+'</h1><p>'+p.sub+'</p></div><div class="refresh">● Atualização: automática</div></div>'+p.html+'</div>'}
 function card(label,value,cls=""){return '<div class="card"><div class="label">'+label+'</div><div class="value '+cls+'">'+value+'</div></div>'}
 function home(){
-  return '<div class="home-yesterday-hero panel">'+
-    '<div><span>RESUMO EXECUTIVO • FND</span><h2 id="homeYesterdayTitle">Dia anterior</h2><p>Demanda, produção, modelos, eficiência por máquina e não qualidade somente da Fundição.</p></div>'+
-    '<div class="home-yesterday-status" id="homeYesterdayStatus">🟡 Consultando L2L...</div>'+
-  '</div>'+
-  '<div class="home-yesterday-kpis" id="homeYesterdayKpis"></div>'+
-  '<div class="home-yesterday-grid">'+
-    '<section class="panel"><div class="home-section-head"><div><span>PRODUÇÃO</span><h2>Demanda x Produção Real</h2></div></div><div id="homeYesterdayProduction"></div></section>'+
-    '<section class="panel"><div class="home-section-head"><div><span>MODELOS</span><h2>Modelos produzidos</h2></div></div><div id="homeYesterdayModels"></div></section>'+
-  '</div>'+
-  '<section class="panel"><div class="home-section-head"><div><span>EFICIÊNCIA</span><h2>OEE por máquina — FND</h2><p>Valores oficiais do L2L para o dia anterior.</p></div></div><div id="homeYesterdayOee"></div></section>'+
-  '<section class="panel"><div class="home-section-head"><div><span>NÃO QUALIDADE</span><h2>Defeitos e causas — FND</h2><p>Descrição dos defeitos registrados no L2L no dia anterior.</p></div></div><div id="homeYesterdayDefects"></div></section>';
+  return '<section class="home-command panel">'+
+    '<div class="home-command-copy"><span>GESTÃO À VISTA • FND</span><h2 id="homeYesterdayTitle">Resumo do dia anterior</h2><p>Leitura executiva da Fundição: produção, modelos, eficiência e não qualidade.</p></div>'+
+    '<div class="home-command-side"><div class="home-yesterday-status" id="homeYesterdayStatus">🟡 Consultando L2L...</div><div class="home-source-badge">Fonte: L2L • atualização automática</div></div>'+
+  '</section>'+
+  '<section class="home-block">'+
+    '<div class="home-block-title"><div><span>01 • RESULTADO DO DIA</span><h2>Resumo executivo</h2></div><p>Os principais números da FND em uma única leitura.</p></div>'+
+    '<div class="home-yesterday-kpis" id="homeYesterdayKpis"></div>'+
+  '</section>'+
+  '<section class="home-block">'+
+    '<div class="home-block-title"><div><span>02 • PRODUÇÃO</span><h2>Plano x realizado</h2></div><p>Demanda, produção real e modelos que passaram no processo.</p></div>'+
+    '<div class="home-yesterday-grid">'+
+      '<article class="panel home-focus-panel"><div class="home-section-head"><div><span>DEMANDA X REAL</span><h2>Performance de produção</h2></div></div><div id="homeYesterdayProduction"></div></article>'+
+      '<article class="panel home-focus-panel"><div class="home-section-head"><div><span>MIX PRODUZIDO</span><h2>Modelos do dia</h2></div></div><div id="homeYesterdayModels"></div></article>'+
+    '</div>'+
+  '</section>'+
+  '<section class="home-block">'+
+    '<div class="home-block-title"><div><span>03 • EFICIÊNCIA</span><h2>Desempenho por máquina</h2></div><p>OEE oficial do L2L com OA, PPP, Yield e produção.</p></div>'+
+    '<div class="panel home-wide-panel"><div id="homeYesterdayOee"></div></div>'+
+  '</section>'+
+  '<section class="home-block">'+
+    '<div class="home-block-title"><div><span>04 • NÃO QUALIDADE</span><h2>Defeitos e causas</h2></div><p>Prioridade visual por quantidade para facilitar a tomada de ação.</p></div>'+
+    '<div class="panel home-wide-panel"><div id="homeYesterdayDefects"></div></div>'+
+  '</section>';
 }
 function safety(){return '<div class="panel safety-live-panel"><div class="safety-live-head"><div><span>MOMENTO DE SEGURANÇA</span><h2 id="safetyWeekTitle">Safety Moments — Semana atual</h2><p id="safetyWeekMeta">Conteúdo organizado automaticamente a partir do PDF semanal.</p></div><div class="safety-mode-switch"><button id="safetyModeDynamic" class="active">▥ Visualização dinâmica</button><button id="safetyModeWeekly">▣ Semanal</button><a class="safety-open-pdf" href="SafetyMomentWeek_Current.pdf" target="_blank" rel="noopener">▤ Abrir PDF ↗</a></div></div><div class="safety-status" id="safetyStatus">Carregando Momento de Segurança...</div><section id="safetyDynamic" class="safety-dynamic"><div id="safetyDayCards" class="safety-day-cards"></div><div id="safetyDayDetail" class="safety-day-detail"></div></section><section id="safetyWeekly" class="safety-weekly" hidden><div class="safety-viewer"><canvas id="safetyCanvas"></canvas></div></section><div class="safety-help">O modo <b>Dinâmico</b> organiza a leitura do dia. O modo <b>Semanal</b> mantém o PDF oficial completo.</div></div>'}
 const oeeData=[
@@ -2197,43 +2209,59 @@ function renderHomeYesterday(){
   const defects=homeDefectSummary(homeYesterdayScrapRows);
   const defectQty=defects.reduce((s,x)=>s+x.qty,0);
 
+  const bestMachine=groups.length?[...groups].sort((a,b)=>b.oee-a.oee)[0]:null;
+  const criticalMachines=groups.filter(g=>g.oee<70).length;
+  const topDefect=defects[0]||null;
+
   const status=document.getElementById("homeYesterdayStatus");
   if(status)status.textContent=liveStamp()+" • FND • "+dateLabel;
 
   const kpis=document.getElementById("homeYesterdayKpis");
   if(kpis)kpis.innerHTML=
-    '<div class="home-exec-kpi"><span>Demanda</span><strong>'+fmt(demand)+'</strong><small>Dia anterior</small></div>'+
-    '<div class="home-exec-kpi"><span>Produção real</span><strong>'+fmt(actual)+'</strong><small>'+fmtPct(attainment)+' da demanda</small></div>'+
-    '<div class="home-exec-kpi"><span>Produzido líquido</span><strong>'+fmt(net)+'</strong><small>Produção − scrap</small></div>'+
-    '<div class="home-exec-kpi"><span>OEE médio FND</span><strong>'+fmtPct(avgOee)+'</strong><small>'+groups.length+' máquina(s)</small></div>'+
-    '<div class="home-exec-kpi"><span>Defeitos</span><strong>'+fmt(defectQty)+'</strong><small>'+defects.length+' tipo(s)/causa(s)</small></div>';
+    '<article class="home-exec-kpi primary"><span>Demanda</span><strong>'+fmt(demand)+'</strong><small>Planejado para o dia</small></article>'+
+    '<article class="home-exec-kpi '+(attainment>=100?"success":attainment>=95?"attention":"critical")+'"><span>Produção real</span><strong>'+fmt(actual)+'</strong><small>'+fmtPct(attainment)+' de atingimento</small></article>'+
+    '<article class="home-exec-kpi"><span>Produzido líquido</span><strong>'+fmt(net)+'</strong><small>Produção − scrap</small></article>'+
+    '<article class="home-exec-kpi '+(avgOee>=85?"success":avgOee>=70?"attention":"critical")+'"><span>OEE médio FND</span><strong>'+fmtPct(avgOee)+'</strong><small>'+groups.length+' máquina(s) monitorada(s)</small></article>'+
+    '<article class="home-exec-kpi '+(defectQty>0?"critical":"success")+'"><span>Não qualidade</span><strong>'+fmt(defectQty)+'</strong><small>'+defects.length+' combinação(ões) defeito/causa</small></article>';
 
   const prod=document.getElementById("homeYesterdayProduction");
   if(prod){
-    const pct=Math.max(0,Math.min(140,attainment));
+    const pct=Math.max(0,Math.min(100,attainment));
+    const gap=actual-demand;
     prod.innerHTML=
-      '<div class="home-production-compare">'+
-        '<div class="home-prod-numbers"><div><span>Demanda</span><strong>'+fmt(demand)+'</strong></div><div><span>Produção real</span><strong>'+fmt(actual)+'</strong></div><div><span>Atingimento</span><strong class="'+(attainment>=100?"good":attainment>=95?"warn":"bad")+'">'+fmtPct(attainment)+'</strong></div></div>'+
-        '<div class="home-prod-track"><i style="width:'+Math.min(100,pct)+'%"></i></div>'+
-      '</div>';
+      '<div class="home-production-hero">'+
+        '<div class="home-prod-main"><span>Atingimento</span><strong class="'+(attainment>=100?"good":attainment>=95?"warn":"bad")+'">'+fmtPct(attainment)+'</strong><small>'+(gap>=0?"+":"")+fmt(gap)+' peças vs. demanda</small></div>'+
+        '<div class="home-prod-pairs"><div><span>Demanda</span><strong>'+fmt(demand)+'</strong></div><div><span>Produção real</span><strong>'+fmt(actual)+'</strong></div><div><span>Scrap</span><strong>'+fmt(scrap)+'</strong></div><div><span>Líquido</span><strong>'+fmt(net)+'</strong></div></div>'+
+      '</div>'+
+      '<div class="home-prod-progress"><div class="home-prod-progress-head"><span>Progresso contra demanda</span><b>'+fmtPct(attainment)+'</b></div><div class="home-prod-track"><i style="width:'+pct+'%"></i><em style="left:95%"></em></div><div class="home-prod-scale"><span>0%</span><span>Meta mínima 95%</span><span>100%</span></div></div>';
   }
 
   const models=document.getElementById("homeYesterdayModels");
   if(models){
+    const totalModels=products.reduce((s,p)=>s+p.actual,0);
     models.innerHTML=products.length
-      ? '<div class="home-model-list">'+products.map((p,i)=>
-          '<div class="home-model-row"><span class="home-model-pos">'+(i+1)+'</span><div><strong>'+stockEsc(p.name)+'</strong><small>'+p.lineCount+' linha(s)</small></div><b>'+fmt(p.actual)+'</b></div>'
-        ).join("")+'</div>'
+      ? '<div class="home-model-summary"><span>'+products.length+' modelo(s)</span><b>'+fmt(totalModels)+' peças</b></div>'+
+        '<div class="home-model-list">'+products.slice(0,12).map((p,i)=>{
+          const share=totalModels?p.actual/totalModels*100:0;
+          return '<div class="home-model-row"><span class="home-model-pos">'+(i+1)+'</span><div class="home-model-copy"><strong>'+stockEsc(p.name)+'</strong><small>'+p.lineCount+' linha(s) • '+fmtPct(share)+' do mix</small></div><b>'+fmt(p.actual)+'</b></div>';
+        }).join("")+'</div>'
       : '<div class="empty-state">O L2L não retornou detalhamento de modelos para a FND no dia anterior.</div>';
   }
 
   const oee=document.getElementById("homeYesterdayOee");
   if(oee){
     oee.innerHTML=groups.length
-      ? '<div class="home-machine-grid">'+groups.map(g=>{
+      ? '<div class="home-machine-summary">'+
+          '<div><span>Melhor OEE</span><strong>'+(bestMachine?stockEsc(bestMachine.line)+" • "+fmtPct(bestMachine.oee):"-")+'</strong></div>'+
+          '<div><span>Máquinas críticas</span><strong>'+criticalMachines+'</strong></div>'+
+          '<div><span>Referência</span><strong>85% OEE</strong></div>'+
+        '</div>'+
+        '<div class="home-machine-grid">'+groups.map(g=>{
           const cls=g.oee>=85?"good":g.oee>=70?"warn":"bad";
-          return '<article class="home-machine-card">'+
-            '<div class="home-machine-head"><div><span>'+stockEsc(g.area||"FND")+'</span><h3>'+stockEsc(g.line)+'</h3></div><b class="'+cls+'">'+fmtPct(g.oee)+'</b></div>'+
+          const status=g.oee>=85?"Dentro da meta":g.oee>=70?"Atenção":"Crítico";
+          return '<article class="home-machine-card '+cls+'">'+
+            '<div class="home-machine-head"><div><span>'+stockEsc(g.area||"FND")+'</span><h3>'+stockEsc(g.line)+'</h3></div><div class="home-machine-oee"><small>'+status+'</small><b>'+fmtPct(g.oee)+'</b></div></div>'+
+            '<div class="home-machine-bar"><i style="width:'+Math.min(100,Math.max(0,g.oee))+'%"></i></div>'+
             '<div class="home-machine-metrics"><div><span>OA</span><strong>'+fmtPct(g.availability)+'</strong></div><div><span>PPP</span><strong>'+fmtPct(g.performance)+'</strong></div><div><span>Yield</span><strong>'+fmtPct(g.quality)+'</strong></div><div><span>Produção</span><strong>'+fmt(g.actual)+' / '+fmt(g.demand)+'</strong></div></div>'+
           '</article>';
         }).join("")+'</div>'
@@ -2243,10 +2271,15 @@ function renderHomeYesterday(){
   const defectsEl=document.getElementById("homeYesterdayDefects");
   if(defectsEl){
     defectsEl.innerHTML=defects.length
-      ? '<div class="table-scroll"><table class="home-defect-table"><thead><tr><th>Defeito</th><th>Causa</th><th>Linha(s)</th><th>Modelo(s)</th><th>Qtd.</th></tr></thead><tbody>'+
-        defects.map(d=>'<tr><td><span class="defect-chip">'+stockEsc(d.defect)+'</span></td><td><span class="cause-chip">'+stockEsc(d.cause)+'</span></td><td>'+stockEsc(d.lines.join(", ")||"-")+'</td><td>'+stockEsc(d.models.join(", ")||"-")+'</td><td><b>'+fmt(d.qty)+'</b></td></tr>').join("")+
+      ? '<div class="home-defect-summary">'+
+          '<div><span>Total</span><strong>'+fmt(defectQty)+'</strong><small>ocorrências/peças</small></div>'+
+          '<div><span>Principal defeito</span><strong>'+stockEsc(topDefect?.defect||"-")+'</strong><small>'+fmt(topDefect?.qty||0)+' registro(s)</small></div>'+
+          '<div><span>Principal causa</span><strong>'+stockEsc(topDefect?.cause||"-")+'</strong><small>maior impacto do dia</small></div>'+
+        '</div>'+
+        '<div class="table-scroll"><table class="home-defect-table"><thead><tr><th>Prioridade</th><th>Defeito</th><th>Causa</th><th>Linha(s)</th><th>Modelo(s)</th><th>Qtd.</th></tr></thead><tbody>'+
+        defects.map((d,i)=>'<tr><td><span class="defect-priority p'+Math.min(3,i+1)+'">'+(i+1)+'</span></td><td><span class="defect-chip">'+stockEsc(d.defect)+'</span></td><td><span class="cause-chip">'+stockEsc(d.cause)+'</span></td><td>'+stockEsc(d.lines.join(", ")||"-")+'</td><td>'+stockEsc(d.models.join(", ")||"-")+'</td><td><b>'+fmt(d.qty)+'</b></td></tr>').join("")+
         '</tbody></table></div>'
-      : '<div class="empty-state">Nenhum defeito/scrap da FND encontrado no L2L para o dia anterior.</div>';
+      : '<div class="empty-state home-empty-good"><strong>Sem não qualidade registrada.</strong><br>Nenhum defeito/scrap da FND foi encontrado no L2L para o dia anterior.</div>';
   }
 }
 
