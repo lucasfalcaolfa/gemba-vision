@@ -29,6 +29,7 @@ function home(){
     '<a class="home-quick-link" href="#home-efficiency"><span>04</span><b>OEE</b></a>'+
     '<a class="home-quick-link" href="#home-quality"><span>05</span><b>Não Qualidade</b></a>'+
     '<a class="home-quick-link" href="#home-events"><span>06</span><b>Ocorrências</b></a>'+
+    '<a class="home-quick-link" href="#home-hse"><span>07</span><b>HSE Semanal</b></a>'+
   '</nav>'+
   '<section class="home-block" id="home-result">'+
     '<div class="home-block-title"><div><span>01 • RESULTADO DO DIA</span><h2>Resumo executivo</h2></div><p>Principais indicadores da FND para leitura rápida.</p></div>'+
@@ -53,6 +54,26 @@ function home(){
   '<section class="home-block" id="home-events">'+
     '<div class="home-block-title"><div><span>06 • OCORRÊNCIAS</span><h2>Dispatches e contramedidas</h2></div><p>Eventos de manutenção e registros de produção do período.</p></div>'+
     '<div class="panel home-wide-panel"><div id="homeYesterdayEvents"></div></div>'+
+  '</section>'+
+  '<section class="home-block" id="home-hse">'+
+    '<div class="home-block-title"><div><span>07 • HSE SEMANAL</span><h2>Informativo de Segurança</h2></div><p>Conteúdo visual da semana • atualização automática da imagem.</p></div>'+
+    '<div class="panel home-hse-panel">'+
+      '<div class="home-hse-head">'+
+        '<div><span>HSE • DIÁLOGO SEMANAL</span><h3>Pequenas Mudanças, Risco Diferente</h3><p>Material oficial exibido na Visão Geral para consulta rápida da equipe.</p></div>'+
+        '<div class="home-hse-live"><i></i><span id="homeHseStatus">Imagem atualizada automaticamente</span></div>'+
+      '</div>'+
+      '<button type="button" class="home-hse-image-wrap" onclick="openHseImage()" aria-label="Abrir informativo HSE em tela ampliada">'+
+        '<img id="hseWeeklyImage" src="assets/hse-weekly.jpg" alt="Informativo semanal de HSE">'+
+        '<span>Ampliar informativo ↗</span>'+
+      '</button>'+
+    '</div>'+
+    '<div class="home-hse-modal" id="homeHseModal" aria-hidden="true">'+
+      '<div class="home-hse-modal-backdrop" onclick="closeHseImage()"></div>'+
+      '<section class="home-hse-modal-panel" role="dialog" aria-modal="true" aria-label="Informativo HSE ampliado">'+
+        '<div class="home-hse-modal-head"><div><span>HSE SEMANAL</span><h2>Informativo de Segurança</h2></div><button type="button" onclick="closeHseImage()" aria-label="Fechar">×</button></div>'+
+        '<div class="home-hse-modal-body"><img id="hseWeeklyImageLarge" src="assets/hse-weekly.jpg" alt="Informativo semanal de HSE ampliado"></div>'+
+      '</section>'+
+    '</div>'+
   '</section>';
 }
 function safety(){return '<div class="panel safety-live-panel"><div class="safety-live-head"><div><span>MOMENTO DE SEGURANÇA</span><h2 id="safetyWeekTitle">Safety Moments — Semana atual</h2><p id="safetyWeekMeta">Conteúdo organizado automaticamente a partir do PDF semanal.</p></div><div class="safety-mode-switch"><button id="safetyModeDynamic" class="active">▥ Visualização dinâmica</button><button id="safetyModeWeekly">▣ Semanal</button><a class="safety-open-pdf" href="SafetyMomentWeek_Current.pdf" target="_blank" rel="noopener">▤ Abrir PDF ↗</a></div></div><div class="safety-status" id="safetyStatus">Carregando Momento de Segurança...</div><section id="safetyDynamic" class="safety-dynamic"><div id="safetyDayCards" class="safety-day-cards"></div><div id="safetyDayDetail" class="safety-day-detail"></div></section><section id="safetyWeekly" class="safety-weekly" hidden><div class="safety-viewer"><canvas id="safetyCanvas"></canvas></div></section><div class="safety-help">O modo <b>Dinâmico</b> organiza a leitura do dia. O modo <b>Semanal</b> mantém o PDF oficial completo.</div></div>'}
@@ -2811,9 +2832,39 @@ async function refreshHomeYesterday(){
   }
 }
 
+function refreshHseBulletin(){
+  const stamp=Date.now();
+  const src="assets/hse-weekly.jpg?v="+stamp;
+  const img=document.getElementById("hseWeeklyImage");
+  const large=document.getElementById("hseWeeklyImageLarge");
+  if(img)img.src=src;
+  if(large)large.src=src;
+
+  const status=document.getElementById("homeHseStatus");
+  if(status)status.textContent="Verificação automática • "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+}
+
+function openHseImage(){
+  refreshHseBulletin();
+  const modal=document.getElementById("homeHseModal");
+  if(!modal)return;
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden","false");
+  document.body.classList.add("modal-open");
+}
+
+function closeHseImage(){
+  const modal=document.getElementById("homeHseModal");
+  if(!modal)return;
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden","true");
+  document.body.classList.remove("modal-open");
+}
+
 function initHome(){
   renderHomeYesterday();
   refreshHomeYesterday();
+  refreshHseBulletin();
 }
 
 let currentPage="home";
@@ -2834,7 +2885,10 @@ async function refreshL2L(){
     l2lLastUpdate=new Date();
     l2lError="";
     applyLiveData(currentPage);
-    if(currentPage==="home")await refreshHomeYesterday();
+    if(currentPage==="home"){
+      await refreshHomeYesterday();
+      refreshHseBulletin();
+    }
     if(currentPage==="oee"){
       await refreshOeeRange();
       await refreshOeeHeatmap(true);
