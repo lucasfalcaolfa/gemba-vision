@@ -2158,18 +2158,30 @@ function homeFndRows(rows){
   return (Array.isArray(rows)?rows:[]).filter(r=>isFndArea(r.area));
 }
 
+function homeProcessFromLine(lineName){
+  const line=String(lineName||"").toUpperCase().trim();
+  if(line.includes("INJETORA")||/^INJP?_?\d+/.test(line)||line.includes("INJ"))return "injecao";
+  if(line.includes("ACAB")||line.startsWith("FND_ACAB"))return "acabamento";
+  return "outros";
+}
+
 function homePitchProducts(pitches){
   const map={};
   (Array.isArray(pitches)?pitches:[]).forEach(p=>{
     const product=String(p.product||"").trim();
     if(!product||product==="Sem modelo")return;
 
+    const line=String(p.line||"").trim();
+    const process=homeProcessFromLine(line);
+    if(process==="outros")return;
+
     const when=p.start?new Date(p.start):null;
     const hour=when&&!Number.isNaN(when.getTime())?when.getHours():null;
     const shift=hour===null?"":shiftFromHour(hour);
-    const key=[shift,product].join("|");
+    const key=[process,shift,product].join("|");
 
     if(!map[key])map[key]={
+      process,
       shift,
       product,
       actual:0,
@@ -2182,7 +2194,7 @@ function homePitchProducts(pitches){
     const item=map[key];
     item.actual+=n(p.actual);
     item.demand+=n(p.demand);
-    if(p.line)item.lines.add(String(p.line));
+    if(line)item.lines.add(line);
 
     if(when&&!Number.isNaN(when.getTime())){
       const ts=when.getTime();
@@ -2194,14 +2206,15 @@ function homePitchProducts(pitches){
   return Object.values(map)
     .map(x=>({...x,lines:[...x.lines]}))
     .sort((a,b)=>{
+      if(a.process!==b.process)return a.process.localeCompare(b.process);
       const sa=Number(a.shift||99), sb=Number(b.shift||99);
       if(sa!==sb)return sa-sb;
       return b.actual-a.actual||a.product.localeCompare(b.product,"pt-BR",{numeric:true,sensitivity:"base"});
     });
 }
 
-function homeShiftProductGroups(pitches){
-  const products=homePitchProducts(pitches);
+function homeShiftProductGroups(pitches,process){
+  const products=homePitchProducts(pitches).filter(p=>p.process===process);
   return ["1","2","3"].map(shift=>({
     shift,
     label:SHIFT_SCHEDULE[shift]?.label||shift+"º Turno",
@@ -2370,7 +2383,8 @@ function renderHomeYesterday(){
   const avgOee=groups.length?groups.reduce((s,g)=>s+n(g.oee),0)/groups.length:0;
 
   const products=homeProductSummary(homeYesterdayProductRows);
-  const shiftProducts=homeShiftProductGroups(homeYesterdayContext?.pitches||[]);
+  const injectionShiftProducts=homeShiftProductGroups(homeYesterdayContext?.pitches||[],"injecao");
+  const finishingShiftProducts=homeShiftProductGroups(homeYesterdayContext?.pitches||[],"acabamento");
   const defects=homeDefectSummary(homeYesterdayScrapRows,homeYesterdayContext?.pitches||[]);
   const defectQty=defects.reduce((s,x)=>s+x.qty,0);
 
@@ -2403,12 +2417,13 @@ function renderHomeYesterday(){
 
   const models=document.getElementById("homeYesterdayModels");
   if(models){
-    const pitchProductCount=shiftProducts.reduce((s,g)=>s+g.products.length,0);
-    const pitchActual=shiftProducts.reduce((s,g)=>s+g.products.reduce((x,p)=>x+p.actual,0),0);
+    const renderProcess=(title,subtitle,groups,processClass)=>{
+      const count=groups.reduce((s,g)=>s+g.products.length,0);
+      const actualTotal=groups.reduce((s,g)=>s+g.products.reduce((x,p)=>x+p.actual,0),0);
 
-    models.innerHTML=pitchProductCount
-      ? '<div class="home-model-summary"><span>'+pitchProductCount+' produto(s) por turno</span><b>'+fmt(pitchActual)+' peças registradas</b></div>'+
-        '<div class="home-shift-product-grid">'+shiftProducts.map(group=>{
+      return '<section class="home-process-products '+processClass+'">'+
+        '<div class="home-process-products-head"><div><span>PROCESSO</span><h3>'+title+'</h3><p>'+subtitle+'</p></div><div><strong>'+count+'</strong><small>produto(s)</small><b>'+fmt(actualTotal)+' peças</b></div></div>'+
+        '<div class="home-shift-product-grid">'+groups.map(group=>{
           const total=group.products.reduce((s,p)=>s+p.actual,0);
           return '<section class="home-shift-product-card shift-'+group.shift+'">'+
             '<div class="home-shift-product-head"><div><span>'+group.label+'</span><strong>'+group.time+'</strong></div><b>'+fmt(total)+' peças</b></div>'+
@@ -2423,7 +2438,18 @@ function renderHomeYesterday(){
                 }).join("")+'</div>'
               : '<div class="home-shift-product-empty">Nenhum produto registrado neste turno.</div>')+
           '</section>';
-        }).join("")+'</div>'
+        }).join("")+'</div>'+
+      '</section>';
+    };
+
+    const injectionCount=injectionShiftProducts.reduce((s,g)=>s+g.products.length,0);
+    const finishingCount=finishingShiftProducts.reduce((s,g)=>s+g.products.length,0);
+
+    models.innerHTML=(injectionCount||finishingCount)
+      ? '<div class="home-process-products-stack">'+
+          renderProcess("Injetoras","Produtos registrados nas linhas de injeção da FND.",injectionShiftProducts,"injection")+
+          renderProcess("Acabamento","Produtos registrados nas linhas FND_ACAB / acabamento.",finishingShiftProducts,"finishing")+
+        '</div>'
       : (products.length
           ? '<div class="home-model-summary"><span>'+products.length+' modelo(s)</span><b>'+fmt(products.reduce((s,p)=>s+p.actual,0))+' peças</b></div>'+
             '<div class="home-model-list">'+products.slice(0,12).map((p,i)=>'<div class="home-model-row"><span class="home-model-pos">'+(i+1)+'</span><div class="home-model-copy"><strong>'+stockEsc(p.name)+'</strong><small>'+p.lineCount+' linha(s)</small></div><b>'+fmt(p.actual)+'</b></div>').join("")+'</div>'
