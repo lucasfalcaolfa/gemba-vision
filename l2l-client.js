@@ -102,6 +102,17 @@ window.L2L = {
     const results = await Promise.all(requests);
     return results.flat();
   },
+  async getHomeContext(date, startTime = "00:00", endTime = "23:59") {
+    const day = date || new Date().toISOString().slice(0, 10);
+    const start = encodeURIComponent(day + " " + startTime);
+    const end = encodeURIComponent(day + " " + endTime);
+    const response = await fetch("/api/l2l?report=homecontext&start=" + start + "&end=" + end);
+    const payload = await response.json();
+    if (!response.ok || payload.success === false) {
+      throw new Error(payload.error || "Falha ao consultar Dispatches e comentários do L2L");
+    }
+    return payload.data || { pitches: [], dispatches: [] };
+  },
   async getScrapDetails(date, startTime = "00:00", endTime = "23:59") {
     const day = date || new Date().toISOString().slice(0, 10);
     const start = encodeURIComponent(day + " " + startTime);
