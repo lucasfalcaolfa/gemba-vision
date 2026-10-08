@@ -2228,38 +2228,57 @@ function renderHomeEvents(){
   if(!el)return;
 
   const pitches=(homeYesterdayContext?.pitches||[]).filter(p=>String(p.comment||"").trim());
-  const dispatches=homeYesterdayContext?.dispatches||[];
+  const dispatches=(homeYesterdayContext?.dispatches||[]).slice().sort((a,b)=>{
+    const da=a.created?new Date(a.created).getTime():0;
+    const db=b.created?new Date(b.created).getTime():0;
+    return db-da;
+  });
+
+  const dispatchLines=new Set(dispatches.map(d=>String(d.line||"")).filter(Boolean));
+  const commentLines=new Set(pitches.map(p=>String(p.line||"")).filter(Boolean));
 
   const dispatchHtml=dispatches.length
-    ? '<div class="home-event-list">'+dispatches.map(d=>{
+    ? '<div class="home-event-list home-event-list-pro">'+dispatches.map((d,i)=>{
         const reason=String(d.reason||"").trim();
-        return '<article class="home-event-card dispatch">'+
-          '<div class="home-event-head"><div><span>DISPATCH #'+stockEsc(String(d.number||d.id||"-"))+'</span><h3>'+stockEsc(d.dispatch_type||"Dispatch")+'</h3></div><b>'+homeTimeLabel(d.created)+'</b></div>'+
-          '<div class="home-event-meta"><span>'+stockEsc(d.line||"Sem linha")+'</span>'+(d.machine?'<span>'+stockEsc(d.machine)+'</span>':'')+'</div>'+
-          '<p>'+stockEsc(d.description||"Sem descrição registrada.")+'</p>'+
-          (reason?'<div class="home-event-reason"><span>Causa / motivo</span><strong>'+stockEsc(reason)+'</strong></div>':'')+
+        const status=String(d.status||"").trim();
+        const downtime=n(d.downtime_minutes);
+        const priority=i<3?"high":"normal";
+        return '<article class="home-event-card dispatch '+priority+'">'+
+          '<div class="home-event-rank">'+(i+1)+'</div>'+
+          '<div class="home-event-main">'+
+            '<div class="home-event-head"><div><span>DISPATCH #'+stockEsc(String(d.number||d.id||"-"))+'</span><h3>'+stockEsc(d.dispatch_type||"Dispatch")+'</h3></div><b>'+homeTimeLabel(d.created)+'</b></div>'+
+            '<div class="home-event-meta"><span class="line">'+stockEsc(d.line||"Sem linha")+'</span>'+(d.machine?'<span>'+stockEsc(d.machine)+'</span>':'')+(status?'<span>'+stockEsc(status)+'</span>':'')+'</div>'+
+            '<p>'+stockEsc(d.description||"Sem descrição registrada.")+'</p>'+
+            (reason?'<div class="home-event-reason"><span>Causa / motivo</span><strong>'+stockEsc(reason)+'</strong></div>':'')+
+            (downtime>0?'<div class="home-event-downtime">⏱ '+fmt(downtime)+' min de parada</div>':'')+
+          '</div>'+
         '</article>';
       }).join("")+'</div>'
     : '<div class="empty-state">Nenhum Dispatch da FND encontrado para o dia anterior.</div>';
 
   const commentsHtml=pitches.length
-    ? '<div class="home-countermeasure-list">'+pitches.map(p=>
+    ? '<div class="home-countermeasure-list home-countermeasure-list-pro">'+pitches.map((p,i)=>
         '<article class="home-countermeasure-card">'+
+          '<div class="home-countermeasure-index">'+(i+1)+'</div>'+
           '<div class="home-countermeasure-time">'+homeTimeLabel(p.start)+'</div>'+
-          '<div><span>'+stockEsc(p.line||"Sem linha")+(p.product&&p.product!=="Sem modelo"?" • "+stockEsc(p.product):"")+'</span><p>'+stockEsc(p.comment)+'</p></div>'+
-          '<b>'+fmt(p.actual)+' / '+fmt(p.demand)+'</b>'+
+          '<div class="home-countermeasure-copy"><span>'+stockEsc(p.line||"Sem linha")+(p.product&&p.product!=="Sem modelo"?" • "+stockEsc(p.product):"")+'</span><p>'+stockEsc(p.comment)+'</p></div>'+
+          '<div class="home-countermeasure-production"><span>Real / Demanda</span><b>'+fmt(p.actual)+' / '+fmt(p.demand)+'</b></div>'+
         '</article>'
       ).join("")+'</div>'
     : '<div class="empty-state">Nenhum comentário/contramedida de pitch foi registrado na FND no dia anterior.</div>';
 
   el.innerHTML=
-    '<div class="home-events-summary">'+
-      '<div><span>Dispatches</span><strong>'+dispatches.length+'</strong><small>ocorrências localizadas</small></div>'+
-      '<div><span>Contramedidas</span><strong>'+pitches.length+'</strong><small>comentários de pitch</small></div>'+
+    '<div class="home-events-toolbar">'+
+      '<div class="home-events-summary">'+
+        '<div><span>Dispatches</span><strong>'+dispatches.length+'</strong><small>'+dispatchLines.size+' linha(s) afetada(s)</small></div>'+
+        '<div><span>Contramedidas</span><strong>'+pitches.length+'</strong><small>'+commentLines.size+' linha(s) com comentário</small></div>'+
+        '<div><span>Prioridade</span><strong>'+(dispatches.length?"Acompanhar":"Sem pendência")+'</strong><small>'+(dispatches.length?"Ver Dispatches primeiro":"Nenhum Dispatch no período")+'</small></div>'+
+      '</div>'+
+      '<div class="home-events-guide"><span>LEITURA RÁPIDA</span><b>1. Dispatches → 2. Causa/Motivo → 3. Contramedidas</b></div>'+
     '</div>'+
-    '<div class="home-events-grid">'+
-      '<section><div class="home-events-subtitle"><span>MANUTENÇÃO / OCORRÊNCIAS</span><h3>Dispatches</h3></div>'+dispatchHtml+'</section>'+
-      '<section><div class="home-events-subtitle"><span>PRODUÇÃO / PASSOS</span><h3>Comentários e contramedidas</h3></div>'+commentsHtml+'</section>'+
+    '<div class="home-events-grid home-events-grid-pro">'+
+      '<section class="home-events-column dispatch-column"><div class="home-events-subtitle"><div><span>MANUTENÇÃO / OCORRÊNCIAS</span><h3>Dispatches</h3></div><small>Ordenados do mais recente para o mais antigo</small></div>'+dispatchHtml+'</section>'+
+      '<section class="home-events-column action-column"><div class="home-events-subtitle"><div><span>PRODUÇÃO / PASSOS</span><h3>Comentários e contramedidas</h3></div><small>Registros feitos durante os pitches</small></div>'+commentsHtml+'</section>'+
     '</div>';
 }
 
