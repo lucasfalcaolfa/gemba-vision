@@ -221,6 +221,140 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  if (report === "homecontext") {
+    const start = String(req.query.start || "").trim();
+    const end = String(req.query.end || "").trim();
+    if (!start || !end) {
+      return res.status(400).json({ success: false, error: "start and end are required for home context." });
+    }
+
+    try {
+      const toIso = (value) => {
+        const v = String(value || "").trim().replace(" ", "T");
+        return v.length === 16 ? v + ":00" : v;
+      };
+      const startIso = toIso(start);
+      const endIso = toIso(end);
+      const numericSite = await resolveNumericSite(start, end);
+
+      const lookupResults = await Promise.allSettled([
+        l2lGet("/api/1.0/lines/", { site: numericSite, limit: 2000 }),
+        l2lGet("/api/1.0/productcomponents/", { site: numericSite, limit: 2000 }),
+        l2lGet("/api/1.0/dispatchtypes/", { site: numericSite, limit: 2000 }),
+      ]);
+
+      const dataOf = (result) => result.status === "fulfilled" && Array.isArray(result.value?.data) ? result.value.data : [];
+      const [lines, products, dispatchTypes] = lookupResults.map(dataOf);
+      const byId = (rows) => new Map(rows.map(x => [String(x.id), x]));
+      const lineMap = byId(lines);
+      const productMap = byId(products);
+      const dispatchTypeMap = byId(dispatchTypes);
+
+      const refId = (value) => {
+        if (value && typeof value === "object") return value.id ?? value.pk ?? value.value ?? null;
+        return value;
+      };
+      const label = (value, map, fallback = "-") => {
+        if (value && typeof value === "object") {
+          return value.name ?? value.code ?? value.description ?? value.number ?? String(value.id ?? fallback);
+        }
+        const found = map.get(String(value));
+        return found ? (found.name ?? found.code ?? found.description ?? String(found.id)) : (value ?? fallback);
+      };
+      const isFndLine = (lineRef, row = {}) => {
+        const line = lineMap.get(String(refId(lineRef))) || (lineRef && typeof lineRef === "object" ? lineRef : null);
+        const area = String(
+          line?.area?.name ??
+          line?.area_name ??
+          line?.areacode ??
+          line?.area ??
+          row.areacode ??
+          row.area?.name ??
+          row.area ??
+          ""
+        ).toUpperCase();
+        const lineCode = String(line?.code ?? line?.name ?? row.linecode ?? row.lineabbreviation ?? "").toUpperCase();
+        return area === "FND" || area.startsWith("FND_") || area.includes("FUNDI") || lineCode.startsWith("FND_") || lineCode.includes("INJETORA AL");
+      };
+
+      let pitchesPayload;
+      try {
+        pitchesPayload = await l2lGet("/api/1.0/pitches/", {
+          site: numericSite,
+          pitch_start__gte: startIso,
+          pitch_start__lte: endIso,
+          limit: 2000,
+          order_by: "pitch_start",
+        });
+      } catch {
+        pitchesPayload = { data: [] };
+      }
+
+      let dispatchPayload;
+      try {
+        dispatchPayload = await l2lGet("/api/1.0/dispatches/", {
+          site: numericSite,
+          areacode: "FND",
+          created__gte: startIso,
+          created__lte: endIso,
+          limit: 2000,
+          order_by: "-created",
+        });
+      } catch {
+        dispatchPayload = await l2lGet("/api/1.0/dispatches/", {
+          site: numericSite,
+          created__gte: startIso,
+          created__lte: endIso,
+          limit: 2000,
+          order_by: "-created",
+        });
+      }
+
+      const pitches = (Array.isArray(pitchesPayload?.data) ? pitchesPayload.data : [])
+        .filter(row => isFndLine(row.line, row))
+        .map(row => ({
+          id: row.id,
+          start: row.pitch_start ?? row.start ?? row.created ?? null,
+          end: row.pitch_end ?? row.end ?? null,
+          line: label(row.line, lineMap, row.linecode ?? "Sem linha"),
+          line_id: refId(row.line),
+          product: label(row.actual_product ?? row.planned_product, productMap, "Sem modelo"),
+          product_id: refId(row.actual_product ?? row.planned_product),
+          demand: Number(row.demand ?? 0),
+          actual: Number(row.actual ?? 0),
+          scrap: Number(row.scrap ?? 0),
+          comment: String(row.comment ?? row.comments ?? row.countermeasure ?? row.countermeasures ?? "").trim(),
+          oee: Number(row.overall_equipment_effectiveness ?? 0),
+        }));
+
+      const dispatches = (Array.isArray(dispatchPayload?.data) ? dispatchPayload.data : [])
+        .filter(row => isFndLine(row.line, row))
+        .map(row => {
+          const typeRef = row.dispatchtype ?? row.dispatch_type ?? row.type;
+          const reason = row.reason?.description ?? row.reason?.name ?? row.reason ?? row.reasoncode ?? row.whydescription ?? row.why ?? "";
+          return {
+            id: row.id,
+            number: row.number ?? row.dispatchnumber ?? row.id,
+            created: row.created ?? row.started ?? row.opened ?? null,
+            completed: row.completed ?? row.closed ?? null,
+            line: label(row.line, lineMap, row.linecode ?? row.lineabbreviation ?? "Sem linha"),
+            line_id: refId(row.line),
+            machine: row.machinedescription ?? row.machine?.description ?? row.machine?.name ?? row.machinecode ?? "",
+            dispatch_type: label(typeRef, dispatchTypeMap, row.dispatchtypecode ?? row.dispatch_type_code ?? "Dispatch"),
+            dispatch_type_id: refId(typeRef),
+            description: String(row.description ?? row.problem ?? row.name ?? row.text ?? "").trim(),
+            reason: String(reason ?? "").trim(),
+            status: row.statusdescription ?? row.status_name ?? row.status ?? "",
+            downtime_minutes: Number(row.downtime_minutes ?? row.downtime ?? 0),
+          };
+        });
+
+      return res.status(200).json({ success: true, data: { pitches, dispatches } });
+    } catch (error) {
+      return res.status(error.status || 502).json({ success: false, error: error.message || "Unable to load L2L home context." });
+    }
+  }
+
   if (report === "scrapdetail") {
     const start = String(req.query.start || "").trim();
     const end = String(req.query.end || "").trim();
