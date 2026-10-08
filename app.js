@@ -16,7 +16,12 @@ function home(){
     '<div class="home-command-side"><div class="home-yesterday-status" id="homeYesterdayStatus">🟡 Consultando L2L...</div><div class="home-source-badge">Fonte: L2L • atualização automática a cada 1 minuto</div></div>'+
   '</section>'+
   '<nav class="home-quick-nav" aria-label="Resumo da Visão Geral">'+
-    '<a href="#home-result">Resultado</a><a href="#home-production">Produção</a><a href="#home-flow">Produtos</a><a href="#home-efficiency">OEE</a><a href="#home-quality">Não Qualidade</a><a href="#home-events">Ocorrências</a>'+
+    '<a class="home-quick-link" href="#home-result"><span>01</span><b>Resultado</b></a>'+
+    '<a class="home-quick-link" href="#home-production"><span>02</span><b>Produção</b></a>'+
+    '<a class="home-quick-link" href="#home-flow"><span>03</span><b>Produtos</b></a>'+
+    '<a class="home-quick-link" href="#home-efficiency"><span>04</span><b>OEE</b></a>'+
+    '<a class="home-quick-link" href="#home-quality"><span>05</span><b>Não Qualidade</b></a>'+
+    '<a class="home-quick-link" href="#home-events"><span>06</span><b>Ocorrências</b></a>'+
   '</nav>'+
   '<section class="home-block" id="home-result">'+
     '<div class="home-block-title"><div><span>01 • RESULTADO DO DIA</span><h2>Resumo executivo</h2></div><p>Principais indicadores da FND para leitura rápida.</p></div>'+
@@ -2367,6 +2372,36 @@ function renderHomeEvents(){
     '</div>';
 }
 
+function homeProcessMetrics(rows,process,defectRows){
+  const processRows=(Array.isArray(rows)?rows:[]).filter(r=>homeProcessFromLine(r.line)===process);
+  const processGroups=sortOeeCardsByLine(groupedByLine(processRows));
+  const demand=total(processRows,"demand");
+  const actual=total(processRows,"actual");
+  const scrap=total(processRows,"scrap");
+  const net=Math.max(0,actual-scrap);
+  const attainment=demand?actual/demand*100:0;
+  const avgOee=processGroups.length?processGroups.reduce((s,g)=>s+n(g.oee),0)/processGroups.length:0;
+  const defects=homeDefectSummary(
+    (Array.isArray(defectRows)?defectRows:[]).filter(r=>homeProcessFromLine(r.line)===process),
+    homeYesterdayContext?.pitches||[]
+  );
+  const defectQty=defects.reduce((s,x)=>s+x.qty,0);
+  return {rows:processRows,groups:processGroups,demand,actual,scrap,net,attainment,avgOee,defects,defectQty};
+}
+
+function homeProcessKpis(title,subtitle,metrics,processClass){
+  return '<section class="home-process-kpi-group '+processClass+'">'+
+    '<div class="home-process-kpi-head"><div><span>PROCESSO</span><h3>'+title+'</h3><p>'+subtitle+'</p></div><b>'+metrics.groups.length+' linha(s)</b></div>'+
+    '<div class="home-process-kpi-grid">'+
+      '<article class="home-exec-kpi primary"><span>Demanda</span><strong>'+fmt(metrics.demand)+'</strong><small>Planejado no período</small></article>'+
+      '<article class="home-exec-kpi '+(metrics.attainment>=100?"success":metrics.attainment>=95?"attention":"critical")+'"><span>Produção real</span><strong>'+fmt(metrics.actual)+'</strong><small>'+fmtPct(metrics.attainment)+' de atingimento</small></article>'+
+      '<article class="home-exec-kpi"><span>Produzido líquido</span><strong>'+fmt(metrics.net)+'</strong><small>Produção − scrap</small></article>'+
+      '<article class="home-exec-kpi '+(metrics.avgOee>=85?"success":metrics.avgOee>=70?"attention":"critical")+'"><span>OEE médio</span><strong>'+fmtPct(metrics.avgOee)+'</strong><small>'+metrics.groups.length+' linha(s) monitorada(s)</small></article>'+
+      '<article class="home-exec-kpi '+(metrics.defectQty>0?"critical":"success")+'"><span>Não qualidade</span><strong>'+fmt(metrics.defectQty)+'</strong><small>'+metrics.defects.length+' tipo(s) de defeito</small></article>'+
+    '</div>'+
+  '</section>';
+}
+
 function renderHomeYesterday(){
   if(currentPage!=="home")return;
 
@@ -2391,6 +2426,8 @@ function renderHomeYesterday(){
   const finishingShiftProducts=homeShiftProductGroups(homeYesterdayContext?.pitches||[],"acabamento");
   const defects=homeDefectSummary(homeYesterdayScrapRows,homeYesterdayContext?.pitches||[]);
   const defectQty=defects.reduce((s,x)=>s+x.qty,0);
+  const injectionMetrics=homeProcessMetrics(fndRows,"injecao",homeYesterdayScrapRows);
+  const finishingMetrics=homeProcessMetrics(fndRows,"acabamento",homeYesterdayScrapRows);
 
   const bestMachine=groups.length?[...groups].sort((a,b)=>b.oee-a.oee)[0]:null;
   const criticalMachines=groups.filter(g=>g.oee<70).length;
@@ -2401,11 +2438,10 @@ function renderHomeYesterday(){
 
   const kpis=document.getElementById("homeYesterdayKpis");
   if(kpis)kpis.innerHTML=
-    '<article class="home-exec-kpi primary"><span>Demanda</span><strong>'+fmt(demand)+'</strong><small>Planejado para o dia</small></article>'+
-    '<article class="home-exec-kpi '+(attainment>=100?"success":attainment>=95?"attention":"critical")+'"><span>Produção real</span><strong>'+fmt(actual)+'</strong><small>'+fmtPct(attainment)+' de atingimento</small></article>'+
-    '<article class="home-exec-kpi"><span>Produzido líquido</span><strong>'+fmt(net)+'</strong><small>Produção − scrap</small></article>'+
-    '<article class="home-exec-kpi '+(avgOee>=85?"success":avgOee>=70?"attention":"critical")+'"><span>OEE médio FND</span><strong>'+fmtPct(avgOee)+'</strong><small>'+groups.length+' máquina(s) monitorada(s)</small></article>'+
-    '<article class="home-exec-kpi '+(defectQty>0?"critical":"success")+'"><span>Não qualidade</span><strong>'+fmt(defectQty)+'</strong><small>'+defects.length+' combinação(ões) defeito/causa</small></article>';
+    '<div class="home-process-kpi-stack">'+
+      homeProcessKpis("Injetoras","Resumo consolidado das linhas de injeção da FND.",injectionMetrics,"injection")+
+      homeProcessKpis("Acabamento","Resumo consolidado das linhas de acabamento da FND.",finishingMetrics,"finishing")+
+    '</div>';
 
   const prod=document.getElementById("homeYesterdayProduction");
   if(prod){
