@@ -4349,3 +4349,211 @@ body.modal-open{
     grid-template-columns:1fr;
   }
 }
+
+/* Executive polish — Defeitos registrados */
+.home-defect-top5{
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:12px;
+}
+.home-defect-top-card{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:0;
+  min-height:188px;
+  padding:0;
+  border:1px solid #dfe7ec;
+  border-radius:14px;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfcfd 100%);
+  overflow:hidden;
+  box-shadow:0 6px 18px rgba(8,31,47,.045);
+  transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
+}
+.home-defect-top-card:hover{
+  transform:translateY(-2px);
+  border-color:#bfd0da;
+  box-shadow:0 12px 26px rgba(8,31,47,.09);
+}
+.home-defect-card-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:11px 12px 8px;
+}
+.home-defect-severity{
+  display:inline-flex;
+  align-items:center;
+  min-height:21px;
+  padding:0 8px;
+  border-radius:999px;
+  font-size:6.5px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.45px;
+}
+.home-defect-severity.critical{
+  background:#fff0ef;
+  color:#b43a35;
+}
+.home-defect-severity.attention{
+  background:#fff6df;
+  color:#8b6811;
+}
+.home-defect-severity.normal{
+  background:#eef4f7;
+  color:#516c7d;
+}
+.home-defect-card-main{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:10px;
+  padding:6px 12px 10px;
+  border-bottom:1px solid #edf1f3;
+}
+.home-defect-card-main strong{
+  font-size:11px;
+  line-height:1.3;
+  color:#122f43;
+}
+.home-defect-qty{
+  flex:0 0 auto;
+  font-size:22px;
+  font-weight:900;
+  line-height:1;
+  color:#c43d37;
+}
+.home-defect-card-meta{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+  padding:10px 12px;
+}
+.home-defect-card-meta span{
+  display:block;
+  font-size:7px;
+  line-height:1.35;
+  color:#6f8390;
+}
+.home-defect-card-meta b{
+  display:block;
+  margin-bottom:2px;
+  font-size:6.5px;
+  text-transform:uppercase;
+  letter-spacing:.45px;
+  color:#9aa6ad;
+}
+.home-defect-card-action{
+  margin-top:auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  padding:9px 12px;
+  background:#f5f8fa;
+  border-top:1px solid #e7edf0;
+  color:#31566d;
+}
+.home-defect-card-action span{
+  font-size:7.5px;
+  font-weight:900;
+}
+.home-defect-card-action b{
+  font-size:13px;
+}
+
+/* Executive defect modal */
+.home-defect-modal-panel{
+  width:min(1040px,calc(100vw - 36px));
+  max-height:86vh;
+  border-radius:18px;
+  border:1px solid #d9e4ea;
+  box-shadow:0 28px 70px rgba(5,22,34,.28);
+}
+.home-defect-modal-head{
+  padding:18px 20px;
+  background:linear-gradient(180deg,#ffffff 0%,#f8fbfc 100%);
+}
+.home-defect-modal-titlewrap>span{
+  color:#698294;
+  letter-spacing:1px;
+}
+.home-defect-modal-head h2{
+  font-size:20px;
+  margin-top:4px;
+}
+.home-defect-modal-head p{
+  font-size:9px;
+  margin-top:5px;
+}
+.home-defect-modal-head button{
+  flex:0 0 auto;
+  width:36px;
+  height:36px;
+  border-radius:10px;
+  background:#fff;
+  box-shadow:0 3px 10px rgba(10,35,52,.05);
+}
+#homeDefectModalBody{
+  padding:18px 20px 20px;
+}
+.home-defect-modal-kpis{
+  gap:12px;
+}
+.home-defect-modal-kpis>div{
+  position:relative;
+  min-height:82px;
+  padding:13px 14px;
+  background:#fff;
+  box-shadow:0 4px 12px rgba(10,35,52,.035);
+}
+.home-defect-modal-kpis>div::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:0;
+  bottom:0;
+  width:3px;
+  background:#174b6b;
+}
+.home-defect-modal-kpis strong{
+  font-size:20px;
+}
+.home-defect-modal-grid>section{
+  padding:14px;
+  box-shadow:0 4px 12px rgba(10,35,52,.025);
+}
+.home-defect-breakdown>div{
+  min-height:34px;
+  background:#f7fafb;
+}
+.home-defect-detail-table{
+  border-collapse:separate;
+  border-spacing:0;
+}
+.home-defect-detail-table th{
+  position:sticky;
+  top:0;
+  z-index:1;
+  padding:9px 10px;
+  background:#f3f7f9;
+  border-bottom:1px solid #dfe7ec;
+  text-transform:uppercase;
+  letter-spacing:.35px;
+}
+.home-defect-detail-table td{
+  padding:9px 10px;
+  border-bottom:1px solid #edf1f3;
+}
+.home-defect-detail-table tbody tr:hover{
+  background:#fafcfd;
+}
+@media(max-width:1200px){
+  .home-defect-top5{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:640px){
+  .home-defect-top5{grid-template-columns:1fr}
+  .home-defect-modal-panel{width:calc(100vw - 20px)}
+}
