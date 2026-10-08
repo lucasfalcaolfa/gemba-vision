@@ -3068,12 +3068,19 @@ function initHomeQuickNavFollow(){
 
   const nav=document.querySelector("nav.home-quick-nav");
   const topbar=document.querySelector(".topbar");
-  const lastSection=document.getElementById("home-events");
-  if(!nav||!topbar||!lastSection)return;
+  if(!nav||!topbar)return;
+
+  const topbarParent=topbar.parentNode;
+  const stack=document.createElement("div");
+  stack.className="home-header-stack";
+
+  topbarParent.insertBefore(stack,topbar);
+  stack.appendChild(topbar);
+  stack.appendChild(nav);
 
   document.body.classList.add("home-nav-in-topbar");
-  topbar.appendChild(nav);
   nav.classList.add("home-quick-nav-topbar");
+  nav.classList.remove("is-at-home-end");
 
   const links=[...nav.querySelectorAll(".home-quick-link")];
   const sections=links
@@ -3081,8 +3088,8 @@ function initHomeQuickNavFollow(){
     .filter(item=>item.section);
 
   function updateActiveSection(){
-    const headerHeight=topbar.offsetHeight||122;
-    const marker=headerHeight+36;
+    const headerHeight=stack.offsetHeight||136;
+    const marker=headerHeight+20;
     let active=sections[0]||null;
 
     sections.forEach(item=>{
@@ -3094,53 +3101,34 @@ function initHomeQuickNavFollow(){
     if(active)active.link.classList.add("is-current");
   }
 
-  function update(){
-    if(currentPage!=="home"||!document.body.contains(nav))return;
-
-    const doc=document.documentElement;
-    const scrollTop=window.scrollY||doc.scrollTop||0;
-    const viewportBottom=scrollTop+window.innerHeight;
-    const pageBottom=Math.max(
-      doc.scrollHeight,
-      document.body.scrollHeight,
-      doc.offsetHeight,
-      document.body.offsetHeight
-    );
-
-    const atRealEnd=viewportBottom>=pageBottom-24;
-
-    // A barra acompanha toda a rolagem da Home e só desaparece
-    // quando o usuário realmente alcança o fim da página.
-    nav.classList.toggle("is-at-home-end",atRealEnd);
-    updateActiveSection();
-  }
-
   let ticking=false;
   const onScroll=()=>{
     if(ticking)return;
     ticking=true;
     requestAnimationFrame(()=>{
-      update();
+      updateActiveSection();
       ticking=false;
     });
   };
 
-  const onResize=()=>update();
-
   window.addEventListener("scroll",onScroll,{passive:true});
   document.addEventListener("scroll",onScroll,{passive:true,capture:true});
-  window.addEventListener("resize",onResize,{passive:true});
-  update();
+  window.addEventListener("resize",onScroll,{passive:true});
+  updateActiveSection();
 
   homeQuickNavCleanup=()=>{
     window.removeEventListener("scroll",onScroll);
     document.removeEventListener("scroll",onScroll,true);
-    window.removeEventListener("resize",onResize);
+    window.removeEventListener("resize",onScroll);
     document.body.classList.remove("home-nav-in-topbar");
-    if(nav.parentNode===topbar)nav.remove();
+    nav.classList.remove("home-quick-nav-topbar","is-at-home-end");
+    if(stack.parentNode){
+      stack.parentNode.insertBefore(topbar,stack);
+      stack.remove();
+    }
+    if(nav.parentNode)nav.remove();
   };
 }
-
 function initHome(){
   renderHomeYesterday();
   refreshHomeYesterday();
