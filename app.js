@@ -2158,6 +2158,58 @@ function homeFndRows(rows){
   return (Array.isArray(rows)?rows:[]).filter(r=>isFndArea(r.area));
 }
 
+function homePitchProducts(pitches){
+  const map={};
+  (Array.isArray(pitches)?pitches:[]).forEach(p=>{
+    const product=String(p.product||"").trim();
+    if(!product||product==="Sem modelo")return;
+
+    const when=p.start?new Date(p.start):null;
+    const hour=when&&!Number.isNaN(when.getTime())?when.getHours():null;
+    const shift=hour===null?"":shiftFromHour(hour);
+    const key=[shift,product].join("|");
+
+    if(!map[key])map[key]={
+      shift,
+      product,
+      actual:0,
+      demand:0,
+      lines:new Set(),
+      first:null,
+      last:null
+    };
+
+    const item=map[key];
+    item.actual+=n(p.actual);
+    item.demand+=n(p.demand);
+    if(p.line)item.lines.add(String(p.line));
+
+    if(when&&!Number.isNaN(when.getTime())){
+      const ts=when.getTime();
+      if(item.first===null||ts<item.first)item.first=ts;
+      if(item.last===null||ts>item.last)item.last=ts;
+    }
+  });
+
+  return Object.values(map)
+    .map(x=>({...x,lines:[...x.lines]}))
+    .sort((a,b)=>{
+      const sa=Number(a.shift||99), sb=Number(b.shift||99);
+      if(sa!==sb)return sa-sb;
+      return b.actual-a.actual||a.product.localeCompare(b.product,"pt-BR",{numeric:true,sensitivity:"base"});
+    });
+}
+
+function homeShiftProductGroups(pitches){
+  const products=homePitchProducts(pitches);
+  return ["1","2","3"].map(shift=>({
+    shift,
+    label:SHIFT_SCHEDULE[shift]?.label||shift+"º Turno",
+    time:SHIFT_SCHEDULE[shift]?.time||"",
+    products:products.filter(p=>p.shift===shift)
+  }));
+}
+
 function homeProductSummary(rows){
   const map={};
   homeFndRows(rows).forEach(row=>{
@@ -2318,6 +2370,7 @@ function renderHomeYesterday(){
   const avgOee=groups.length?groups.reduce((s,g)=>s+n(g.oee),0)/groups.length:0;
 
   const products=homeProductSummary(homeYesterdayProductRows);
+  const shiftProducts=homeShiftProductGroups(homeYesterdayContext?.pitches||[]);
   const defects=homeDefectSummary(homeYesterdayScrapRows,homeYesterdayContext?.pitches||[]);
   const defectQty=defects.reduce((s,x)=>s+x.qty,0);
 
@@ -2350,14 +2403,31 @@ function renderHomeYesterday(){
 
   const models=document.getElementById("homeYesterdayModels");
   if(models){
-    const totalModels=products.reduce((s,p)=>s+p.actual,0);
-    models.innerHTML=products.length
-      ? '<div class="home-model-summary"><span>'+products.length+' modelo(s)</span><b>'+fmt(totalModels)+' peças</b></div>'+
-        '<div class="home-model-list">'+products.slice(0,12).map((p,i)=>{
-          const share=totalModels?p.actual/totalModels*100:0;
-          return '<div class="home-model-row"><span class="home-model-pos">'+(i+1)+'</span><div class="home-model-copy"><strong>'+stockEsc(p.name)+'</strong><small>'+p.lineCount+' linha(s) • '+fmtPct(share)+' do mix</small></div><b>'+fmt(p.actual)+'</b></div>';
+    const pitchProductCount=shiftProducts.reduce((s,g)=>s+g.products.length,0);
+    const pitchActual=shiftProducts.reduce((s,g)=>s+g.products.reduce((x,p)=>x+p.actual,0),0);
+
+    models.innerHTML=pitchProductCount
+      ? '<div class="home-model-summary"><span>'+pitchProductCount+' produto(s) por turno</span><b>'+fmt(pitchActual)+' peças registradas</b></div>'+
+        '<div class="home-shift-product-grid">'+shiftProducts.map(group=>{
+          const total=group.products.reduce((s,p)=>s+p.actual,0);
+          return '<section class="home-shift-product-card shift-'+group.shift+'">'+
+            '<div class="home-shift-product-head"><div><span>'+group.label+'</span><strong>'+group.time+'</strong></div><b>'+fmt(total)+' peças</b></div>'+
+            (group.products.length
+              ? '<div class="home-shift-product-list">'+group.products.map((p,i)=>{
+                  const share=total?p.actual/total*100:0;
+                  return '<div class="home-shift-product-row">'+
+                    '<span class="home-model-pos">'+(i+1)+'</span>'+
+                    '<div><strong>'+stockEsc(p.product)+'</strong><small>'+stockEsc(p.lines.join(", ")||"Sem linha")+' • '+fmtPct(share)+' do turno</small></div>'+
+                    '<b>'+fmt(p.actual)+'</b>'+
+                  '</div>';
+                }).join("")+'</div>'
+              : '<div class="home-shift-product-empty">Nenhum produto registrado neste turno.</div>')+
+          '</section>';
         }).join("")+'</div>'
-      : '<div class="empty-state">O L2L não retornou detalhamento de modelos para a FND no dia anterior.</div>';
+      : (products.length
+          ? '<div class="home-model-summary"><span>'+products.length+' modelo(s)</span><b>'+fmt(products.reduce((s,p)=>s+p.actual,0))+' peças</b></div>'+
+            '<div class="home-model-list">'+products.slice(0,12).map((p,i)=>'<div class="home-model-row"><span class="home-model-pos">'+(i+1)+'</span><div class="home-model-copy"><strong>'+stockEsc(p.name)+'</strong><small>'+p.lineCount+' linha(s)</small></div><b>'+fmt(p.actual)+'</b></div>').join("")+'</div>'
+          : '<div class="empty-state">Nenhum produto foi identificado nos pitches da FND para a janela operacional 07:00 → 07:00.</div>');
   }
 
   const oee=document.getElementById("homeYesterdayOee");
