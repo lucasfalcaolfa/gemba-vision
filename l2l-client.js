@@ -102,10 +102,9 @@ window.L2L = {
     const results = await Promise.all(requests);
     return results.flat();
   },
-  async getHomeContext(date, startTime = "00:00", endTime = "23:59") {
-    const day = date || new Date().toISOString().slice(0, 10);
-    const start = encodeURIComponent(day + " " + startTime);
-    const end = encodeURIComponent(day + " " + endTime);
+  async getHomeContextWindow(startDateTime, endDateTime) {
+    const start = encodeURIComponent(startDateTime);
+    const end = encodeURIComponent(endDateTime);
     const response = await fetch("/api/l2l?report=homecontext&start=" + start + "&end=" + end);
     const payload = await response.json();
     if (!response.ok || payload.success === false) {
@@ -113,16 +112,23 @@ window.L2L = {
     }
     return payload.data || { pitches: [], dispatches: [] };
   },
-  async getScrapDetails(date, startTime = "00:00", endTime = "23:59") {
+  async getHomeContext(date, startTime = "00:00", endTime = "23:59") {
     const day = date || new Date().toISOString().slice(0, 10);
-    const start = encodeURIComponent(day + " " + startTime);
-    const end = encodeURIComponent(day + " " + endTime);
+    return this.getHomeContextWindow(day + " " + startTime, day + " " + endTime);
+  },
+  async getScrapDetailsWindow(startDateTime, endDateTime) {
+    const start = encodeURIComponent(startDateTime);
+    const end = encodeURIComponent(endDateTime);
     const response = await fetch("/api/l2l?report=scrapdetail&start=" + start + "&end=" + end);
     const payload = await response.json();
     if (!response.ok || payload.success === false) {
       throw new Error(payload.error || "Falha ao consultar detalhes de scrap no L2L");
     }
     return Array.isArray(payload.data) ? payload.data : [];
+  },
+  async getScrapDetails(date, startTime = "00:00", endTime = "23:59") {
+    const day = date || new Date().toISOString().slice(0, 10);
+    return this.getScrapDetailsWindow(day + " " + startTime, day + " " + endTime);
   },
   number(value) {
     const n = Number(value);
