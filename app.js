@@ -2688,7 +2688,12 @@ function renderHomeYesterday(){
           '<div><span>Principal defeito</span><strong>'+stockEsc(topDefect?.defect||"-")+'</strong><small>'+fmt(topDefect?.qty||0)+' registro(s)</small></div>'+
         '</div>'+
         '<div class="home-defect-top5">'+
-          defects.slice(0,5).map((d,i)=>'<button type="button" class="home-defect-top-card" onclick="openHomeDefectDetail('+i+')" aria-label="Abrir detalhes do defeito '+stockEsc(d.defect)+'"><span class="defect-priority p'+Math.min(3,i+1)+'">'+(i+1)+'</span><div><strong>'+stockEsc(d.defect)+'</strong><small>'+stockEsc(d.lines.join(", ")||"-")+(d.models.length?' • '+stockEsc(d.models.join(", ")):'')+'</small><em>Ver detalhes ↗</em></div><b>'+fmt(d.qty)+'</b></button>').join("")+
+          defects.slice(0,5).map((d,i)=>'<button type="button" class="home-defect-top-card" onclick="openHomeDefectDetail('+i+')" aria-label="Abrir detalhes do defeito '+stockEsc(d.defect)+'">'+
+  '<div class="home-defect-card-top"><span class="defect-priority p'+Math.min(3,i+1)+'">#'+(i+1)+'</span><span class="home-defect-severity '+(i===0?"critical":i<3?"attention":"normal")+'">'+(i===0?"Maior impacto":i<3?"Prioridade":"Monitorar")+'</span></div>'+
+  '<div class="home-defect-card-main"><strong>'+stockEsc(d.defect)+'</strong><span class="home-defect-qty">'+fmt(d.qty)+'</span></div>'+
+  '<div class="home-defect-card-meta"><span><b>Linha</b>'+stockEsc(d.lines.join(", ")||"-")+'</span><span><b>Modelo</b>'+stockEsc(d.models.join(", ")||"-")+'</span></div>'+
+  '<div class="home-defect-card-action"><span>Visualizar detalhes completos</span><b>→</b></div>'+
+'</button>').join("")+
         '</div>'+
         '<div class="table-scroll home-defect-more" id="homeDefectMore" hidden><table class="home-defect-table"><thead><tr><th>Prioridade</th><th>Defeito</th><th>Linha(s)</th><th>Modelo(s)</th><th>Qtd.</th></tr></thead><tbody>'+
         defects.slice(5).map((d,i)=>'<tr><td><span class="defect-priority p3">'+(i+6)+'</span></td><td><span class="defect-chip">'+stockEsc(d.defect)+'</span></td><td>'+stockEsc(d.lines.join(", ")||"-")+'</td><td>'+stockEsc(d.models.join(", ")||"-")+'</td><td><b>'+fmt(d.qty)+'</b></td></tr>').join("")+
@@ -2697,7 +2702,7 @@ function renderHomeYesterday(){
         '<div class="home-defect-modal" id="homeDefectModal" aria-hidden="true">'+
           '<div class="home-defect-modal-backdrop" onclick="closeHomeDefectDetail()"></div>'+
           '<section class="home-defect-modal-panel" role="dialog" aria-modal="true" aria-labelledby="homeDefectModalTitle">'+
-            '<div class="home-defect-modal-head"><div><span>DETALHAMENTO DO DEFEITO</span><h2 id="homeDefectModalTitle">Defeito</h2><p id="homeDefectModalContext"></p></div><button type="button" onclick="closeHomeDefectDetail()" aria-label="Fechar">×</button></div>'+
+            '<div class="home-defect-modal-head"><div class="home-defect-modal-titlewrap"><span>ANÁLISE DE NÃO QUALIDADE</span><h2 id="homeDefectModalTitle">Defeito</h2><p id="homeDefectModalContext"></p></div><button type="button" onclick="closeHomeDefectDetail()" aria-label="Fechar">×</button></div>'+
             '<div id="homeDefectModalBody"></div>'+
           '</section>'+
         '</div>'
