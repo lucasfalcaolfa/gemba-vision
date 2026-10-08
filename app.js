@@ -11,15 +11,24 @@ stock:{title:"Controle de Estoque",sub:"Estoque da Fundição — Inacabado e Ac
 function shell(p){return '<div class="page"><div class="page-head"><div><h1>'+p.title+'</h1><p>'+p.sub+'</p></div><div class="refresh">● Atualização: automática</div></div>'+p.html+'</div>'}
 function card(label,value,cls=""){return '<div class="card"><div class="label">'+label+'</div><div class="value '+cls+'">'+value+'</div></div>'}
 function home(){
-  return '<section class="home-command panel">'+
-    '<div class="home-command-copy"><span>GESTÃO À VISTA • FND</span><h2 id="homeYesterdayTitle">Resumo operacional</h2><p>Janela oficial da Fundição: 07:00 de um dia até 07:00 do dia seguinte.</p></div>'+
-    '<div class="home-command-side"><div class="home-yesterday-status" id="homeYesterdayStatus">🟡 Consultando L2L...</div><div class="home-source-badge">Fonte: L2L • atualização automática a cada 1 minuto</div></div>'+
-  '</section>'+
-  '<section class="home-process-filter panel">'+
-    '<div class="home-process-filter-copy"><span>FILTRO DE PROCESSO</span><strong>Visualizar resultados de</strong><small>Todos os indicadores abaixo serão atualizados conforme a seleção.</small></div>'+
-    '<div class="home-process-switch" role="group" aria-label="Processo da FND">'+
-      '<button id="homeProcessInjection" class="active" type="button" onclick="setHomeProcessFilter(\'injecao\')"><span>INJ</span><div><b>Injetoras</b><small>Linhas de injeção FND</small></div></button>'+
-      '<button id="homeProcessFinishing" type="button" onclick="setHomeProcessFilter(\'acabamento\')"><span>ACB</span><div><b>Acabamento</b><small>Linhas FND_ACAB</small></div></button>'+
+  return '<section class="home-executive-hero panel">'+
+    '<div class="home-executive-main">'+
+      '<div class="home-executive-copy">'+
+        '<span class="home-executive-kicker">GESTÃO À VISTA • FND</span>'+
+        '<h1 id="homeYesterdayTitle">Resumo operacional</h1>'+
+        '<p>Visão consolidada do dia operacional • 07:00 até 07:00 do dia seguinte.</p>'+
+      '</div>'+
+      '<div class="home-executive-status">'+
+        '<div class="home-yesterday-status" id="homeYesterdayStatus">🟡 Consultando L2L...</div>'+
+        '<div class="home-source-badge"><i></i> Fonte L2L • atualização automática a cada 1 minuto</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="home-executive-controls">'+
+      '<div class="home-process-filter-copy"><span>PROCESSO</span><strong>Selecione a operação</strong><small>Todos os indicadores abaixo acompanham esta seleção.</small></div>'+
+      '<div class="home-process-switch" role="group" aria-label="Processo da FND">'+
+        '<button id="homeProcessInjection" class="active" type="button" onclick="setHomeProcessFilter(\'injecao\')"><span>INJ</span><div><b>Injetoras</b><small>Linhas de injeção FND</small></div></button>'+
+        '<button id="homeProcessFinishing" type="button" onclick="setHomeProcessFilter(\'acabamento\')"><span>ACB</span><div><b>Acabamento</b><small>Linhas FND_ACAB</small></div></button>'+
+      '</div>'+
     '</div>'+
   '</section>'+
   '<nav class="home-quick-nav" aria-label="Resumo da Visão Geral">'+
@@ -77,7 +86,7 @@ function home(){
           '<div class="home-hse-toolbar-actions"><span class="home-hse-live"><i></i> Sincronizado</span><button type="button" onclick="openHseImage()">Abrir em tela cheia ↗</button></div>'+
         '</div>'+
         '<button type="button" class="home-hse-image-wrap" onclick="openHseImage()" aria-label="Abrir informativo HSE em tela ampliada">'+
-          '<div class="home-hse-image-frame"><img id="hseWeeklyImage" src="assets/hse-weekly.jpg" alt="Informativo semanal de HSE"></div>'+
+          '<div class="home-hse-image-frame"><img id="hseWeeklyImage" src="assets/hse-weekly.jpg" alt="Informativo semanal de HSE" loading="lazy" decoding="async"></div>'+
           '<div class="home-hse-image-footer"><span>Clique no informativo para ampliar</span><b>Visualizar detalhes →</b></div>'+
         '</button>'+
       '</div>'+
@@ -86,7 +95,7 @@ function home(){
       '<div class="home-hse-modal-backdrop" onclick="closeHseImage()"></div>'+
       '<section class="home-hse-modal-panel" role="dialog" aria-modal="true" aria-label="Informativo HSE ampliado">'+
         '<div class="home-hse-modal-head"><div><span>HSE SEMANAL</span><h2>Informativo de Segurança</h2></div><button type="button" onclick="closeHseImage()" aria-label="Fechar">×</button></div>'+
-        '<div class="home-hse-modal-body"><img id="hseWeeklyImageLarge" src="assets/hse-weekly.jpg" alt="Informativo semanal de HSE ampliado"></div>'+
+        '<div class="home-hse-modal-body"><img id="hseWeeklyImageLarge" src="assets/hse-weekly.jpg" alt="Informativo semanal de HSE ampliado" decoding="async"></div>'+
       '</section>'+
     '</div>'+
   '</section>';
