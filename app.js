@@ -3067,45 +3067,19 @@ function initHomeQuickNavFollow(){
   }
 
   const nav=document.querySelector("nav.home-quick-nav");
+  const topbar=document.querySelector(".topbar");
   const lastSection=document.getElementById("home-events");
-  if(!nav||!lastSection)return;
+  if(!nav||!topbar||!lastSection)return;
 
-  const placeholder=document.createElement("div");
-  placeholder.className="home-quick-nav-placeholder";
-  nav.parentNode.insertBefore(placeholder,nav);
-
-  const getTop=()=>window.innerWidth<=640?66:(window.innerWidth<=960?70:78);
+  document.body.classList.add("home-nav-in-topbar");
+  topbar.appendChild(nav);
+  nav.classList.add("home-quick-nav-topbar");
 
   function update(){
     if(currentPage!=="home"||!document.body.contains(nav))return;
-
-    const top=getTop();
-    const anchorRect=placeholder.getBoundingClientRect();
     const endRect=lastSection.getBoundingClientRect();
-    const navHeight=nav.offsetHeight||48;
-    const shouldFollow=anchorRect.top<=top;
-    const reachedEnd=endRect.bottom<=top+navHeight+8;
-
-    if(shouldFollow){
-      placeholder.style.height=navHeight+"px";
-      const rect=placeholder.getBoundingClientRect();
-      nav.style.left=rect.left+"px";
-      nav.style.width=rect.width+"px";
-      nav.style.top=top+"px";
-      nav.classList.add("is-following");
-
-      if(reachedEnd){
-        nav.classList.add("is-at-home-end");
-      }else{
-        nav.classList.remove("is-at-home-end");
-      }
-    }else{
-      placeholder.style.height="0px";
-      nav.style.left="";
-      nav.style.width="";
-      nav.style.top="";
-      nav.classList.remove("is-following","is-at-home-end");
-    }
+    const headerHeight=topbar.offsetHeight||122;
+    nav.classList.toggle("is-at-home-end",endRect.bottom<=headerHeight+8);
   }
 
   let ticking=false;
@@ -3117,25 +3091,16 @@ function initHomeQuickNavFollow(){
       ticking=false;
     });
   };
-  const onResize=()=>requestAnimationFrame(update);
-  const scrollHost=document.getElementById("content");
 
   window.addEventListener("scroll",onScroll,{passive:true});
   document.addEventListener("scroll",onScroll,{passive:true,capture:true});
-  if(scrollHost)scrollHost.addEventListener("scroll",onScroll,{passive:true});
-  window.addEventListener("resize",onResize);
   update();
 
   homeQuickNavCleanup=()=>{
     window.removeEventListener("scroll",onScroll);
     document.removeEventListener("scroll",onScroll,true);
-    if(scrollHost)scrollHost.removeEventListener("scroll",onScroll);
-    window.removeEventListener("resize",onResize);
-    if(placeholder.parentNode)placeholder.remove();
-    nav.classList.remove("is-following","is-at-home-end");
-    nav.style.left="";
-    nav.style.width="";
-    nav.style.top="";
+    document.body.classList.remove("home-nav-in-topbar");
+    if(nav.parentNode===topbar)nav.remove();
   };
 }
 
