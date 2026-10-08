@@ -1286,69 +1286,172 @@ async function openScrapDetails(lineOverride="", areaOverride=""){
   modal.classList.add("open");
   modal.setAttribute("aria-hidden","false");
   document.body.classList.add("modal-open");
-  body.innerHTML='<div class="scrap-loading"><div class="scrap-spinner"></div><strong>Consultando detalhes de scrap no L2L...</strong></div>';
+  body.innerHTML='<div class="scrap-loading"><div class="scrap-spinner"></div><strong>Consultando defeitos, turnos e produtos no L2L...</strong></div>';
 
-  const date=productionFilterState.date||todayISO();
-  ctx.textContent='Período: '+date.split("-").reverse().join("/")+' • '+productionFilterState.start+'–'+productionFilterState.end;
+  const startDate=productionFilterState.startDate||todayISO();
+  const endDate=productionFilterState.endDate||startDate;
+  const startTime=productionFilterState.start||"00:00";
+  const endTime=productionFilterState.end||"23:59";
+  const startDateTime=startDate+" "+startTime;
+  const endDateTime=endDate+" "+endTime;
+
+  const activeArea=areaOverride||productionFilterState.area;
+  const activeLine=lineOverride||productionFilterState.line;
+
+  ctx.textContent='L2L • '+startDate.split("-").reverse().join("/")+(endDate!==startDate?' → '+endDate.split("-").reverse().join("/"):'')+' • '+startTime+'–'+endTime;
+
+  const shiftFromDate=value=>{
+    if(!value)return "Sem turno";
+    const d=new Date(value);
+    if(Number.isNaN(d.getTime()))return "Sem turno";
+    return shiftDisplay(shiftFromHour(d.getHours())).split(" • ")[0];
+  };
+
+  const matchPitch=(line,date,pitches)=>{
+    const targetTime=date?new Date(date).getTime():NaN;
+    const sameLine=(pitches||[]).filter(p=>String(p.line||"")===String(line||""));
+    if(!sameLine.length)return null;
+    if(Number.isNaN(targetTime))return sameLine[0];
+
+    const exact=sameLine.find(p=>{
+      const s=new Date(p.start||0).getTime();
+      const e=new Date(p.end||p.start||0).getTime();
+      return !Number.isNaN(s)&&!Number.isNaN(e)&&targetTime>=s&&targetTime<=e;
+    });
+    if(exact)return exact;
+
+    return sameLine
+      .map(p=>({p,diff:Math.abs(targetTime-new Date(p.start||0).getTime())}))
+      .filter(x=>Number.isFinite(x.diff))
+      .sort((a,b)=>a.diff-b.diff)[0]?.p||null;
+  };
 
   try{
-    let rows=await window.L2L.getScrapDetails(date,productionFilterState.start,productionFilterState.end);
+    const [scrapRowsRaw,homeContext]=await Promise.all([
+      window.L2L.getScrapDetailsWindow(startDateTime,endDateTime).catch(()=>[]),
+      window.L2L.getHomeContextWindow(startDateTime,endDateTime).catch(()=>({pitches:[],dispatches:[]}))
+    ]);
 
-    const activeArea=areaOverride||productionFilterState.area;
-    const activeLine=lineOverride||productionFilterState.line;
-    rows=rows.map(r=>({...r,area:resolveScrapArea(r)})).filter(r=>
+    const pitches=Array.isArray(homeContext?.pitches)?homeContext.pitches:[];
+    const dispatches=Array.isArray(homeContext?.dispatches)?homeContext.dispatches:[];
+
+    let rows=(Array.isArray(scrapRowsRaw)?scrapRowsRaw:[]).map(r=>{
+      const pitch=matchPitch(r.line,r.date,pitches);
+      return {
+        ...r,
+        area:resolveScrapArea(r),
+        product:(r.product&&r.product!=="Sem modelo")?r.product:(pitch?.product||"Sem modelo"),
+        shift:(r.shift&&r.shift!=="Sem turno")?r.shift:shiftFromDate(r.date),
+        source:"Scrap Detail"
+      };
+    });
+
+    const normalizedExisting=new Set(rows.map(r=>[
+      String(r.line||"").toUpperCase(),
+      String(r.product||"").toUpperCase(),
+      String(r.defect||"").toUpperCase(),
+      r.date?new Date(r.date).toISOString().slice(0,16):""
+    ].join("|")));
+
+    const dispatchRows=dispatches
+      .filter(d=>String(d.description||d.reason||d.dispatch_type||"").trim())
+      .map(d=>{
+        const pitch=matchPitch(d.line,d.created,pitches);
+        const product=String(d.product||"").trim()||String(pitch?.product||"").trim()||"Sem modelo";
+        const defect=String(d.description||"").trim()||String(d.dispatch_type||"").trim()||"Ocorrência L2L";
+        const cause=String(d.reason||"").trim();
+        return {
+          id:"dispatch-"+String(d.id||d.number||Math.random()),
+          date:d.created||d.completed||null,
+          defect,
+          product,
+          shift:shiftFromDate(d.created||d.completed),
+          line:d.line||"Sem linha",
+          line_id:d.line_id||null,
+          area:resolveScrapArea({line:d.line,area:""}),
+          cause,
+          scrap:1,
+          source:"Dispatch"
+        };
+      })
+      .filter(r=>{
+        const key=[
+          String(r.line||"").toUpperCase(),
+          String(r.product||"").toUpperCase(),
+          String(r.defect||"").toUpperCase(),
+          r.date?new Date(r.date).toISOString().slice(0,16):""
+        ].join("|");
+        return !normalizedExisting.has(key);
+      });
+
+    // Always include Dispatch occurrences so the manager can see defects/occurrences
+    // even when Scrap Detail is incomplete.
+    rows=rows.concat(dispatchRows);
+
+    rows=rows.filter(r=>
       (activeArea==="Todas"||!activeArea||String(r.area)===String(activeArea)) &&
       (activeLine==="Todas"||!activeLine||String(r.line)===String(activeLine)) &&
       (productionFilterState.shift==="Todos"||normalizeShift(r.shift)===productionFilterState.shift)
     );
 
     rows.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
-    const summary=scrapSummary(rows);
 
-    const contextArea=areaOverride||productionFilterState.area;
-    const contextLine=lineOverride||productionFilterState.line;
-    ctx.textContent='L2L • '+(contextArea==="Todas"||!contextArea?"Todos os setores":contextArea)+' • '+(contextLine==="Todas"||!contextLine?"Todas as linhas":contextLine)+' • '+date.split("-").reverse().join("/")+' • '+productionFilterState.start+'–'+productionFilterState.end;
+    const contextArea=activeArea;
+    const contextLine=activeLine;
+    ctx.textContent='L2L • '+(contextArea==="Todas"||!contextArea?"Todos os setores":contextArea)+' • '+(contextLine==="Todas"||!contextLine?"Todas as linhas":contextLine)+' • '+startDate.split("-").reverse().join("/")+(endDate!==startDate?' → '+endDate.split("-").reverse().join("/"):'')+' • '+startTime+'–'+endTime;
+
     const title=document.getElementById("scrapModalTitle");
     if(title)title.textContent=contextLine && contextLine!=="Todas" ? 'Scrap / Defeitos — '+contextLine : 'Scrap / Defeitos';
 
     if(!rows.length){
-      body.innerHTML='<div class="scrap-empty"><strong>Nenhum detalhe de scrap encontrado para este período.</strong><p>Se houver Scrap no resumo, mas nenhum registro aqui, a linha pode estar registrando scrap sem categoria/detalhamento. O L2L só consegue mostrar defeito, modelo e turno quando esses detalhes são gravados no Scrap Detail.</p></div>';
+      body.innerHTML='<div class="scrap-empty"><strong>Nenhum defeito ou ocorrência detalhada foi encontrado neste período.</strong><p>Foram consultados Scrap Detail, Dispatches e Pitches do L2L. Se existir apenas quantidade agregada de Scrap sem registro associado, o L2L não disponibiliza o produto/defeito individual para essa ocorrência.</p></div>';
       return;
     }
 
+    const summary=scrapSummary(rows);
     const byLine=groupScrap(rows,r=>r.line||"Sem linha");
     const byShift=groupScrap(rows,r=>r.shift||"Sem turno");
-    const byDate=groupScrap(rows,r=>scrapDay(r.date));
     const byModel=groupScrap(rows,r=>r.product||"Sem modelo");
     const byDefect=groupScrap(rows,r=>r.defect||"Sem categoria");
-    const byCause=groupScrap(rows,r=>r.cause||"Causa não informada");
+
+    const shifts=["1","2","3"].map(key=>{
+      const label=SHIFT_SCHEDULE[key]?.label||key;
+      const list=rows.filter(r=>normalizeShift(r.shift)===key);
+      return {key,label,rows:list};
+    }).filter(x=>x.rows.length);
 
     body.innerHTML=
       '<div class="scrap-summary-grid">'+
-        '<div><span>Scrap detalhado</span><strong>'+fmt(summary.qty)+'</strong></div>'+
-        '<div><span>Ocorrências</span><strong>'+fmt(summary.events)+'</strong></div>'+
+        '<div><span>Ocorrências detalhadas</span><strong>'+fmt(summary.events)+'</strong></div>'+
         '<div><span>Tipos de defeito</span><strong>'+fmt(summary.defects)+'</strong></div>'+
-        '<div><span>Principal defeito</span><strong>'+summary.topDefect+'</strong><small>'+fmt(summary.topQty)+' peça(s)</small></div>'+
+        '<div><span>Produtos afetados</span><strong>'+fmt(byModel.filter(x=>x.key!=="Sem modelo").length)+'</strong></div>'+
+        '<div><span>Principal defeito</span><strong>'+stockEsc(summary.topDefect)+'</strong><small>'+fmt(summary.topQty)+' ocorrência(s)/peça(s)</small></div>'+
+      '</div>'+
+      '<div class="scrap-shift-overview">'+
+        shifts.map(s=>{
+          const products=groupScrap(s.rows,r=>r.product||"Sem modelo");
+          const defects=groupScrap(s.rows,r=>r.defect||"Sem categoria");
+          return '<section class="scrap-shift-card">'+
+            '<div class="scrap-shift-head"><div><span>PRODUÇÃO / QUALIDADE</span><h3>'+stockEsc(s.label)+'</h3><small>'+stockEsc(SHIFT_SCHEDULE[s.key]?.time||"")+'</small></div><b>'+s.rows.length+' ocorrência(s)</b></div>'+
+            '<div class="scrap-shift-columns">'+
+              '<div><span>Principais produtos</span>'+products.slice(0,5).map(p=>'<p><b>'+stockEsc(p.key)+'</b><em>'+p.events+'</em></p>').join("")+'</div>'+
+              '<div><span>Principais defeitos</span>'+defects.slice(0,5).map(d=>'<p><b>'+stockEsc(d.key)+'</b><em>'+d.events+'</em></p>').join("")+'</div>'+
+            '</div>'+
+          '</section>';
+        }).join("")+
       '</div>'+
       '<div class="scrap-analysis-grid">'+
         scrapGroupCards("Defeitos por linha",byLine)+
         scrapGroupCards("Defeitos por turno",byShift)+
-        scrapGroupCards("Defeitos por data",byDate)+
-        scrapGroupCards("Defeitos por modelo",byModel)+
+        scrapGroupCards("Defeitos por produto",byModel)+
+        scrapGroupCards("Ranking de defeitos",byDefect)+
       '</div>'+
-      '<div class="scrap-detail-grid">'+
-        '<section class="scrap-defect-section"><h3>Todos os defeitos</h3><div class="scrap-defect-ranking">'+
-          byDefect.map((g,i)=>'<div class="scrap-defect-row"><span class="scrap-defect-rank">'+(i+1)+'</span><div><strong>'+g.key+'</strong><small>'+g.events+' ocorrência(s)</small></div><b>'+fmt(g.qty)+'</b></div>').join("")+
-        '</div></section>'+
-        '<section class="scrap-defect-section"><h3>Causas registradas</h3><div class="scrap-defect-ranking">'+
-          byCause.map((g,i)=>'<div class="scrap-defect-row"><span class="scrap-defect-rank">'+(i+1)+'</span><div><strong>'+g.key+'</strong><small>'+g.events+' ocorrência(s)</small></div><b>'+fmt(g.qty)+'</b></div>').join("")+
-        '</div></section>'+
-      '</div>'+
-      '<section class="scrap-occurrence-section"><h3>Ocorrências detalhadas</h3><div class="scrap-table-wrap"><table class="scrap-detail-table"><thead><tr><th>Data / Hora</th><th>Setor</th><th>Linha</th><th>Turno</th><th>Modelo / Produto</th><th>Defeito</th><th>Causa</th><th>Qtd.</th></tr></thead><tbody>'+
-        rows.map(r=>'<tr><td>'+scrapDateTime(r.date)+'</td><td>'+(r.area||"-")+'</td><td><b>'+(r.line||"-")+'</b></td><td>'+(r.shift||"-")+'</td><td>'+(r.product||"-")+'</td><td><span class="defect-chip">'+(r.defect||"Sem categoria")+'</span></td><td><span class="cause-chip">'+(r.cause||"Não informada")+'</span></td><td><b>'+fmt(r.scrap)+'</b></td></tr>').join("")+
+      '<section class="scrap-occurrence-section"><div class="scrap-occurrence-head"><div><span>DETALHAMENTO L2L</span><h3>Todas as ocorrências</h3></div><small>Scrap Detail + Dispatches + Pitches</small></div>'+
+        '<div class="scrap-table-wrap"><table class="scrap-detail-table"><thead><tr><th>Data / Hora</th><th>Turno</th><th>Linha</th><th>Produto / Modelo</th><th>Defeito</th><th>Causa / Motivo</th><th>Fonte</th><th>Qtd.</th></tr></thead><tbody>'+
+        rows.map(r=>'<tr><td>'+stockEsc(scrapDateTime(r.date))+'</td><td><span class="scrap-shift-chip">'+stockEsc(r.shift||"Sem turno")+'</span></td><td><b>'+stockEsc(r.line||"-")+'</b></td><td><strong>'+stockEsc(r.product||"Sem modelo")+'</strong></td><td><span class="defect-chip">'+stockEsc(r.defect||"Sem categoria")+'</span></td><td>'+stockEsc(r.cause||"Não informada")+'</td><td><span class="scrap-source-chip '+(r.source==="Dispatch"?"dispatch":"detail")+'">'+stockEsc(r.source||"L2L")+'</span></td><td><b>'+fmt(r.scrap||1)+'</b></td></tr>').join("")+
       '</tbody></table></div></section>';
   }catch(err){
-    body.innerHTML='<div class="scrap-empty error"><strong>Não foi possível carregar os detalhes de Scrap.</strong><p>'+(err.message||"Erro ao consultar o L2L.")+'</p></div>';
+    body.innerHTML='<div class="scrap-empty error"><strong>Não foi possível carregar os defeitos do L2L.</strong><p>'+stockEsc(err.message||"Erro ao consultar o L2L.")+'</p></div>';
   }
 }
 
