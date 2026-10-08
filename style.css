@@ -7283,3 +7283,38 @@ body.home-nav-in-topbar .home-block{
   }
   body.home-nav-in-topbar .home-block{scroll-margin-top:120px !important}
 }
+
+
+/* Home quick navigation — executive follow polish */
+nav.home-quick-nav.home-quick-nav-topbar{
+  border:1px solid rgba(255,255,255,.12) !important;
+  background:linear-gradient(180deg,rgba(13,51,75,.98),rgba(8,40,61,.98)) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035),0 6px 18px rgba(3,20,31,.12) !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link{
+  position:relative;
+  min-height:38px !important;
+  border-radius:8px !important;
+  transition:background .18s ease,border-color .18s ease,transform .18s ease,color .18s ease !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link:hover{
+  transform:translateY(-1px);
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link.is-current{
+  background:rgba(255,255,255,.11) !important;
+  border-color:rgba(255,255,255,.16) !important;
+  box-shadow:inset 0 -2px 0 rgba(255,255,255,.75) !important;
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link.is-current span{
+  background:#2b6f93 !important;
+  box-shadow:0 0 0 3px rgba(43,111,147,.14);
+}
+nav.home-quick-nav.home-quick-nav-topbar .home-quick-link-hse.is-current span{
+  background:#1ea465 !important;
+  box-shadow:0 0 0 3px rgba(30,164,101,.14);
+}
+nav.home-quick-nav.home-quick-nav-topbar.is-at-home-end{
+  opacity:0 !important;
+  transform:translateY(-12px) scale(.995) !important;
+  pointer-events:none !important;
+}
