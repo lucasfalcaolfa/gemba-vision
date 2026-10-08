@@ -3966,3 +3966,127 @@ nav.home-quick-nav .home-quick-link b{
     grid-template-columns:1fr;
   }
 }
+
+/* Home process filter */
+.home-process-filter{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:12px;
+  padding:12px 14px;
+  background:linear-gradient(180deg,#fff 0%,#f9fbfc 100%);
+}
+.home-process-filter-copy>span{
+  display:block;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.8px;
+  color:#7d909d;
+  margin-bottom:3px;
+}
+.home-process-filter-copy>strong{
+  display:block;
+  font-size:12px;
+  color:#163247;
+}
+.home-process-filter-copy>small{
+  display:block;
+  margin-top:3px;
+  font-size:8px;
+  color:#87969f;
+}
+.home-process-switch{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  min-width:390px;
+}
+.home-process-switch button{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-height:44px;
+  padding:8px 11px;
+  border:1px solid #dbe4e9;
+  border-radius:10px;
+  background:#fff;
+  color:#486579;
+  cursor:pointer;
+  text-align:left;
+  transition:.15s ease;
+}
+.home-process-switch button:hover{
+  background:#f3f8fa;
+}
+.home-process-switch button>span{
+  width:30px;
+  height:30px;
+  display:grid;
+  place-items:center;
+  border-radius:9px;
+  background:#eef3f6;
+  color:#416277;
+  font-size:7px;
+  font-weight:900;
+}
+.home-process-switch button b{
+  display:block;
+  font-size:9px;
+  color:#173247;
+}
+.home-process-switch button small{
+  display:block;
+  margin-top:2px;
+  font-size:7px;
+  color:#87959e;
+}
+.home-process-switch button.active{
+  border-color:#123d5c;
+  background:linear-gradient(180deg,#123d5c 0%,#0d334e 100%);
+  box-shadow:0 6px 14px rgba(14,51,78,.16);
+}
+.home-process-switch button.active>span{
+  background:rgba(255,255,255,.13);
+  color:#fff;
+}
+.home-process-switch button.active b,
+.home-process-switch button.active small{
+  color:#fff;
+}
+.home-selected-process{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin-bottom:10px;
+  padding:6px 8px;
+  border-radius:8px;
+  background:#eef4f7;
+  color:#456377;
+}
+.home-selected-process span{
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.6px;
+}
+.home-selected-process b{
+  font-size:9px;
+}
+.home-machine-summary{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+}
+@media(max-width:900px){
+  .home-process-filter{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .home-process-switch{
+    width:100%;
+    min-width:0;
+  }
+}
+@media(max-width:560px){
+  .home-process-switch{
+    grid-template-columns:1fr;
+  }
+}
