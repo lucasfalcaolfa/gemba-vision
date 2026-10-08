@@ -15,6 +15,13 @@ function home(){
     '<div class="home-command-copy"><span>GESTÃO À VISTA • FND</span><h2 id="homeYesterdayTitle">Resumo operacional</h2><p>Janela oficial da Fundição: 07:00 de um dia até 07:00 do dia seguinte.</p></div>'+
     '<div class="home-command-side"><div class="home-yesterday-status" id="homeYesterdayStatus">🟡 Consultando L2L...</div><div class="home-source-badge">Fonte: L2L • atualização automática a cada 1 minuto</div></div>'+
   '</section>'+
+  '<section class="home-process-filter panel">'+
+    '<div class="home-process-filter-copy"><span>FILTRO DE PROCESSO</span><strong>Visualizar resultados de</strong><small>Todos os indicadores abaixo serão atualizados conforme a seleção.</small></div>'+
+    '<div class="home-process-switch" role="group" aria-label="Processo da FND">'+
+      '<button id="homeProcessInjection" class="active" type="button" onclick="setHomeProcessFilter(\'injecao\')"><span>INJ</span><div><b>Injetoras</b><small>Linhas de injeção FND</small></div></button>'+
+      '<button id="homeProcessFinishing" type="button" onclick="setHomeProcessFilter(\'acabamento\')"><span>ACB</span><div><b>Acabamento</b><small>Linhas FND_ACAB</small></div></button>'+
+    '</div>'+
+  '</section>'+
   '<nav class="home-quick-nav" aria-label="Resumo da Visão Geral">'+
     '<a class="home-quick-link" href="#home-result"><span>01</span><b>Resultado</b></a>'+
     '<a class="home-quick-link" href="#home-production"><span>02</span><b>Produção</b></a>'+
@@ -2130,6 +2137,7 @@ async function initSafety(){
   }
 }
 
+let homeProcessFilter="injecao";
 let homeYesterdayRows=[];
 let homeYesterdayProductRows=[];
 let homeYesterdayScrapRows=[];
@@ -2313,16 +2321,41 @@ function homeTimeLabel(value){
   return d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
 }
 
+function setHomeProcessFilter(process){
+  if(process!=="injecao"&&process!=="acabamento")return;
+  homeProcessFilter=process;
+
+  const inj=document.getElementById("homeProcessInjection");
+  const acab=document.getElementById("homeProcessFinishing");
+  if(inj)inj.classList.toggle("active",process==="injecao");
+  if(acab)acab.classList.toggle("active",process==="acabamento");
+
+  renderHomeYesterday();
+}
+
+function homeProcessLabel(process){
+  return process==="acabamento"?"Acabamento":"Injetoras";
+}
+
 function renderHomeEvents(){
   const el=document.getElementById("homeYesterdayEvents");
   if(!el)return;
 
-  const pitches=(homeYesterdayContext?.pitches||[]).filter(p=>String(p.comment||"").trim());
-  const dispatches=(homeYesterdayContext?.dispatches||[]).slice().sort((a,b)=>{
-    const da=a.created?new Date(a.created).getTime():0;
-    const db=b.created?new Date(b.created).getTime():0;
-    return db-da;
-  });
+  const process=homeProcessFilter;
+  const processLabel=homeProcessLabel(process);
+
+  const pitches=(homeYesterdayContext?.pitches||[])
+    .filter(p=>homeProcessFromLine(p.line)===process)
+    .filter(p=>String(p.comment||"").trim());
+
+  const dispatches=(homeYesterdayContext?.dispatches||[])
+    .filter(d=>homeProcessFromLine(d.line)===process)
+    .slice()
+    .sort((a,b)=>{
+      const da=a.created?new Date(a.created).getTime():0;
+      const db=b.created?new Date(b.created).getTime():0;
+      return db-da;
+    });
 
   const dispatchLines=new Set(dispatches.map(d=>String(d.line||"")).filter(Boolean));
   const commentLines=new Set(pitches.map(p=>String(p.line||"")).filter(Boolean));
@@ -2344,7 +2377,7 @@ function renderHomeEvents(){
           '</div>'+
         '</article>';
       }).join("")+'</div>'
-    : '<div class="empty-state">Nenhum Dispatch da FND encontrado para o dia anterior.</div>';
+    : '<div class="empty-state">Nenhum Dispatch de '+processLabel+' encontrado para o período.</div>';
 
   const commentsHtml=pitches.length
     ? '<div class="home-countermeasure-list home-countermeasure-list-pro">'+pitches.map((p,i)=>
@@ -2355,20 +2388,20 @@ function renderHomeEvents(){
           '<div class="home-countermeasure-production"><span>Real / Demanda</span><b>'+fmt(p.actual)+' / '+fmt(p.demand)+'</b></div>'+
         '</article>'
       ).join("")+'</div>'
-    : '<div class="empty-state">Nenhum comentário/contramedida de pitch foi registrado na FND no dia anterior.</div>';
+    : '<div class="empty-state">Nenhum comentário/contramedida de '+processLabel+' foi registrado no período.</div>';
 
   el.innerHTML=
     '<div class="home-events-toolbar">'+
       '<div class="home-events-summary">'+
+        '<div><span>Processo</span><strong>'+processLabel+'</strong><small>Filtro ativo</small></div>'+
         '<div><span>Dispatches</span><strong>'+dispatches.length+'</strong><small>'+dispatchLines.size+' linha(s) afetada(s)</small></div>'+
         '<div><span>Contramedidas</span><strong>'+pitches.length+'</strong><small>'+commentLines.size+' linha(s) com comentário</small></div>'+
-        '<div><span>Prioridade</span><strong>'+(dispatches.length?"Acompanhar":"Sem pendência")+'</strong><small>'+(dispatches.length?"Ver Dispatches primeiro":"Nenhum Dispatch no período")+'</small></div>'+
       '</div>'+
       '<div class="home-events-guide"><span>LEITURA RÁPIDA</span><b>1. Dispatches → 2. Causa/Motivo → 3. Contramedidas</b></div>'+
     '</div>'+
     '<div class="home-events-grid home-events-grid-pro">'+
-      '<section class="home-events-column dispatch-column"><div class="home-events-subtitle"><div><span>MANUTENÇÃO / OCORRÊNCIAS</span><h3>Dispatches</h3></div><small>Ordenados do mais recente para o mais antigo</small></div>'+dispatchHtml+'</section>'+
-      '<section class="home-events-column action-column"><div class="home-events-subtitle"><div><span>PRODUÇÃO / PASSOS</span><h3>Comentários e contramedidas</h3></div><small>Registros feitos durante os pitches</small></div>'+commentsHtml+'</section>'+
+      '<section class="home-events-column dispatch-column"><div class="home-events-subtitle"><div><span>'+processLabel.toUpperCase()+'</span><h3>Dispatches</h3></div><small>Mais recentes primeiro</small></div>'+dispatchHtml+'</section>'+
+      '<section class="home-events-column action-column"><div class="home-events-subtitle"><div><span>'+processLabel.toUpperCase()+'</span><h3>Comentários e contramedidas</h3></div><small>Registros dos pitches</small></div>'+commentsHtml+'</section>'+
     '</div>';
 }
 
@@ -2426,45 +2459,52 @@ function renderHomeYesterday(){
   const day=windowRange.startDate;
   const dateLabel=day.split("-").reverse().join("/");
   const endLabel=windowRange.endDate.split("-").reverse().join("/");
+  const process=homeProcessFilter;
+  const processLabel=homeProcessLabel(process);
+
+  const injBtn=document.getElementById("homeProcessInjection");
+  const acabBtn=document.getElementById("homeProcessFinishing");
+  if(injBtn)injBtn.classList.toggle("active",process==="injecao");
+  if(acabBtn)acabBtn.classList.toggle("active",process==="acabamento");
+
   const title=document.getElementById("homeYesterdayTitle");
-  if(title)title.textContent="Resumo FND • "+dateLabel+" 07:00 → "+endLabel+" 07:00";
+  if(title)title.textContent=processLabel+" • "+dateLabel+" 07:00 → "+endLabel+" 07:00";
 
   const fndRows=homeFndRows(homeYesterdayRows);
-  const groups=sortOeeCardsByLine(groupedByLine(fndRows));
-  const demand=total(fndRows,"demand");
-  const actual=total(fndRows,"actual");
-  const scrap=total(fndRows,"scrap");
-  const net=Math.max(0,actual-scrap);
-  const attainment=demand?actual/demand*100:0;
-  const avgOee=groups.length?groups.reduce((s,g)=>s+n(g.oee),0)/groups.length:0;
+  const metrics=homeProcessMetrics(fndRows,process,homeYesterdayScrapRows);
+  const groups=metrics.groups;
+  const demand=metrics.demand;
+  const actual=metrics.actual;
+  const scrap=metrics.scrap;
+  const net=metrics.net;
+  const attainment=metrics.attainment;
+  const avgOee=metrics.avgOee;
+  const defects=metrics.defects;
+  const defectQty=metrics.defectQty;
 
   const products=homeProductSummary(homeYesterdayProductRows);
-  const injectionShiftProducts=homeShiftProductGroups(homeYesterdayContext?.pitches||[],"injecao");
-  const finishingShiftProducts=homeShiftProductGroups(homeYesterdayContext?.pitches||[],"acabamento");
-  const defects=homeDefectSummary(homeYesterdayScrapRows,homeYesterdayContext?.pitches||[]);
-  const defectQty=defects.reduce((s,x)=>s+x.qty,0);
-  const injectionMetrics=homeProcessMetrics(fndRows,"injecao",homeYesterdayScrapRows);
-  const finishingMetrics=homeProcessMetrics(fndRows,"acabamento",homeYesterdayScrapRows);
-
+  const shiftProducts=homeShiftProductGroups(homeYesterdayContext?.pitches||[],process);
   const bestMachine=groups.length?[...groups].sort((a,b)=>b.oee-a.oee)[0]:null;
   const criticalMachines=groups.filter(g=>g.oee<70).length;
   const topDefect=defects[0]||null;
 
   const status=document.getElementById("homeYesterdayStatus");
-  if(status)status.textContent=liveStamp()+" • FND • "+dateLabel+" 07:00 → "+endLabel+" 07:00";
+  if(status)status.textContent=liveStamp()+" • "+processLabel+" • "+dateLabel+" 07:00 → "+endLabel+" 07:00";
 
   const kpis=document.getElementById("homeYesterdayKpis");
-  if(kpis)kpis.innerHTML=
-    '<div class="home-process-kpi-stack">'+
-      homeProcessKpis("Injetoras","Resumo consolidado das linhas de injeção da FND.",injectionMetrics,"injection")+
-      homeProcessKpis("Acabamento","Resumo consolidado das linhas de acabamento da FND.",finishingMetrics,"finishing")+
-    '</div>';
+  if(kpis)kpis.innerHTML=homeProcessKpis(
+    processLabel,
+    process==="acabamento"?"Resumo das linhas de acabamento da FND.":"Resumo das linhas de injeção da FND.",
+    metrics,
+    process==="acabamento"?"finishing":"injection"
+  );
 
   const prod=document.getElementById("homeYesterdayProduction");
   if(prod){
     const pct=Math.max(0,Math.min(100,attainment));
     const gap=actual-demand;
     prod.innerHTML=
+      '<div class="home-selected-process"><span>PROCESSO SELECIONADO</span><b>'+processLabel+'</b></div>'+
       '<div class="home-production-hero">'+
         '<div class="home-prod-main"><span>Atingimento</span><strong class="'+(attainment>=100?"good":attainment>=95?"warn":"bad")+'">'+fmtPct(attainment)+'</strong><small>'+(gap>=0?"+":"")+fmt(gap)+' peças vs. demanda</small></div>'+
         '<div class="home-prod-pairs"><div><span>Demanda</span><strong>'+fmt(demand)+'</strong></div><div><span>Produção real</span><strong>'+fmt(actual)+'</strong></div><div><span>Scrap</span><strong>'+fmt(scrap)+'</strong></div><div><span>Líquido</span><strong>'+fmt(net)+'</strong></div></div>'+
@@ -2474,71 +2514,56 @@ function renderHomeYesterday(){
 
   const models=document.getElementById("homeYesterdayModels");
   if(models){
-    const renderProcess=(title,subtitle,groups,processClass)=>{
-      const count=groups.reduce((s,g)=>s+g.products.length,0);
-      const actualTotal=groups.reduce((s,g)=>s+g.products.reduce((x,p)=>x+p.actual,0),0);
+    const count=shiftProducts.reduce((s,g)=>s+g.products.length,0);
+    const actualTotal=shiftProducts.reduce((s,g)=>s+g.products.reduce((x,p)=>x+p.actual,0),0);
+    const processClass=process==="acabamento"?"finishing":"injection";
 
-      return '<section class="home-process-products '+processClass+'">'+
-        '<div class="home-process-products-head"><div><span>PROCESSO</span><h3>'+title+'</h3><p>'+subtitle+'</p></div><div><strong>'+count+'</strong><small>produto(s)</small><b>'+fmt(actualTotal)+' peças</b></div></div>'+
-        '<div class="home-shift-product-grid">'+groups.map(group=>{
-          const total=group.products.reduce((s,p)=>s+p.actual,0);
-          return '<section class="home-shift-product-card shift-'+group.shift+'">'+
-            '<div class="home-shift-product-head"><div><span>'+group.label+'</span><strong>'+group.time+'</strong></div><b>'+fmt(total)+' peças</b></div>'+
-            (group.products.length
-              ? '<div class="home-shift-product-list">'+group.products.map((p,i)=>{
-                  const share=total?p.actual/total*100:0;
-                  return '<div class="home-shift-product-row">'+
-                    '<span class="home-model-pos">'+(i+1)+'</span>'+
-                    '<div><strong>'+stockEsc(p.product)+'</strong><small>'+stockEsc(p.lines.join(", ")||"Sem linha")+' • '+fmtPct(share)+' do turno</small></div>'+
-                    '<b>'+fmt(p.actual)+'</b>'+
-                  '</div>';
-                }).join("")+'</div>'
-              : '<div class="home-shift-product-empty">Nenhum produto registrado neste turno.</div>')+
-          '</section>';
-        }).join("")+'</div>'+
-      '</section>';
-    };
-
-    const injectionCount=injectionShiftProducts.reduce((s,g)=>s+g.products.length,0);
-    const finishingCount=finishingShiftProducts.reduce((s,g)=>s+g.products.length,0);
-
-    models.innerHTML=(injectionCount||finishingCount)
-      ? '<div class="home-process-products-stack">'+
-          renderProcess("Injetoras","Produtos registrados nas linhas de injeção da FND.",injectionShiftProducts,"injection")+
-          renderProcess("Acabamento","Produtos registrados nas linhas FND_ACAB / acabamento.",finishingShiftProducts,"finishing")+
-        '</div>'
-      : (products.length
-          ? '<div class="home-model-summary"><span>'+products.length+' modelo(s)</span><b>'+fmt(products.reduce((s,p)=>s+p.actual,0))+' peças</b></div>'+
-            '<div class="home-model-list">'+products.slice(0,12).map((p,i)=>'<div class="home-model-row"><span class="home-model-pos">'+(i+1)+'</span><div class="home-model-copy"><strong>'+stockEsc(p.name)+'</strong><small>'+p.lineCount+' linha(s)</small></div><b>'+fmt(p.actual)+'</b></div>').join("")+'</div>'
-          : '<div class="empty-state">Nenhum produto foi identificado nos pitches da FND para a janela operacional 07:00 → 07:00.</div>');
+    models.innerHTML=count
+      ? '<section class="home-process-products '+processClass+'">'+
+          '<div class="home-process-products-head"><div><span>PROCESSO SELECIONADO</span><h3>'+processLabel+'</h3><p>Produtos registrados por turno na janela operacional.</p></div><div><strong>'+count+'</strong><small>produto(s)</small><b>'+fmt(actualTotal)+' peças</b></div></div>'+
+          '<div class="home-shift-product-grid">'+shiftProducts.map(group=>{
+            const total=group.products.reduce((s,p)=>s+p.actual,0);
+            return '<section class="home-shift-product-card shift-'+group.shift+'">'+
+              '<div class="home-shift-product-head"><div><span>'+group.label+'</span><strong>'+group.time+'</strong></div><b>'+fmt(total)+' peças</b></div>'+
+              (group.products.length
+                ? '<div class="home-shift-product-list">'+group.products.map((p,i)=>{
+                    const share=total?p.actual/total*100:0;
+                    return '<div class="home-shift-product-row"><span class="home-model-pos">'+(i+1)+'</span><div><strong>'+stockEsc(p.product)+'</strong><small>'+stockEsc(p.lines.join(", ")||"Sem linha")+' • '+fmtPct(share)+' do turno</small></div><b>'+fmt(p.actual)+'</b></div>';
+                  }).join("")+'</div>'
+                : '<div class="home-shift-product-empty">Nenhum produto registrado neste turno.</div>')+
+            '</section>';
+          }).join("")+'</div>'+
+        '</section>'
+      : '<div class="empty-state">Nenhum produto de '+processLabel+' foi identificado nos pitches para 07:00 → 07:00.</div>';
   }
 
   const oee=document.getElementById("homeYesterdayOee");
   if(oee){
     oee.innerHTML=groups.length
       ? '<div class="home-machine-summary">'+
+          '<div><span>Processo</span><strong>'+processLabel+'</strong></div>'+
           '<div><span>Melhor OEE</span><strong>'+(bestMachine?stockEsc(bestMachine.line)+" • "+fmtPct(bestMachine.oee):"-")+'</strong></div>'+
-          '<div><span>Máquinas críticas</span><strong>'+criticalMachines+'</strong></div>'+
+          '<div><span>Linhas críticas</span><strong>'+criticalMachines+'</strong></div>'+
           '<div><span>Referência</span><strong>85% OEE</strong></div>'+
         '</div>'+
         '<div class="home-machine-grid">'+groups.map(g=>{
           const cls=g.oee>=85?"good":g.oee>=70?"warn":"bad";
-          const status=g.oee>=85?"Dentro da meta":g.oee>=70?"Atenção":"Crítico";
+          const machineStatus=g.oee>=85?"Dentro da meta":g.oee>=70?"Atenção":"Crítico";
           return '<article class="home-machine-card '+cls+'">'+
-            '<div class="home-machine-head"><div><span>'+stockEsc(g.area||"FND")+'</span><h3>'+stockEsc(g.line)+'</h3></div><span class="home-machine-status '+cls+'">'+status+'</span></div>'+
+            '<div class="home-machine-head"><div><span>'+processLabel.toUpperCase()+'</span><h3>'+stockEsc(g.line)+'</h3></div><span class="home-machine-status '+cls+'">'+machineStatus+'</span></div>'+
             '<div class="home-machine-oee-main"><span>OEE DA LINHA</span><strong>'+fmtPct(g.oee)+'</strong><small>Meta de referência: 85%</small></div>'+
             '<div class="home-machine-bar"><i style="width:'+Math.min(100,Math.max(0,g.oee))+'%"></i></div>'+
             '<div class="home-machine-metrics"><div><span>OA</span><strong>'+fmtPct(g.availability)+'</strong></div><div><span>PPP</span><strong>'+fmtPct(g.performance)+'</strong></div><div><span>Yield</span><strong>'+fmtPct(g.quality)+'</strong></div><div><span>Produção</span><strong>'+fmt(g.actual)+' / '+fmt(g.demand)+'</strong></div></div>'+
           '</article>';
         }).join("")+'</div>'
-      : '<div class="empty-state">Nenhuma máquina da FND encontrada no resumo do dia anterior.</div>';
+      : '<div class="empty-state">Nenhuma linha de '+processLabel+' encontrada para o período.</div>';
   }
 
   const defectsEl=document.getElementById("homeYesterdayDefects");
   if(defectsEl){
     defectsEl.innerHTML=defects.length
       ? '<div class="home-defect-summary home-defect-summary-two">'+
-          '<div><span>Total</span><strong>'+fmt(defectQty)+'</strong><small>ocorrências/peças</small></div>'+
+          '<div><span>Total • '+processLabel+'</span><strong>'+fmt(defectQty)+'</strong><small>ocorrências/peças</small></div>'+
           '<div><span>Principal defeito</span><strong>'+stockEsc(topDefect?.defect||"-")+'</strong><small>'+fmt(topDefect?.qty||0)+' registro(s)</small></div>'+
         '</div>'+
         '<div class="home-defect-top5">'+
@@ -2548,7 +2573,7 @@ function renderHomeYesterday(){
         defects.slice(5).map((d,i)=>'<tr><td><span class="defect-priority p3">'+(i+6)+'</span></td><td><span class="defect-chip">'+stockEsc(d.defect)+'</span></td><td>'+stockEsc(d.lines.join(", ")||"-")+'</td><td>'+stockEsc(d.models.join(", ")||"-")+'</td><td><b>'+fmt(d.qty)+'</b></td></tr>').join("")+
         '</tbody></table></div>'+
         (defects.length>5?'<button class="home-defect-toggle" type="button" onclick="toggleHomeDefects(this)"><span>Mostrar mais defeitos</span><b>⌄</b></button>':'')
-      : '<div class="empty-state home-empty-good"><strong>Sem não qualidade registrada.</strong><br>Nenhum defeito/scrap da FND foi encontrado no L2L para o dia anterior.</div>';
+      : '<div class="empty-state home-empty-good"><strong>Sem não qualidade registrada em '+processLabel+'.</strong><br>Nenhum defeito/scrap foi encontrado para o processo selecionado.</div>';
   }
 
   renderHomeEvents();
