@@ -97,7 +97,6 @@ function heatmap(){
 
 let oeeRows=[];
 let oeeProductRows=[];
-let oeeCatalogProducts=[];
 let oeeLoading=false;
 let oeeHeatmapRows=[];
 let oeeHourlyHeatmapRows=[];
@@ -152,14 +151,12 @@ async function refreshOeeRange(){
   if(oeeLoading)return;
   oeeLoading=true;
   const ctx=document.getElementById("oeeContext");
-  if(ctx)ctx.textContent="🟡 Consultando OEE e produtos oficiais do L2L...";
+  if(ctx)ctx.textContent="🟡 Consultando OEE oficial do L2L...";
   try{
     const startDate=oeeFilterState.startDate||todayISO();
     const endDate=oeeFilterState.endDate||startDate;
-    const startDateTime=startDate+" "+oeeFilterState.start;
-    const endDateTime=endDate+" "+oeeFilterState.end;
 
-    const [summaryRows,productRows,catalogRows]=await Promise.all([
+    const [summaryRows,productRows]=await Promise.all([
       window.L2L.getOeeShiftRange(
         startDate,
         endDate,
@@ -172,13 +169,11 @@ async function refreshOeeRange(){
         endDate,
         oeeFilterState.start,
         oeeFilterState.end
-      ).catch(()=>[]),
-      window.L2L.getProducts(startDateTime,endDateTime).catch(()=>[])
+      ).catch(()=>[])
     ]);
 
     oeeRows=summaryRows;
     oeeProductRows=productRows;
-    oeeCatalogProducts=catalogRows;
     l2lLastUpdate=new Date();
     l2lError="";
     if(currentPage==="oee"){
@@ -919,13 +914,17 @@ function renderOeeLive(){
       (oeeFilterState.area==="Todas"||r.area===oeeFilterState.area) &&
       (oeeFilterState.line==="Todas"||r.line===oeeFilterState.line)
     );
-    const products=allRegisteredProductsWithEfficiency(productSource,oeeCatalogProducts);
-
-    chart.innerHTML=
-      '<div class="oee-live-rank-head"><span><i></i> Produtos cadastrados no L2L • OEE do maior para o menor</span><b>'+products.length+' produto(s)</b></div>'+
-      productCatalogRows(products);
+    const products=groupedProducts(productSource).slice(0,10);
+    chart.innerHTML=products.length
+      ? '<div class="oee-live-rank-head"><span><i></i> Ranking por OEE • atualização a cada 1 minuto</span><b>'+liveStamp()+'</b></div>'+
+        rankingRows(
+          products,
+          p=>p.name,
+          p=>p.efficiency,
+          p=>(p.lines.length?stockEsc(p.lines.join(", ")):"Sem linha")+" • Produção "+fmt(p.actual)+(p.demand?" / "+fmt(p.demand):"")
+        )
+      : '<div class="empty-state"><strong>Nenhum produto com OEE foi encontrado para os filtros selecionados.</strong><br>O ranking será preenchido automaticamente assim que o L2L retornar produto associado à linha.</div>';
   }
-}
 }
 
 let productionRows=[];
@@ -2801,66 +2800,6 @@ function groupedProducts(rows){
     lineCount:x.lines.size,
     lines:[...x.lines]
   })).sort((a,b)=>b.efficiency-a.efficiency||b.actual-a.actual);
-}
-
-function allRegisteredProductsWithEfficiency(rows,catalog){
-  const ranked=groupedProducts(rows);
-  const rankedMap=new Map(ranked.map(p=>[String(p.name).trim().toUpperCase(),p]));
-
-  const merged=[];
-  const seen=new Set();
-
-  (Array.isArray(catalog)?catalog:[]).forEach(product=>{
-    const name=String(product.name||product.code||product.description||"").trim();
-    if(!name)return;
-    const key=name.toUpperCase();
-    const live=rankedMap.get(key);
-
-    merged.push({
-      name,
-      code:String(product.code||"").trim(),
-      description:String(product.description||"").trim(),
-      efficiency:live?live.efficiency:null,
-      actual:live?live.actual:0,
-      demand:live?live.demand:0,
-      lines:live?live.lines:[],
-      hasEfficiency:!!live
-    });
-    seen.add(key);
-  });
-
-  ranked.forEach(p=>{
-    const key=String(p.name||"").trim().toUpperCase();
-    if(!key||seen.has(key))return;
-    merged.push({...p,code:"",description:"",hasEfficiency:true});
-  });
-
-  return merged.sort((a,b)=>{
-    if(a.hasEfficiency!==b.hasEfficiency)return a.hasEfficiency?-1:1;
-    if(a.hasEfficiency&&b.hasEfficiency&&b.efficiency!==a.efficiency)return b.efficiency-a.efficiency;
-    return String(a.name).localeCompare(String(b.name),"pt-BR",{numeric:true,sensitivity:"base"});
-  });
-}
-
-function productCatalogRows(items){
-  if(!items.length)return '<div class="empty-state">Nenhum produto cadastrado foi retornado pelo L2L.</div>';
-  return '<div class="ranking-list product-catalog-ranking">'+items.map((p,index)=>{
-    const has=Number.isFinite(p.efficiency);
-    const value=has?p.efficiency:0;
-    const width=has?Math.min(100,Math.max(0,value)):0;
-    const cls=has?(value>=85?"rank-good":value>=70?"rank-warn":"rank-bad"):"rank-neutral";
-    const metaParts=[];
-    if(p.lines&&p.lines.length)metaParts.push(stockEsc(p.lines.join(", ")));
-    if(p.actual>0)metaParts.push("Produção "+fmt(p.actual)+(p.demand?" / "+fmt(p.demand):""));
-    if(!has)metaParts.push("Sem OEE registrado no período selecionado");
-
-    return '<div class="rank-row '+(!has?"no-oee":"")+'">'+
-      '<div class="rank-head"><div class="rank-name"><span class="rank-pos">'+(index+1)+'</span><strong>'+stockEsc(p.name)+'</strong></div>'+
-      (has?'<b class="'+cls+'">'+fmtPct(value)+'</b>':'<b class="rank-neutral">—</b>')+'</div>'+
-      '<div class="rank-track"><i class="'+cls+'" style="width:'+width+'%"></i></div>'+
-      '<div class="rank-meta">'+metaParts.join(" • ")+'</div>'+
-    '</div>';
-  }).join("")+'</div>';
 }
 
 function rankingRows(items,getName,getValue,getMeta){
