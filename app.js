@@ -32,43 +32,73 @@ function home(){
     '</div>'+
   '</section>'+
   '<nav class="home-quick-nav" aria-label="Resumo da Visão Geral">'+
-    '<a class="home-quick-link" href="#home-hse"><span>01</span><b>HSE do Dia</b></a>'+
-    '<a class="home-quick-link" href="#home-result"><span>02</span><b>Resultado</b></a>'+
-    '<a class="home-quick-link" href="#home-production"><span>03</span><b>Produção</b></a>'+
-    '<a class="home-quick-link" href="#home-flow"><span>04</span><b>Produtos</b></a>'+
-    '<a class="home-quick-link" href="#home-efficiency"><span>05</span><b>OEE</b></a>'+
-    '<a class="home-quick-link" href="#home-quality"><span>06</span><b>Não Qualidade</b></a>'+
-    '<a class="home-quick-link" href="#home-events"><span>07</span><b>Ocorrências</b></a>'+
+    '<a class="home-quick-link" href="#home-result"><span>01</span><b>Resultado</b></a>'+
+    '<a class="home-quick-link" href="#home-production"><span>02</span><b>Produção</b></a>'+
+    '<a class="home-quick-link" href="#home-flow"><span>03</span><b>Produtos</b></a>'+
+    '<a class="home-quick-link" href="#home-efficiency"><span>04</span><b>OEE</b></a>'+
+    '<a class="home-quick-link" href="#home-quality"><span>05</span><b>Não Qualidade</b></a>'+
+    '<a class="home-quick-link" href="#home-events"><span>06</span><b>Ocorrências</b></a>'+
+    '<a class="home-quick-link" href="#home-hse"><span>07</span><b>HSE Semanal</b></a>'+
   '</nav>'+
-  '<section class="home-block home-hse-daily-block" id="home-hse">'+
-    '<div class="home-block-title"><div><span>01 • HSE DO DIA</span><h2>Momento de Segurança</h2></div><p id="homeHseDateLabel">Conteúdo diário de segurança.</p></div>'+
-    '<div class="panel home-hse-daily-panel" id="homeHseDaily"></div>'+
-  '</section>'+
   '<section class="home-block" id="home-result">'+
-    '<div class="home-block-title"><div><span>02 • RESULTADO DO DIA</span><h2>Resumo executivo</h2></div><p>Principais indicadores da FND para leitura rápida.</p></div>'+
+    '<div class="home-block-title"><div><span>01 • RESULTADO DO DIA</span><h2>Resumo executivo</h2></div><p>Principais indicadores da FND para leitura rápida.</p></div>'+
     '<div class="home-yesterday-kpis" id="homeYesterdayKpis"></div>'+
   '</section>'+
   '<section class="home-block" id="home-production">'+
-    '<div class="home-block-title"><div><span>03 • PRODUÇÃO</span><h2>Plano x realizado</h2></div><p>Resultado consolidado da janela operacional.</p></div>'+
+    '<div class="home-block-title"><div><span>02 • PRODUÇÃO</span><h2>Plano x realizado</h2></div><p>Resultado consolidado da janela operacional.</p></div>'+
     '<article class="panel home-focus-panel home-production-panel"><div id="homeYesterdayProduction"></div></article>'+
   '</section>'+
   '<section class="home-block" id="home-flow">'+
-    '<div class="home-block-title"><div><span>04 • FLUXO DE PRODUTOS</span><h2>Produtos por processo e turno</h2></div><p>Injetoras e Acabamento separados, dentro da mesma visão.</p></div>'+
+    '<div class="home-block-title"><div><span>03 • FLUXO DE PRODUTOS</span><h2>Produtos por processo e turno</h2></div><p>Injetoras e Acabamento separados, dentro da mesma visão.</p></div>'+
     '<article class="panel home-wide-panel home-products-panel"><div id="homeYesterdayModels"></div></article>'+
   '</section>'+
   '<section class="home-block" id="home-efficiency">'+
-    '<div class="home-block-title"><div><span>05 • EFICIÊNCIA</span><h2>OEE por linha</h2></div><p>OEE, OA, PPP, Yield e produção de cada máquina.</p></div>'+
+    '<div class="home-block-title"><div><span>04 • EFICIÊNCIA</span><h2>OEE por linha</h2></div><p>OEE, OA, PPP, Yield e produção de cada máquina.</p></div>'+
     '<div class="panel home-wide-panel"><div id="homeYesterdayOee"></div></div>'+
   '</section>'+
   '<section class="home-block" id="home-quality">'+
-    '<div class="home-block-title"><div><span>06 • NÃO QUALIDADE</span><h2>Defeitos registrados</h2></div><p>Ocorrências priorizadas por quantidade, linha e modelo.</p></div>'+
+    '<div class="home-block-title"><div><span>05 • NÃO QUALIDADE</span><h2>Defeitos registrados</h2></div><p>Ocorrências priorizadas por quantidade, linha e modelo.</p></div>'+
     '<div class="panel home-wide-panel"><div id="homeYesterdayDefects"></div></div>'+
   '</section>'+
   '<section class="home-block" id="home-events">'+
-    '<div class="home-block-title"><div><span>07 • OCORRÊNCIAS</span><h2>Dispatches e contramedidas</h2></div><p>Eventos de manutenção e registros de produção do período.</p></div>'+
+    '<div class="home-block-title"><div><span>06 • OCORRÊNCIAS</span><h2>Dispatches e contramedidas</h2></div><p>Eventos de manutenção e registros de produção do período.</p></div>'+
     '<div class="panel home-wide-panel"><div id="homeYesterdayEvents"></div></div>'+
   '</section>'+
-
+  '<section class="home-block" id="home-hse">'+
+    '<div class="home-block-title"><div><span>07 • HSE SEMANAL</span><h2>Informativo de Segurança</h2></div><p>Conteúdo visual da semana • atualização automática da imagem.</p></div>'+
+    '<div class="panel home-hse-panel">'+
+      '<div class="home-hse-hero">'+
+        '<div class="home-hse-hero-copy">'+
+          '<div class="home-hse-eyebrow"><span>HSE</span><b>Boletim semanal de segurança</b></div>'+
+          '<h3>Pequenas Mudanças, Risco Diferente</h3>'+
+          '<p>Conteúdo oficial para apoiar o diálogo diário de segurança e reforçar os principais riscos da semana.</p>'+
+          '<div class="home-hse-meta">'+
+            '<span><i class="dot"></i> Conteúdo vigente</span>'+
+            '<span>Leitura recomendada: início do turno</span>'+
+            '<span id="homeHseStatus">Atualização automática ativa</span>'+
+          '</div>'+
+        '</div>'+
+        '<div class="home-hse-hero-badge"><span>07</span><small>HSE<br>SEMANAL</small></div>'+
+      '</div>'+
+      '<div class="home-hse-content">'+
+        '<div class="home-hse-toolbar">'+
+          '<div><span>INFORMATIVO OFICIAL</span><strong>Visualização da semana</strong></div>'+
+          '<div class="home-hse-toolbar-actions"><span class="home-hse-live"><i></i> Sincronizado</span><button type="button" onclick="openHseImage()">Abrir em tela cheia ↗</button></div>'+
+        '</div>'+
+        '<button type="button" class="home-hse-image-wrap" onclick="openHseImage()" aria-label="Abrir informativo HSE em tela ampliada">'+
+          '<div class="home-hse-image-frame"><img id="hseWeeklyImage" src="assets/hse-weekly.jpg" alt="Informativo semanal de HSE" loading="lazy" decoding="async"></div>'+
+          '<div class="home-hse-image-footer"><span>Clique no informativo para ampliar</span><b>Visualizar detalhes →</b></div>'+
+        '</button>'+
+      '</div>'+
+    '</div>'+
+    '<div class="home-hse-modal" id="homeHseModal" aria-hidden="true">'+
+      '<div class="home-hse-modal-backdrop" onclick="closeHseImage()"></div>'+
+      '<section class="home-hse-modal-panel" role="dialog" aria-modal="true" aria-label="Informativo HSE ampliado">'+
+        '<div class="home-hse-modal-head"><div><span>HSE SEMANAL</span><h2>Informativo de Segurança</h2></div><button type="button" onclick="closeHseImage()" aria-label="Fechar">×</button></div>'+
+        '<div class="home-hse-modal-body"><img id="hseWeeklyImageLarge" src="assets/hse-weekly.jpg" alt="Informativo semanal de HSE ampliado" decoding="async"></div>'+
+      '</section>'+
+    '</div>'+
+  '</section>';
 }
 function safety(){return '<div class="panel safety-live-panel"><div class="safety-live-head"><div><span>MOMENTO DE SEGURANÇA</span><h2 id="safetyWeekTitle">Safety Moments — Semana atual</h2><p id="safetyWeekMeta">Conteúdo organizado automaticamente a partir do PDF semanal.</p></div><div class="safety-mode-switch"><button id="safetyModeDynamic" class="active">▥ Visualização dinâmica</button><button id="safetyModeWeekly">▣ Semanal</button><a class="safety-open-pdf" href="SafetyMomentWeek_Current.pdf" target="_blank" rel="noopener">▤ Abrir PDF ↗</a></div></div><div class="safety-status" id="safetyStatus">Carregando Momento de Segurança...</div><section id="safetyDynamic" class="safety-dynamic"><div id="safetyDayCards" class="safety-day-cards"></div><div id="safetyDayDetail" class="safety-day-detail"></div></section><section id="safetyWeekly" class="safety-weekly" hidden><div class="safety-viewer"><canvas id="safetyCanvas"></canvas></div></section><div class="safety-help">O modo <b>Dinâmico</b> organiza a leitura do dia. O modo <b>Semanal</b> mantém o PDF oficial completo.</div></div>'}
 const oeeData=[
@@ -2828,110 +2858,39 @@ async function refreshHomeYesterday(){
   }
 }
 
-function renderHseToday(){
-  const mount=document.getElementById("homeHseDaily");
-  const dateLabel=document.getElementById("homeHseDateLabel");
-  if(!mount)return;
+function refreshHseBulletin(){
+  const stamp=Date.now();
+  const src="assets/hse-weekly.jpg?v="+stamp;
+  const img=document.getElementById("hseWeeklyImage");
+  const large=document.getElementById("hseWeeklyImageLarge");
+  if(img)img.src=src;
+  if(large)large.src=src;
 
-  const days={
-    1:{
-      weekday:"Segunda-feira",
-      title:"Pequenas Mudanças Podem Importar",
-      focus:"Nem toda mudança parece significativa. Uma peça, ferramenta, material, configuração ou sequência de trabalho diferente pode alterar como uma tarefa interage com pessoas e equipamentos.",
-      points:[
-        "Pequenas mudanças no processo podem introduzir riscos que antes não estavam presentes.",
-        "O trabalho familiar pode parecer rotineiro mesmo quando parte da tarefa mudou.",
-        "Considere como a mudança afeta toda a tarefa, não apenas a etapa que está sendo modificada."
-      ],
-      summary:"Uma pequena mudança no trabalho pode criar uma mudança significativa na exposição.",
-      action:"Antes de começar hoje, pergunte: “Algo nesta tarefa mudou?”"
-    },
-    2:{
-      weekday:"Terça-feira",
-      title:"Uma Mudança Pode Afetar Outra Coisa",
-      focus:"Mudanças raramente existem isoladamente. Ajustar uma parte de um processo pode afetar equipamentos, pessoas, fluxo de materiais ou controles de segurança existentes.",
-      points:[
-        "Ferramentas ou dispositivos diferentes podem alterar folgas e pontos de acesso.",
-        "Materiais ou recipientes diferentes podem alterar o manuseio, a estabilidade ou as exigências físicas.",
-        "Mudanças na velocidade, sequência ou layout podem criar novas interações."
-      ],
-      summary:"Mudar uma coisa pode alterar mais de um risco.",
-      action:"Quando algo mudar, olhe além da própria mudança e considere o que mais ela pode afetar."
-    },
-    3:{
-      weekday:"Quarta-feira",
-      title:"Não Esqueça os Controles",
-      focus:"Um controle projetado para o processo de ontem pode não fornecer a mesma proteção após a mudança do processo.",
-      points:[
-        "Verifique se proteções, barreiras, ventilação, sensores e outros controles ainda protegem conforme o previsto.",
-        "Considere se os procedimentos, JHAs ou instruções de trabalho ainda refletem o trabalho real.",
-        "Nunca presuma que um controle existente continua eficaz após uma mudança."
-      ],
-      summary:"Quando o trabalho muda, verifique se a proteção ainda funciona.",
-      action:"Para qualquer processo alterado, identifique os controles e confirme se ainda correspondem ao trabalho realizado."
-    },
-    4:{
-      weekday:"Quinta-feira",
-      title:"Mudanças Temporárias Ainda São Mudanças",
-      focus:"Algumas das mudanças mais fáceis de ignorar são aquelas que assumimos como temporárias.",
-      points:[
-        "Ferramentas substitutas, reparos temporários, materiais alternativos e métodos de trabalho revisados podem introduzir riscos diferentes.",
-        "Testes de produção e configurações temporárias devem ser avaliados antes do uso.",
-        "Uma solução temporária nunca deve se tornar silenciosamente o processo permanente."
-      ],
-      summary:"Temporário não significa insignificante.",
-      action:"Identifique qualquer mudança temporária em sua área e verifique se considerou seus riscos."
-    },
-    5:{
-      weekday:"Sexta-feira",
-      title:"Mudar Deve Gerar uma Pergunta",
-      focus:"Não precisamos complicar o trabalho. Precisamos reconhecer quando uma mudança merece uma nova análise antes de prosseguir.",
-      points:[
-        "Pergunte quais novos perigos a mudança pode introduzir.",
-        "Determine se os controles existentes continuam eficazes.",
-        "Envolva o suporte apropriado quando a mudança afetar a segurança, o equipamento ou o processo."
-      ],
-      summary:"A pergunta não é apenas “Esta mudança vai funcionar?”. Mas também “Como essa mudança afeta o risco?”",
-      action:"Torne isso um hábito sempre que algo mudar."
-    }
-  };
-
-  const now=new Date();
-  const day=now.getDay();
-  const item=days[day];
-
-  const dateText=now.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
-  if(dateLabel)dateLabel.textContent=(item?item.weekday:"Fim de semana")+" • "+dateText;
-
-  if(!item){
-    mount.innerHTML='<div class="home-hse-day-empty"><span>HSE</span><h3>Sem conteúdo programado para hoje</h3><p>O informativo diário é exibido de segunda a sexta-feira.</p></div>';
-    return;
-  }
-
-  mount.innerHTML=
-    '<div class="home-hse-day-hero">'+
-      '<div class="home-hse-day-mark"><span>HSE</span><small>'+dateText+'</small></div>'+
-      '<div class="home-hse-day-title"><span>'+item.weekday.toUpperCase()+'</span><h3>'+item.title+'</h3><p>Conteúdo de segurança do dia para leitura no início do turno.</p></div>'+
-      '<div class="home-hse-day-status"><i></i><span>Conteúdo de hoje</span></div>'+
-    '</div>'+
-    '<div class="home-hse-day-content">'+
-      '<section class="home-hse-focus"><span>FOCO DO DIA</span><p>'+item.focus+'</p></section>'+
-      '<section class="home-hse-points"><span>PONTOS PRINCIPAIS</span><ul>'+item.points.map(p=>'<li>'+p+'</li>').join("")+'</ul></section>'+
-      '<div class="home-hse-bottom">'+
-        '<section><span>RESUMO</span><strong>'+item.summary+'</strong></section>'+
-        '<section class="action"><span>AÇÃO DO DIA</span><strong>'+item.action+'</strong></section>'+
-      '</div>'+
-    '</div>';
+  const status=document.getElementById("homeHseStatus");
+  if(status)status.textContent="Verificação automática • "+new Date().toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
 }
 
+function openHseImage(){
+  refreshHseBulletin();
+  const modal=document.getElementById("homeHseModal");
+  if(!modal)return;
+  modal.classList.add("open");
+  modal.setAttribute("aria-hidden","false");
+  document.body.classList.add("modal-open");
+}
 
-
-
+function closeHseImage(){
+  const modal=document.getElementById("homeHseModal");
+  if(!modal)return;
+  modal.classList.remove("open");
+  modal.setAttribute("aria-hidden","true");
+  document.body.classList.remove("modal-open");
+}
 
 function initHome(){
   renderHomeYesterday();
   refreshHomeYesterday();
-  renderHseToday();
+  refreshHseBulletin();
 }
 
 let currentPage="home";
@@ -2954,7 +2913,7 @@ async function refreshL2L(){
     applyLiveData(currentPage);
     if(currentPage==="home"){
       await refreshHomeYesterday();
-      renderHseToday();
+      refreshHseBulletin();
     }
     if(currentPage==="oee"){
       await refreshOeeRange();
