@@ -221,6 +221,57 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  if (report === "products") {
+    const start = String(req.query.start || "").trim();
+    const end = String(req.query.end || "").trim();
+
+    try {
+      const numericSite = await resolveNumericSite(
+        start || new Date().toISOString().slice(0, 10) + " 00:00",
+        end || new Date().toISOString().slice(0, 10) + " 23:59"
+      );
+
+      const payload = await l2lGet("/api/1.0/productcomponents/", {
+        site: numericSite,
+        limit: 5000,
+      });
+
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      const normalized = rows.map(row => ({
+        id: row.id,
+        name: String(
+          row.name ??
+          row.product_name ??
+          row.code ??
+          row.product_code ??
+          row.part_number ??
+          row.description ??
+          row.id ??
+          ""
+        ).trim(),
+        code: String(
+          row.code ??
+          row.product_code ??
+          row.part_number ??
+          ""
+        ).trim(),
+        description: String(row.description ?? row.name ?? "").trim(),
+        active: row.active ?? row.is_active ?? true,
+      })).filter(row => row.name);
+
+      return res.status(200).json({
+        success: true,
+        data: normalized,
+        meta: { numeric_site: numericSite, count: normalized.length },
+      });
+    } catch (error) {
+      return res.status(error.status || 502).json({
+        success: false,
+        error: error.message || "Unable to load L2L products.",
+      });
+    }
+  }
+
   if (report === "homecontext") {
     const start = String(req.query.start || "").trim();
     const end = String(req.query.end || "").trim();
