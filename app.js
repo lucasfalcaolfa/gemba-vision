@@ -52,6 +52,7 @@ function heatmap(){
 }
 
 let oeeRows=[];
+let oeeProductRows=[];
 let oeeLoading=false;
 let oeeHeatmapRows=[];
 let oeeHourlyHeatmapRows=[];
@@ -106,9 +107,29 @@ async function refreshOeeRange(){
   if(oeeLoading)return;
   oeeLoading=true;
   const ctx=document.getElementById("oeeContext");
-  if(ctx)ctx.textContent="🟡 Consultando L2L...";
+  if(ctx)ctx.textContent="🟡 Consultando OEE oficial do L2L...";
   try{
-    oeeRows=await window.L2L.getRange(oeeFilterState.startDate||todayISO(),oeeFilterState.endDate||oeeFilterState.startDate||todayISO(),oeeFilterState.start,oeeFilterState.end);
+    const startDate=oeeFilterState.startDate||todayISO();
+    const endDate=oeeFilterState.endDate||startDate;
+
+    const [summaryRows,productRows]=await Promise.all([
+      window.L2L.getOeeShiftRange(
+        startDate,
+        endDate,
+        oeeFilterState.shift,
+        oeeFilterState.start,
+        oeeFilterState.end
+      ),
+      window.L2L.getRange(
+        startDate,
+        endDate,
+        oeeFilterState.start,
+        oeeFilterState.end
+      ).catch(()=>[])
+    ]);
+
+    oeeRows=summaryRows;
+    oeeProductRows=productRows;
     l2lLastUpdate=new Date();
     l2lError="";
     if(currentPage==="oee"){
@@ -116,7 +137,7 @@ async function refreshOeeRange(){
       renderOeeLive();
     }
   }catch(err){
-    l2lError=err.message||"Falha ao consultar L2L";
+    l2lError=err.message||"Falha ao consultar OEE no L2L";
     if(currentPage==="oee")renderOeeLive();
   }finally{
     oeeLoading=false;
@@ -128,7 +149,6 @@ function populateOeeFilters(){
   const lineEl=document.getElementById("oeeLinha");
   if(!areaEl||!lineEl)return;
 
-  const source=oeeRows.length?oeeRows:l2lRows;
   const areas=[...new Set(source.map(r=>r.area).filter(Boolean))].sort();
   areaEl.innerHTML='<option value="Todas">Toda a fábrica</option>'+areas.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
   areaEl.value=areas.includes(oeeFilterState.area)?oeeFilterState.area:"Todas";
@@ -141,12 +161,10 @@ function populateOeeFilters(){
 }
 
 function getFilteredOeeRows(){
-  const source=oeeRows.length?oeeRows:l2lRows;
-  const shiftAvailable=hasShiftDetail(source);
+  const source=oeeRows.length?oeeRows:[];
   return source.filter(r=>
     (oeeFilterState.area==="Todas"||r.area===oeeFilterState.area) &&
-    (oeeFilterState.line==="Todas"||r.line===oeeFilterState.line) &&
-    (oeeFilterState.shift==="Todos"||!shiftAvailable||rowShift(r)===oeeFilterState.shift)
+    (oeeFilterState.line==="Todas"||r.line===oeeFilterState.line)
   );
 }
 
@@ -195,6 +213,17 @@ function initOee(){
       oeeFilterState.endDate=last.date<first.date?first.date:last.date;
       oeeFilterState.start=first.time;
       oeeFilterState.end=last.time;
+
+      if(oeeFilterState.shift==="1"){
+        oeeFilterState.start="07:00";
+        oeeFilterState.end="17:00";
+      }else if(oeeFilterState.shift==="2"){
+        oeeFilterState.start="17:00";
+        oeeFilterState.end="02:00";
+      }else if(oeeFilterState.shift==="3"){
+        oeeFilterState.start="02:00";
+        oeeFilterState.end="07:00";
+      }
       if(oeeFilterState.endDate===oeeFilterState.startDate&&oeeFilterState.end<=oeeFilterState.start){
         oeeFilterState.end="23:59";
         endAt.value=dateTimeLocalValue(oeeFilterState.endDate,oeeFilterState.end);
@@ -798,7 +827,6 @@ function renderOeeLive(){
   const selectedArea=oeeFilterState.area==="Todas"?"Toda a fábrica":oeeFilterState.area;
   const selectedLine=oeeFilterState.line==="Todas"?"Todas as linhas":oeeFilterState.line;
   const selectedShift=oeeFilterState.shift==="Todos"?"Todos os turnos":shiftDisplay(oeeFilterState.shift);
-  const shiftNote=oeeFilterState.shift!=="Todos"&&!hasShiftDetail(source)?" • turno não detalhado pelo retorno atual do L2L":"";
 
   const oeeValue=avg(rows,"overall_equipment_effectiveness");
   const efficiency=avg(rows,"peff");
@@ -816,7 +844,7 @@ function renderOeeLive(){
   }
 
   const ctx=document.getElementById("oeeContext");
-  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(oeeFilterState.startDate||"")+(oeeFilterState.endDate&&oeeFilterState.endDate!==oeeFilterState.startDate?" → "+oeeFilterState.endDate:"")+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s)"+shiftNote;
+  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(oeeFilterState.startDate||"")+(oeeFilterState.endDate&&oeeFilterState.endDate!==oeeFilterState.startDate?" → "+oeeFilterState.endDate:"")+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s) • OEE oficial L2L";
 
   const table=document.getElementById("oeeTable");
   if(table){
@@ -831,7 +859,8 @@ function renderOeeLive(){
 
   const chart=document.getElementById("oeeChart");
   if(chart){
-    const products=groupedProducts(rows).slice(0,10);
+    const productSource=oeeProductRows.length?oeeProductRows:rows;
+    const products=groupedProducts(productSource).slice(0,10);
     chart.innerHTML=products.length
       ? rankingRows(
           products,
@@ -2099,25 +2128,91 @@ function liveStamp(){
   return "🟢 L2L atualizado às "+l2lLastUpdate.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
 }
 
+function weightedMetric(rows,key,weightKey){
+  let weighted=0,totalWeight=0;
+  rows.forEach(r=>{
+    const value=n(r[key]);
+    const weight=Math.max(0,n(r[weightKey]));
+    if(weight>0){
+      weighted+=value*weight;
+      totalWeight+=weight;
+    }
+  });
+  if(totalWeight>0)return weighted/totalWeight;
+  const values=rows.map(r=>n(r[key])).filter(Number.isFinite);
+  return values.length?values.reduce((a,b)=>a+b,0)/values.length:0;
+}
+
 function groupedByLine(rows){
   const map={};
+
   rows.forEach(r=>{
     const key=r.line||"Sem linha";
-    if(!map[key])map[key]={line:key,area:r.area||"",demand:0,actual:0,scrap:0,availability:[],performance:[],quality:[]};
+    if(!map[key])map[key]={
+      line:key,
+      area:r.area||"",
+      rows:[],
+      demand:0,
+      actual:0,
+      scrap:0,
+      plannedMinutes:0,
+      downtimeMinutes:0,
+      theoreticalParts:0
+    };
+
     const g=map[key];
+    g.rows.push(r);
     g.demand+=n(r.demand);
     g.actual+=n(r.actual);
     g.scrap+=n(r.scrap);
-    if(r.operational_availability!==null&&r.operational_availability!==undefined)g.availability.push(n(r.operational_availability));
-    if(r.ppp!==null&&r.ppp!==undefined)g.performance.push(n(r.ppp));
-    if(r.yield!==null&&r.yield!==undefined)g.quality.push(n(r.yield));
+    g.plannedMinutes+=n(r.planned_production_minutes);
+    g.downtimeMinutes+=n(r.downtime_minutes);
+    g.theoreticalParts+=n(r.theoretical_parts);
   });
+
   return Object.values(map).map(g=>{
-    const availability=g.availability.length?g.availability.reduce((a,b)=>a+b,0)/g.availability.length:0;
-    const performance=g.performance.length?g.performance.reduce((a,b)=>a+b,0)/g.performance.length:0;
-    const quality=g.quality.length?g.quality.reduce((a,b)=>a+b,0)/g.quality.length:0;
+    if(g.rows.length===1){
+      const r=g.rows[0];
+      return {
+        line:g.line,
+        area:g.area,
+        demand:g.demand,
+        actual:g.actual,
+        scrap:g.scrap,
+        oee:n(r.overall_equipment_effectiveness),
+        availability:n(r.operational_availability),
+        performance:n(r.ppp),
+        quality:n(r.yield),
+        source:"L2L"
+      };
+    }
+
+    const availability=g.plannedMinutes>0
+      ? Math.max(0,(g.plannedMinutes-g.downtimeMinutes)/g.plannedMinutes*100)
+      : 0;
+
+    const performance=g.theoreticalParts>0
+      ? (g.actual+g.scrap)/g.theoreticalParts*100
+      : weightedMetric(g.rows,"ppp","planned_production_minutes");
+
+    const quality=(g.actual+g.scrap)>0
+      ? g.actual/(g.actual+g.scrap)*100
+      : weightedMetric(g.rows,"yield","planned_production_minutes");
+
     const oee=(availability*performance*quality)/10000;
-    return {...g,oee,availability,performance,quality};
+
+    return {
+      line:g.line,
+      area:g.area,
+      demand:g.demand,
+      actual:g.actual,
+      scrap:g.scrap,
+      oee,
+      availability,
+      performance,
+      quality,
+      source:"Agregado"
+    };
   }).sort((a,b)=>a.line.localeCompare(b.line));
 }
 
