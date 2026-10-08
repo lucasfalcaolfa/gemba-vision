@@ -2402,6 +2402,23 @@ function homeProcessKpis(title,subtitle,metrics,processClass){
   '</section>';
 }
 
+function toggleHomeDefects(button){
+  const more=document.getElementById("homeDefectMore");
+  if(!more)return;
+  const open=more.hasAttribute("hidden");
+  if(open){
+    more.removeAttribute("hidden");
+    button.classList.add("open");
+    button.querySelector("span").textContent="Mostrar menos";
+    button.querySelector("b").textContent="⌃";
+  }else{
+    more.setAttribute("hidden","");
+    button.classList.remove("open");
+    button.querySelector("span").textContent="Mostrar mais defeitos";
+    button.querySelector("b").textContent="⌄";
+  }
+}
+
 function renderHomeYesterday(){
   if(currentPage!=="home")return;
 
@@ -2524,9 +2541,13 @@ function renderHomeYesterday(){
           '<div><span>Total</span><strong>'+fmt(defectQty)+'</strong><small>ocorrências/peças</small></div>'+
           '<div><span>Principal defeito</span><strong>'+stockEsc(topDefect?.defect||"-")+'</strong><small>'+fmt(topDefect?.qty||0)+' registro(s)</small></div>'+
         '</div>'+
-        '<div class="table-scroll"><table class="home-defect-table"><thead><tr><th>Prioridade</th><th>Defeito</th><th>Linha(s)</th><th>Modelo(s)</th><th>Qtd.</th></tr></thead><tbody>'+
-        defects.map((d,i)=>'<tr><td><span class="defect-priority p'+Math.min(3,i+1)+'">'+(i+1)+'</span></td><td><span class="defect-chip">'+stockEsc(d.defect)+'</span></td><td>'+stockEsc(d.lines.join(", ")||"-")+'</td><td>'+stockEsc(d.models.join(", ")||"-")+'</td><td><b>'+fmt(d.qty)+'</b></td></tr>').join("")+
-        '</tbody></table></div>'
+        '<div class="home-defect-top5">'+
+          defects.slice(0,5).map((d,i)=>'<article class="home-defect-top-card"><span class="defect-priority p'+Math.min(3,i+1)+'">'+(i+1)+'</span><div><strong>'+stockEsc(d.defect)+'</strong><small>'+stockEsc(d.lines.join(", ")||"-")+(d.models.length?' • '+stockEsc(d.models.join(", ")):'')+'</small></div><b>'+fmt(d.qty)+'</b></article>').join("")+
+        '</div>'+
+        '<div class="table-scroll home-defect-more" id="homeDefectMore" hidden><table class="home-defect-table"><thead><tr><th>Prioridade</th><th>Defeito</th><th>Linha(s)</th><th>Modelo(s)</th><th>Qtd.</th></tr></thead><tbody>'+
+        defects.slice(5).map((d,i)=>'<tr><td><span class="defect-priority p3">'+(i+6)+'</span></td><td><span class="defect-chip">'+stockEsc(d.defect)+'</span></td><td>'+stockEsc(d.lines.join(", ")||"-")+'</td><td>'+stockEsc(d.models.join(", ")||"-")+'</td><td><b>'+fmt(d.qty)+'</b></td></tr>').join("")+
+        '</tbody></table></div>'+
+        (defects.length>5?'<button class="home-defect-toggle" type="button" onclick="toggleHomeDefects(this)"><span>Mostrar mais defeitos</span><b>⌄</b></button>':'')
       : '<div class="empty-state home-empty-good"><strong>Sem não qualidade registrada.</strong><br>Nenhum defeito/scrap da FND foi encontrado no L2L para o dia anterior.</div>';
   }
 
