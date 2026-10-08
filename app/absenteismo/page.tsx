@@ -1,5 +1,5 @@
-import { GenericPage } from "@/components/pages/GenericPage";
+import { PeoplePage } from "@/components/pages/PeoplePage";
 
 export default function Page() {
-  return <GenericPage title="Absenteísmo" subtitle="Indicadores de pessoas e presença" mode="people" />;
+  return <PeoplePage />;
 }
