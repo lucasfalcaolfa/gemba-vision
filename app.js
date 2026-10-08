@@ -31,14 +31,18 @@ function home(){
       '</div>'+
     '</div>'+
   '</section>'+
+  '<section class="home-block home-hse-top-block" id="home-hse">'+
+    '<div class="home-block-title home-hse-top-title"><div><span>HSE • CONTEÚDO DO DIA</span><h2>Momento de Segurança</h2></div><p id="homeHseDateLabel">Conteúdo de segurança do dia.</p></div>'+
+    '<div class="panel home-hse-daily-showcase"><div id="homeHseToday"></div></div>'+
+  '</section>'+
   '<nav class="home-quick-nav" aria-label="Resumo da Visão Geral">'+
+    '<a class="home-quick-link home-quick-link-hse" href="#home-hse"><span>HSE</span><b>Segurança</b></a>'+
     '<a class="home-quick-link" href="#home-result"><span>01</span><b>Resultado</b></a>'+
     '<a class="home-quick-link" href="#home-production"><span>02</span><b>Produção</b></a>'+
     '<a class="home-quick-link" href="#home-flow"><span>03</span><b>Produtos</b></a>'+
     '<a class="home-quick-link" href="#home-efficiency"><span>04</span><b>OEE</b></a>'+
     '<a class="home-quick-link" href="#home-quality"><span>05</span><b>Não Qualidade</b></a>'+
     '<a class="home-quick-link" href="#home-events"><span>06</span><b>Ocorrências</b></a>'+
-    '<a class="home-quick-link" href="#home-hse"><span>07</span><b>HSE Semanal</b></a>'+
   '</nav>'+
   '<section class="home-block" id="home-result">'+
     '<div class="home-block-title"><div><span>01 • RESULTADO DO DIA</span><h2>Resumo executivo</h2></div><p>Principais indicadores da FND para leitura rápida.</p></div>'+
@@ -64,10 +68,7 @@ function home(){
     '<div class="home-block-title"><div><span>06 • OCORRÊNCIAS</span><h2>Dispatches e contramedidas</h2></div><p>Eventos de manutenção e registros de produção do período.</p></div>'+
     '<div class="panel home-wide-panel"><div id="homeYesterdayEvents"></div></div>'+
   '</section>'+
-  '<section class="home-block" id="home-hse">'+
-    '<div class="home-block-title"><div><span>07 • HSE DO DIA</span><h2>Boletim diário de segurança</h2></div><p id="homeHseDateLabel">Conteúdo de segurança do dia.</p></div>'+
-    '<div class="panel home-hse-day-panel"><div id="homeHseToday"></div></div>'+
-  '</section>';
+  '' ;
 }
 function safety(){return '<div class="panel safety-live-panel"><div class="safety-live-head"><div><span>MOMENTO DE SEGURANÇA</span><h2 id="safetyWeekTitle">Safety Moments — Semana atual</h2><p id="safetyWeekMeta">Conteúdo organizado automaticamente a partir do PDF semanal.</p></div><div class="safety-mode-switch"><button id="safetyModeDynamic" class="active">▥ Visualização dinâmica</button><button id="safetyModeWeekly">▣ Semanal</button><a class="safety-open-pdf" href="SafetyMomentWeek_Current.pdf" target="_blank" rel="noopener">▤ Abrir PDF ↗</a></div></div><div class="safety-status" id="safetyStatus">Carregando Momento de Segurança...</div><section id="safetyDynamic" class="safety-dynamic"><div id="safetyDayCards" class="safety-day-cards"></div><div id="safetyDayDetail" class="safety-day-detail"></div></section><section id="safetyWeekly" class="safety-weekly" hidden><div class="safety-viewer"><canvas id="safetyCanvas"></canvas></div></section><div class="safety-help">O modo <b>Dinâmico</b> organiza a leitura do dia. O modo <b>Semanal</b> mantém o PDF oficial completo.</div></div>'}
 const oeeData=[
@@ -2898,7 +2899,6 @@ function refreshHseBulletin(){
   const now=new Date();
   const item=days[now.getDay()];
   const dateText=now.toLocaleDateString("pt-BR",{day:"2-digit",month:"2-digit",year:"numeric"});
-
   if(dateLabel)dateLabel.textContent=(item?item.weekday:"Fim de semana")+" • "+dateText;
 
   if(!item){
@@ -2906,18 +2906,24 @@ function refreshHseBulletin(){
     return;
   }
 
+  const weekLabel="Week of 05-out-2026";
+
   mount.innerHTML=
-    '<div class="home-hse-day-hero">'+
-      '<div class="home-hse-day-mark"><span>HSE</span><small>'+dateText+'</small></div>'+
-      '<div class="home-hse-day-title"><span>'+item.weekday.toUpperCase()+'</span><h3>'+item.title+'</h3><p>Conteúdo oficial do dia para leitura no início do turno.</p></div>'+
-      '<div class="home-hse-day-status"><i></i><span>Conteúdo de hoje</span></div>'+
-    '</div>'+
-    '<div class="home-hse-day-content">'+
-      '<section class="home-hse-focus"><span>FOCO DO DIA</span><p>'+item.focus+'</p></section>'+
-      '<section class="home-hse-points"><span>PONTOS PRINCIPAIS</span><ul>'+item.points.map(p=>'<li>'+p+'</li>').join("")+'</ul></section>'+
-      '<div class="home-hse-bottom">'+
-        '<section><span>RESUMO</span><strong>'+item.summary+'</strong></section>'+
-        '<section class="action"><span>AÇÃO DO DIA</span><strong>'+item.action+'</strong></section>'+
+    '<div class="home-hse-showcase-grid">'+
+      '<section class="home-hse-visual-card">'+
+        '<div class="home-hse-visual-top"><span class="home-hse-weekday-pill">'+item.weekday.toUpperCase()+'</span><b>'+weekLabel+'</b></div>'+
+        '<div class="home-hse-visual-scene" aria-hidden="true">'+
+          '<div class="home-hse-cone"><i></i><i></i><i></i></div>'+
+          '<div class="home-hse-machine"><span></span><i></i><b></b></div>'+
+          '<div class="home-hse-check">✓</div>'+
+          '<div class="home-hse-theme-chip"><small>Tema destacado</small><strong>Mudança temporária</strong></div>'+
+        '</div>'+
+        '<div class="home-hse-visual-copy"><h3>'+item.title+'</h3><div class="home-hse-red-line"></div><p>'+item.focus+'</p></div>'+
+      '</section>'+
+      '<div class="home-hse-insight-stack">'+
+        '<section class="home-hse-insight focus"><div class="home-hse-insight-icon">◎</div><div><span>FOCO</span><h3>'+item.title+'</h3><p>'+item.focus+'</p></div></section>'+
+        '<section class="home-hse-insight key"><div class="home-hse-insight-icon">⚙</div><div><span>PONTOS-CHAVE</span><ul>'+item.points.map(p=>'<li>'+p+'</li>').join("")+'</ul></div></section>'+
+        '<section class="home-hse-insight action"><div class="home-hse-insight-icon">◉</div><div><span>AÇÃO DO DIA</span><h3>Pense antes de executar</h3><p>'+item.action+'</p></div></section>'+
       '</div>'+
     '</div>';
 }
