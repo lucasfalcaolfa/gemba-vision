@@ -2260,7 +2260,8 @@ function renderHomeYesterday(){
           const cls=g.oee>=85?"good":g.oee>=70?"warn":"bad";
           const status=g.oee>=85?"Dentro da meta":g.oee>=70?"Atenção":"Crítico";
           return '<article class="home-machine-card '+cls+'">'+
-            '<div class="home-machine-head"><div><span>'+stockEsc(g.area||"FND")+'</span><h3>'+stockEsc(g.line)+'</h3></div><div class="home-machine-oee"><small>'+status+'</small><b>'+fmtPct(g.oee)+'</b></div></div>'+
+            '<div class="home-machine-head"><div><span>'+stockEsc(g.area||"FND")+'</span><h3>'+stockEsc(g.line)+'</h3></div><span class="home-machine-status '+cls+'">'+status+'</span></div>'+
+            '<div class="home-machine-oee-main"><span>OEE DA LINHA</span><strong>'+fmtPct(g.oee)+'</strong><small>Meta de referência: 85%</small></div>'+
             '<div class="home-machine-bar"><i style="width:'+Math.min(100,Math.max(0,g.oee))+'%"></i></div>'+
             '<div class="home-machine-metrics"><div><span>OA</span><strong>'+fmtPct(g.availability)+'</strong></div><div><span>PPP</span><strong>'+fmtPct(g.performance)+'</strong></div><div><span>Yield</span><strong>'+fmtPct(g.quality)+'</strong></div><div><span>Produção</span><strong>'+fmt(g.actual)+' / '+fmt(g.demand)+'</strong></div></div>'+
           '</article>';
