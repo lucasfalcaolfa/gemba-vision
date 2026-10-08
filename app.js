@@ -909,16 +909,21 @@ function renderOeeLive(){
 
   const chart=document.getElementById("oeeChart");
   if(chart){
-    const productSource=oeeProductRows.length?oeeProductRows:rows;
+    const productBase=oeeProductRows.length?oeeProductRows:rows;
+    const productSource=productBase.filter(r=>
+      (oeeFilterState.area==="Todas"||r.area===oeeFilterState.area) &&
+      (oeeFilterState.line==="Todas"||r.line===oeeFilterState.line)
+    );
     const products=groupedProducts(productSource).slice(0,10);
     chart.innerHTML=products.length
-      ? rankingRows(
+      ? '<div class="oee-live-rank-head"><span><i></i> Ranking por OEE • atualização a cada 1 minuto</span><b>'+liveStamp()+'</b></div>'+
+        rankingRows(
           products,
           p=>p.name,
           p=>p.efficiency,
-          p=>(p.lineCount?p.lineCount+" linha(s)":"")+" • Produção "+fmt(p.actual)
+          p=>(p.lines.length?stockEsc(p.lines.join(", ")):"Sem linha")+" • Produção "+fmt(p.actual)+(p.demand?" / "+fmt(p.demand):"")
         )
-      : '<div class="empty-state"><strong>Modelos não detalhados pelo retorno atual do L2L.</strong><br>O painel já solicita <code>show_products=1</code>; quando o L2L retornar eficiência por produto/modelo, o ranking aparecerá automaticamente.</div>';
+      : '<div class="empty-state"><strong>Nenhum produto com OEE foi encontrado para os filtros selecionados.</strong><br>O ranking será preenchido automaticamente assim que o L2L retornar produto associado à linha.</div>';
   }
 }
 
@@ -2750,40 +2755,51 @@ function extractProductRows(rows){
   rows.forEach(row=>{
     let products=row.products;
     if(!products)return;
-    if(!Array.isArray(products) && typeof products==="object") products=Object.values(products);
+    if(!Array.isArray(products)&&typeof products==="object")products=Object.values(products);
     if(!Array.isArray(products))return;
     products.forEach(p=>{
       if(!p||typeof p!=="object")return;
       const name=p.product_name ?? p.product ?? p.name ?? p.model ?? p.product_code ?? p.part_number ?? p.description;
-      const efficiencyRaw=p.peff ?? p.efficiency ?? p.performance_efficiency ?? p.overall_equipment_effectiveness ?? p.oee;
-      const efficiency=Number(efficiencyRaw);
-      if(!name || !Number.isFinite(efficiency))return;
+      if(!name)return;
+      const productOeeRaw=p.overall_equipment_effectiveness ?? p.oee ?? p.efficiency ?? p.performance_efficiency ?? p.peff;
+      const rowOeeRaw=row.overall_equipment_effectiveness ?? row.oee;
+      const raw=(productOeeRaw!==undefined&&productOeeRaw!==null&&productOeeRaw!=="")?productOeeRaw:rowOeeRaw;
+      const efficiency=Number(raw);
+      if(!Number.isFinite(efficiency))return;
       out.push({
-        name:String(name),
+        name:String(name).trim(),
         efficiency,
         line:row.line||"",
         area:row.area||"",
-        actual:n(p.actual ?? p.production_actual ?? 0)
+        actual:n(p.actual ?? p.production_actual ?? p.quantity ?? p.qty ?? row.actual ?? 0),
+        demand:n(p.demand ?? p.production_demand ?? row.demand ?? 0)
       });
     });
   });
-  return out;
+  return out.filter(p=>p.name);
 }
 
 function groupedProducts(rows){
   const map={};
   extractProductRows(rows).forEach(p=>{
-    if(!map[p.name])map[p.name]={name:p.name,values:[],actual:0,lines:new Set()};
-    map[p.name].values.push(p.efficiency);
-    map[p.name].actual+=p.actual;
-    if(p.line)map[p.name].lines.add(p.line);
+    if(!map[p.name])map[p.name]={name:p.name,weightedEfficiency:0,totalWeight:0,values:[],actual:0,demand:0,lines:new Set()};
+    const item=map[p.name];
+    const weight=p.actual>0?p.actual:1;
+    item.weightedEfficiency+=p.efficiency*weight;
+    item.totalWeight+=weight;
+    item.values.push(p.efficiency);
+    item.actual+=p.actual;
+    item.demand+=p.demand;
+    if(p.line)item.lines.add(p.line);
   });
   return Object.values(map).map(x=>({
     name:x.name,
-    efficiency:x.values.reduce((a,b)=>a+b,0)/x.values.length,
+    efficiency:x.totalWeight>0?x.weightedEfficiency/x.totalWeight:(x.values.length?x.values.reduce((a,b)=>a+b,0)/x.values.length:0),
     actual:x.actual,
-    lineCount:x.lines.size
-  })).sort((a,b)=>b.efficiency-a.efficiency);
+    demand:x.demand,
+    lineCount:x.lines.size,
+    lines:[...x.lines]
+  })).sort((a,b)=>b.efficiency-a.efficiency||b.actual-a.actual);
 }
 
 function rankingRows(items,getName,getValue,getMeta){
