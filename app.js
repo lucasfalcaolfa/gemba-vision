@@ -33,6 +33,10 @@ function home(){
   '<section class="home-block">'+
     '<div class="home-block-title"><div><span>04 • NÃO QUALIDADE</span><h2>Defeitos e causas</h2></div><p>Prioridade visual por quantidade para facilitar a tomada de ação.</p></div>'+
     '<div class="panel home-wide-panel"><div id="homeYesterdayDefects"></div></div>'+
+  '</section>'+
+  '<section class="home-block">'+
+    '<div class="home-block-title"><div><span>05 • OCORRÊNCIAS</span><h2>Dispatches e contramedidas</h2></div><p>Eventos abertos no L2L e comentários registrados nos passos de produção.</p></div>'+
+    '<div class="panel home-wide-panel"><div id="homeYesterdayEvents"></div></div>'+
   '</section>';
 }
 function safety(){return '<div class="panel safety-live-panel"><div class="safety-live-head"><div><span>MOMENTO DE SEGURANÇA</span><h2 id="safetyWeekTitle">Safety Moments — Semana atual</h2><p id="safetyWeekMeta">Conteúdo organizado automaticamente a partir do PDF semanal.</p></div><div class="safety-mode-switch"><button id="safetyModeDynamic" class="active">▥ Visualização dinâmica</button><button id="safetyModeWeekly">▣ Semanal</button><a class="safety-open-pdf" href="SafetyMomentWeek_Current.pdf" target="_blank" rel="noopener">▤ Abrir PDF ↗</a></div></div><div class="safety-status" id="safetyStatus">Carregando Momento de Segurança...</div><section id="safetyDynamic" class="safety-dynamic"><div id="safetyDayCards" class="safety-day-cards"></div><div id="safetyDayDetail" class="safety-day-detail"></div></section><section id="safetyWeekly" class="safety-weekly" hidden><div class="safety-viewer"><canvas id="safetyCanvas"></canvas></div></section><div class="safety-help">O modo <b>Dinâmico</b> organiza a leitura do dia. O modo <b>Semanal</b> mantém o PDF oficial completo.</div></div>'}
@@ -2120,6 +2124,7 @@ async function initSafety(){
 let homeYesterdayRows=[];
 let homeYesterdayProductRows=[];
 let homeYesterdayScrapRows=[];
+let homeYesterdayContext={pitches:[],dispatches:[]};
 let homeYesterdayLoading=false;
 
 function previousDayISO(){
@@ -2172,11 +2177,34 @@ function homeDefectRows(rows){
   });
 }
 
-function homeDefectSummary(rows){
+function homeDefectSummary(rows,pitches=[]){
+  const pitchRows=Array.isArray(pitches)?pitches:[];
+  const findPitchComment=(row)=>{
+    const line=String(row.line||"").trim().toUpperCase();
+    const when=row.date?new Date(row.date).getTime():NaN;
+
+    const candidates=pitchRows.filter(p=>
+      String(p.line||"").trim().toUpperCase()===line &&
+      String(p.comment||"").trim()
+    );
+    if(!candidates.length)return "";
+
+    if(Number.isFinite(when)){
+      const exact=candidates.find(p=>{
+        const start=p.start?new Date(p.start).getTime():NaN;
+        const end=p.end?new Date(p.end).getTime():NaN;
+        return Number.isFinite(start)&&Number.isFinite(end)&&when>=start&&when<=end;
+      });
+      if(exact)return String(exact.comment||"").trim();
+    }
+    return String(candidates[0].comment||"").trim();
+  };
+
   const map={};
   homeDefectRows(rows).forEach(r=>{
     const defect=String(r.defect||"Sem descrição").trim()||"Sem descrição";
-    const cause=String(r.cause||"Sem causa registrada").trim()||"Sem causa registrada";
+    const pitchComment=findPitchComment(r);
+    const cause=String(r.cause||pitchComment||"Sem causa registrada").trim()||"Sem causa registrada";
     const key=defect+"|"+cause;
     if(!map[key])map[key]={defect,cause,qty:0,lines:new Set(),models:new Set()};
     map[key].qty+=n(r.scrap||1);
@@ -2186,6 +2214,53 @@ function homeDefectSummary(rows){
   return Object.values(map)
     .map(x=>({...x,lines:[...x.lines],models:[...x.models]}))
     .sort((a,b)=>b.qty-a.qty);
+}
+
+function homeTimeLabel(value){
+  if(!value)return "-";
+  const d=new Date(value);
+  if(Number.isNaN(d.getTime()))return String(value);
+  return d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit"});
+}
+
+function renderHomeEvents(){
+  const el=document.getElementById("homeYesterdayEvents");
+  if(!el)return;
+
+  const pitches=(homeYesterdayContext?.pitches||[]).filter(p=>String(p.comment||"").trim());
+  const dispatches=homeYesterdayContext?.dispatches||[];
+
+  const dispatchHtml=dispatches.length
+    ? '<div class="home-event-list">'+dispatches.map(d=>{
+        const reason=String(d.reason||"").trim();
+        return '<article class="home-event-card dispatch">'+
+          '<div class="home-event-head"><div><span>DISPATCH #'+stockEsc(String(d.number||d.id||"-"))+'</span><h3>'+stockEsc(d.dispatch_type||"Dispatch")+'</h3></div><b>'+homeTimeLabel(d.created)+'</b></div>'+
+          '<div class="home-event-meta"><span>'+stockEsc(d.line||"Sem linha")+'</span>'+(d.machine?'<span>'+stockEsc(d.machine)+'</span>':'')+'</div>'+
+          '<p>'+stockEsc(d.description||"Sem descrição registrada.")+'</p>'+
+          (reason?'<div class="home-event-reason"><span>Causa / motivo</span><strong>'+stockEsc(reason)+'</strong></div>':'')+
+        '</article>';
+      }).join("")+'</div>'
+    : '<div class="empty-state">Nenhum Dispatch da FND encontrado para o dia anterior.</div>';
+
+  const commentsHtml=pitches.length
+    ? '<div class="home-countermeasure-list">'+pitches.map(p=>
+        '<article class="home-countermeasure-card">'+
+          '<div class="home-countermeasure-time">'+homeTimeLabel(p.start)+'</div>'+
+          '<div><span>'+stockEsc(p.line||"Sem linha")+(p.product&&p.product!=="Sem modelo"?" • "+stockEsc(p.product):"")+'</span><p>'+stockEsc(p.comment)+'</p></div>'+
+          '<b>'+fmt(p.actual)+' / '+fmt(p.demand)+'</b>'+
+        '</article>'
+      ).join("")+'</div>'
+    : '<div class="empty-state">Nenhum comentário/contramedida de pitch foi registrado na FND no dia anterior.</div>';
+
+  el.innerHTML=
+    '<div class="home-events-summary">'+
+      '<div><span>Dispatches</span><strong>'+dispatches.length+'</strong><small>ocorrências localizadas</small></div>'+
+      '<div><span>Contramedidas</span><strong>'+pitches.length+'</strong><small>comentários de pitch</small></div>'+
+    '</div>'+
+    '<div class="home-events-grid">'+
+      '<section><div class="home-events-subtitle"><span>MANUTENÇÃO / OCORRÊNCIAS</span><h3>Dispatches</h3></div>'+dispatchHtml+'</section>'+
+      '<section><div class="home-events-subtitle"><span>PRODUÇÃO / PASSOS</span><h3>Comentários e contramedidas</h3></div>'+commentsHtml+'</section>'+
+    '</div>';
 }
 
 function renderHomeYesterday(){
@@ -2206,7 +2281,7 @@ function renderHomeYesterday(){
   const avgOee=groups.length?groups.reduce((s,g)=>s+n(g.oee),0)/groups.length:0;
 
   const products=homeProductSummary(homeYesterdayProductRows);
-  const defects=homeDefectSummary(homeYesterdayScrapRows);
+  const defects=homeDefectSummary(homeYesterdayScrapRows,homeYesterdayContext?.pitches||[]);
   const defectQty=defects.reduce((s,x)=>s+x.qty,0);
 
   const bestMachine=groups.length?[...groups].sort((a,b)=>b.oee-a.oee)[0]:null;
@@ -2282,6 +2357,8 @@ function renderHomeYesterday(){
         '</tbody></table></div>'
       : '<div class="empty-state home-empty-good"><strong>Sem não qualidade registrada.</strong><br>Nenhum defeito/scrap da FND foi encontrado no L2L para o dia anterior.</div>';
   }
+
+  renderHomeEvents();
 }
 
 async function refreshHomeYesterday(){
@@ -2292,15 +2369,17 @@ async function refreshHomeYesterday(){
 
   const day=previousDayISO();
   try{
-    const [summaryResult,productResult,scrapResult]=await Promise.allSettled([
+    const [summaryResult,productResult,scrapResult,contextResult]=await Promise.allSettled([
       window.L2L.getOeeSummaryWindow(day+" 00:00",day+" 23:59"),
       window.L2L.getDaily(day,"00:00","23:59"),
-      window.L2L.getScrapDetails(day,"00:00","23:59")
+      window.L2L.getScrapDetails(day,"00:00","23:59"),
+      window.L2L.getHomeContext(day,"00:00","23:59")
     ]);
 
     homeYesterdayRows=summaryResult.status==="fulfilled"?summaryResult.value:[];
     homeYesterdayProductRows=productResult.status==="fulfilled"?productResult.value:[];
     homeYesterdayScrapRows=scrapResult.status==="fulfilled"?scrapResult.value:[];
+    homeYesterdayContext=contextResult.status==="fulfilled"?contextResult.value:{pitches:[],dispatches:[]};
 
     if(summaryResult.status==="rejected")throw summaryResult.reason;
     l2lLastUpdate=new Date();
