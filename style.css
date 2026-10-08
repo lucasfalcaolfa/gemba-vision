@@ -8028,3 +8028,194 @@ body.home-nav-in-topbar .home-block{
     height:calc(100vh - 110px) !important;
   }
 }
+
+
+/* =========================================================
+   HOME EXECUTIVE HERO — PROFESSIONAL PROCESS HEADER
+   ========================================================= */
+body.home-nav-in-topbar #content .page{
+  padding-top:24px !important;
+}
+body.home-nav-in-topbar .home-executive-hero{
+  margin-top:0 !important;
+  overflow:hidden !important;
+  border:1px solid #dce6eb !important;
+  border-radius:14px !important;
+  background:#fff !important;
+  box-shadow:0 8px 24px rgba(8,31,47,.055) !important;
+}
+body.home-nav-in-topbar .home-executive-main{
+  min-height:108px !important;
+  padding:18px 20px 16px !important;
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) auto !important;
+  align-items:center !important;
+  gap:24px !important;
+  background:linear-gradient(180deg,#ffffff 0%,#fbfdfe 100%) !important;
+}
+body.home-nav-in-topbar .home-executive-copy{
+  min-width:0 !important;
+}
+body.home-nav-in-topbar .home-executive-kicker{
+  display:block !important;
+  margin-bottom:5px !important;
+  color:#718a9a !important;
+  font-size:7px !important;
+  font-weight:900 !important;
+  letter-spacing:1.35px !important;
+}
+body.home-nav-in-topbar .home-executive-copy h1{
+  margin:0 !important;
+  color:#0d2d43 !important;
+  font-size:23px !important;
+  line-height:1.12 !important;
+  font-weight:900 !important;
+  letter-spacing:-.25px !important;
+}
+body.home-nav-in-topbar .home-executive-copy p{
+  margin:6px 0 0 !important;
+  color:#748896 !important;
+  font-size:9px !important;
+  line-height:1.45 !important;
+}
+body.home-nav-in-topbar .home-executive-status{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:flex-end !important;
+  justify-content:center !important;
+  gap:6px !important;
+  min-width:320px !important;
+}
+body.home-nav-in-topbar .home-yesterday-status{
+  min-height:30px !important;
+  max-width:390px !important;
+  padding:0 12px !important;
+  border:1px solid #dce6eb !important;
+  background:#fff !important;
+  color:#506978 !important;
+  font-size:8px !important;
+  font-weight:800 !important;
+  box-shadow:0 3px 10px rgba(8,31,47,.035) !important;
+}
+body.home-nav-in-topbar .home-source-badge{
+  color:#8a9aa5 !important;
+  font-size:7px !important;
+  white-space:nowrap !important;
+}
+body.home-nav-in-topbar .home-executive-controls{
+  min-height:70px !important;
+  padding:10px 12px 10px 18px !important;
+  display:grid !important;
+  grid-template-columns:minmax(190px,1fr) minmax(430px,660px) !important;
+  align-items:center !important;
+  gap:24px !important;
+  border-top:1px solid #e6edf1 !important;
+  background:#f9fbfc !important;
+}
+body.home-nav-in-topbar .home-process-filter-copy{
+  min-width:0 !important;
+}
+body.home-nav-in-topbar .home-process-filter-copy span{
+  display:block !important;
+  margin-bottom:3px !important;
+  color:#7c909e !important;
+  font-size:7px !important;
+  font-weight:900 !important;
+  letter-spacing:1px !important;
+}
+body.home-nav-in-topbar .home-process-filter-copy strong{
+  display:block !important;
+  color:#17384f !important;
+  font-size:12px !important;
+  font-weight:900 !important;
+}
+body.home-nav-in-topbar .home-process-switch{
+  width:100% !important;
+  display:grid !important;
+  grid-template-columns:1fr 1fr !important;
+  gap:8px !important;
+  padding:0 !important;
+}
+body.home-nav-in-topbar .home-process-switch button{
+  min-height:48px !important;
+  padding:7px 12px !important;
+  display:grid !important;
+  grid-template-columns:32px minmax(0,1fr) !important;
+  align-items:center !important;
+  gap:10px !important;
+  border:1px solid #d7e2e8 !important;
+  border-radius:11px !important;
+  background:#fff !important;
+  color:#2c4a5d !important;
+  box-shadow:none !important;
+  transition:background .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease !important;
+}
+body.home-nav-in-topbar .home-process-switch button:hover{
+  transform:translateY(-1px) !important;
+  border-color:#bfd1da !important;
+  box-shadow:0 5px 14px rgba(8,31,47,.055) !important;
+}
+body.home-nav-in-topbar .home-process-switch button>span{
+  width:32px !important;
+  height:32px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border-radius:9px !important;
+  background:#edf3f6 !important;
+  color:#456b82 !important;
+  font-size:8px !important;
+  font-weight:900 !important;
+}
+body.home-nav-in-topbar .home-process-switch button div{
+  min-width:0 !important;
+  text-align:left !important;
+}
+body.home-nav-in-topbar .home-process-switch button b{
+  display:block !important;
+  margin-bottom:2px !important;
+  color:inherit !important;
+  font-size:10px !important;
+  font-weight:900 !important;
+}
+body.home-nav-in-topbar .home-process-switch button small{
+  display:block !important;
+  color:#82939e !important;
+  font-size:7px !important;
+  white-space:nowrap !important;
+}
+body.home-nav-in-topbar .home-process-switch button.active{
+  border-color:#164c6a !important;
+  background:linear-gradient(180deg,#124766 0%,#0d3c58 100%) !important;
+  color:#fff !important;
+  box-shadow:0 6px 15px rgba(9,49,75,.14) !important;
+}
+body.home-nav-in-topbar .home-process-switch button.active>span{
+  background:#2c6788 !important;
+  color:#fff !important;
+}
+body.home-nav-in-topbar .home-process-switch button.active small{
+  color:#c7d9e4 !important;
+}
+@media(max-width:1100px){
+  body.home-nav-in-topbar .home-executive-main{
+    grid-template-columns:1fr !important;
+    gap:12px !important;
+  }
+  body.home-nav-in-topbar .home-executive-status{
+    min-width:0 !important;
+    align-items:flex-start !important;
+  }
+  body.home-nav-in-topbar .home-executive-controls{
+    grid-template-columns:1fr !important;
+    gap:10px !important;
+  }
+}
+@media(max-width:700px){
+  body.home-nav-in-topbar #content .page{
+    padding-top:16px !important;
+  }
+  body.home-nav-in-topbar .home-process-switch{
+    grid-template-columns:1fr !important;
+  }
+}
