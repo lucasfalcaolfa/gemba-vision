@@ -24,7 +24,7 @@ function home(){
       '</div>'+
     '</div>'+
     '<div class="home-executive-controls">'+
-      '<div class="home-process-filter-copy"><span>PROCESSO</span><strong>Selecione a operação</strong><small>Todos os indicadores abaixo acompanham esta seleção.</small></div>'+
+      '<div class="home-process-filter-copy"><span>PROCESSO</span><strong>Selecione a operação</strong></div>'+
       '<div class="home-process-switch" role="group" aria-label="Processo da FND">'+
         '<button id="homeProcessInjection" class="active" type="button" onclick="setHomeProcessFilter(\'injecao\')"><span>INJ</span><div><b>Injetoras</b><small>Linhas de injeção FND</small></div></button>'+
         '<button id="homeProcessFinishing" type="button" onclick="setHomeProcessFilter(\'acabamento\')"><span>ACB</span><div><b>Acabamento</b><small>Linhas FND_ACAB</small></div></button>'+
@@ -46,11 +46,11 @@ function home(){
   '</section>'+
   '<section class="home-block" id="home-production">'+
     '<div class="home-block-title"><div><span>02 • PRODUÇÃO</span><h2>Plano x realizado</h2></div><p>Resultado consolidado da janela operacional.</p></div>'+
-    '<article class="panel home-focus-panel home-production-panel"><div class="home-section-head"><div><span>DEMANDA X REAL</span><h2>Performance de produção</h2></div></div><div id="homeYesterdayProduction"></div></article>'+
+    '<article class="panel home-focus-panel home-production-panel"><div id="homeYesterdayProduction"></div></article>'+
   '</section>'+
   '<section class="home-block" id="home-flow">'+
     '<div class="home-block-title"><div><span>03 • FLUXO DE PRODUTOS</span><h2>Produtos por processo e turno</h2></div><p>Injetoras e Acabamento separados, dentro da mesma visão.</p></div>'+
-    '<article class="panel home-wide-panel home-products-panel"><div class="home-section-head"><div><span>MIX PRODUZIDO</span><h2>Injetoras → Acabamento</h2></div></div><div id="homeYesterdayModels"></div></article>'+
+    '<article class="panel home-wide-panel home-products-panel"><div id="homeYesterdayModels"></div></article>'+
   '</section>'+
   '<section class="home-block" id="home-efficiency">'+
     '<div class="home-block-title"><div><span>04 • EFICIÊNCIA</span><h2>OEE por linha</h2></div><p>OEE, OA, PPP, Yield e produção de cada máquina.</p></div>'+
@@ -2493,8 +2493,7 @@ function renderHomeEvents(){
 
   el.innerHTML=
     '<div class="home-events-toolbar">'+
-      '<div class="home-events-summary">'+
-        '<div><span>Processo</span><strong>'+processLabel+'</strong><small>Filtro ativo</small></div>'+
+      '<div class="home-events-summary home-events-summary-compact">'+
         '<div><span>Dispatches</span><strong>'+dispatches.length+'</strong><small>'+dispatchLines.size+' linha(s) afetada(s)</small></div>'+
         '<div><span>Contramedidas</span><strong>'+pitches.length+'</strong><small>'+commentLines.size+' linha(s) com comentário</small></div>'+
       '</div>'+
@@ -2738,12 +2737,15 @@ function renderHomeYesterday(){
     const pct=Math.max(0,Math.min(100,attainment));
     const gap=actual-demand;
     prod.innerHTML=
-      '<div class="home-selected-process"><span>PROCESSO SELECIONADO</span><b>'+processLabel+'</b></div>'+
-      '<div class="home-production-hero">'+
-        '<div class="home-prod-main"><span>Atingimento</span><strong class="'+(attainment>=100?"good":attainment>=95?"warn":"bad")+'">'+fmtPct(attainment)+'</strong><small>'+(gap>=0?"+":"")+fmt(gap)+' peças vs. demanda</small></div>'+
-        '<div class="home-prod-pairs"><div><span>Demanda</span><strong>'+fmt(demand)+'</strong></div><div><span>Produção real</span><strong>'+fmt(actual)+'</strong></div><div><span>Scrap</span><strong>'+fmt(scrap)+'</strong></div><div><span>Líquido</span><strong>'+fmt(net)+'</strong></div></div>'+
+      '<div class="home-production-focus">'+
+        '<div class="home-prod-main"><span>Atingimento do plano</span><strong class="'+(attainment>=100?"good":attainment>=95?"warn":"bad")+'">'+fmtPct(attainment)+'</strong><small>'+(gap>=0?"+":"")+fmt(gap)+' peças em relação à demanda</small></div>'+
+        '<div class="home-production-insight">'+
+          '<span>Situação</span>'+
+          '<strong>'+(attainment>=100?"Meta atingida":attainment>=95?"Próximo da meta":"Abaixo da meta")+'</strong>'+
+          '<small>Referência operacional: 95% ou mais.</small>'+
+        '</div>'+
       '</div>'+
-      '<div class="home-prod-progress"><div class="home-prod-progress-head"><span>Progresso contra demanda</span><b>'+fmtPct(attainment)+'</b></div><div class="home-prod-track"><i style="width:'+pct+'%"></i><em style="left:95%"></em></div><div class="home-prod-scale"><span>0%</span><span>Meta mínima 95%</span><span>100%</span></div></div>';
+      '<div class="home-prod-progress"><div class="home-prod-progress-head"><span>Progresso contra demanda</span><b>'+fmtPct(attainment)+'</b></div><div class="home-prod-track"><i style="width:'+pct+'%"></i><em style="left:95%"></em></div><div class="home-prod-scale"><span>0%</span><span>Meta 95%</span><span>100%</span></div></div>';
   }
 
   const models=document.getElementById("homeYesterdayModels");
@@ -2754,7 +2756,7 @@ function renderHomeYesterday(){
 
     models.innerHTML=count
       ? '<section class="home-process-products '+processClass+'">'+
-          '<div class="home-process-products-head"><div><span>PROCESSO SELECIONADO</span><h3>'+processLabel+'</h3><p>Produtos registrados por turno na janela operacional.</p></div><div><strong>'+count+'</strong><small>produto(s)</small><b>'+fmt(actualTotal)+' peças</b></div></div>'+
+          '<div class="home-process-products-head"><div><span>PRODUTOS POR TURNO</span><h3>'+processLabel+'</h3></div><div><strong>'+count+'</strong><small>produto(s)</small><b>'+fmt(actualTotal)+' peças</b></div></div>'+
           '<div class="home-shift-product-grid">'+shiftProducts.map(group=>{
             const total=group.products.reduce((s,p)=>s+p.actual,0);
             return '<section class="home-shift-product-card shift-'+group.shift+'">'+
