@@ -2132,6 +2132,22 @@ function previousDayISO(){
   d.setDate(d.getDate()-1);
   return localIsoDate(d);
 }
+function nextDayISO(iso){
+  const d=new Date((iso||todayISO())+"T00:00:00");
+  d.setDate(d.getDate()+1);
+  return localIsoDate(d);
+}
+
+function homeOperationalWindow(){
+  const startDate=previousDayISO();
+  const endDate=nextDayISO(startDate);
+  return {
+    startDate,
+    endDate,
+    start:startDate+" 07:00",
+    end:endDate+" 07:00"
+  };
+}
 
 function isFndArea(value){
   const text=String(value||"").trim().toUpperCase();
@@ -2285,10 +2301,12 @@ function renderHomeEvents(){
 function renderHomeYesterday(){
   if(currentPage!=="home")return;
 
-  const day=previousDayISO();
+  const windowRange=homeOperationalWindow();
+  const day=windowRange.startDate;
   const dateLabel=day.split("-").reverse().join("/");
+  const endLabel=windowRange.endDate.split("-").reverse().join("/");
   const title=document.getElementById("homeYesterdayTitle");
-  if(title)title.textContent="Resumo de "+dateLabel+" • FND";
+  if(title)title.textContent="Resumo FND • "+dateLabel+" 07:00 → "+endLabel+" 07:00";
 
   const fndRows=homeFndRows(homeYesterdayRows);
   const groups=sortOeeCardsByLine(groupedByLine(fndRows));
@@ -2308,7 +2326,7 @@ function renderHomeYesterday(){
   const topDefect=defects[0]||null;
 
   const status=document.getElementById("homeYesterdayStatus");
-  if(status)status.textContent=liveStamp()+" • FND • "+dateLabel;
+  if(status)status.textContent=liveStamp()+" • FND • "+dateLabel+" 07:00 → "+endLabel+" 07:00";
 
   const kpis=document.getElementById("homeYesterdayKpis");
   if(kpis)kpis.innerHTML=
@@ -2383,15 +2401,15 @@ async function refreshHomeYesterday(){
   if(homeYesterdayLoading)return;
   homeYesterdayLoading=true;
   const status=document.getElementById("homeYesterdayStatus");
-  if(status)status.textContent="🟡 Consultando resumo FND do dia anterior...";
+  if(status)status.textContent="🟡 Consultando FND • janela operacional 07:00 → 07:00...";
 
-  const day=previousDayISO();
+  const windowRange=homeOperationalWindow();
   try{
     const [summaryResult,productResult,scrapResult,contextResult]=await Promise.allSettled([
-      window.L2L.getOeeSummaryWindow(day+" 00:00",day+" 23:59"),
-      window.L2L.getDaily(day,"00:00","23:59"),
-      window.L2L.getScrapDetails(day,"00:00","23:59"),
-      window.L2L.getHomeContext(day,"00:00","23:59")
+      window.L2L.getOeeSummaryWindow(windowRange.start,windowRange.end),
+      window.L2L.getDailyWindow(windowRange.start,windowRange.end),
+      window.L2L.getScrapDetailsWindow(windowRange.start,windowRange.end),
+      window.L2L.getHomeContextWindow(windowRange.start,windowRange.end)
     ]);
 
     homeYesterdayRows=summaryResult.status==="fulfilled"?summaryResult.value:[];
@@ -2403,7 +2421,7 @@ async function refreshHomeYesterday(){
     l2lLastUpdate=new Date();
     if(currentPage==="home")renderHomeYesterday();
   }catch(err){
-    if(status)status.textContent="🔴 Não foi possível carregar o resumo FND: "+(err.message||"falha no L2L");
+    if(status)status.textContent="🔴 Não foi possível carregar o resumo FND 07:00 → 07:00: "+(err.message||"falha no L2L");
     if(currentPage==="home")renderHomeYesterday();
   }finally{
     homeYesterdayLoading=false;
