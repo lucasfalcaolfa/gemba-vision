@@ -12,30 +12,34 @@ function shell(p){return '<div class="page"><div class="page-head"><div><h1>'+p.
 function card(label,value,cls=""){return '<div class="card"><div class="label">'+label+'</div><div class="value '+cls+'">'+value+'</div></div>'}
 function home(){
   return '<section class="home-command panel">'+
-    '<div class="home-command-copy"><span>GESTÃO À VISTA • FND</span><h2 id="homeYesterdayTitle">Resumo do dia anterior</h2><p>Leitura executiva da Fundição: produção, modelos, eficiência e não qualidade.</p></div>'+
-    '<div class="home-command-side"><div class="home-yesterday-status" id="homeYesterdayStatus">🟡 Consultando L2L...</div><div class="home-source-badge">Fonte: L2L • atualização automática</div></div>'+
+    '<div class="home-command-copy"><span>GESTÃO À VISTA • FND</span><h2 id="homeYesterdayTitle">Resumo operacional</h2><p>Janela oficial da Fundição: 07:00 de um dia até 07:00 do dia seguinte.</p></div>'+
+    '<div class="home-command-side"><div class="home-yesterday-status" id="homeYesterdayStatus">🟡 Consultando L2L...</div><div class="home-source-badge">Fonte: L2L • atualização automática a cada 1 minuto</div></div>'+
   '</section>'+
-  '<section class="home-block">'+
-    '<div class="home-block-title"><div><span>01 • RESULTADO DO DIA</span><h2>Resumo executivo</h2></div><p>Os principais números da FND em uma única leitura.</p></div>'+
+  '<nav class="home-quick-nav" aria-label="Resumo da Visão Geral">'+
+    '<a href="#home-result">Resultado</a><a href="#home-production">Produção</a><a href="#home-flow">Produtos</a><a href="#home-efficiency">OEE</a><a href="#home-quality">Não Qualidade</a><a href="#home-events">Ocorrências</a>'+
+  '</nav>'+
+  '<section class="home-block" id="home-result">'+
+    '<div class="home-block-title"><div><span>01 • RESULTADO DO DIA</span><h2>Resumo executivo</h2></div><p>Principais indicadores da FND para leitura rápida.</p></div>'+
     '<div class="home-yesterday-kpis" id="homeYesterdayKpis"></div>'+
   '</section>'+
-  '<section class="home-block">'+
-    '<div class="home-block-title"><div><span>02 • PRODUÇÃO</span><h2>Plano x realizado</h2></div><p>Demanda, produção real e modelos que passaram no processo.</p></div>'+
-    '<div class="home-yesterday-grid">'+
-      '<article class="panel home-focus-panel"><div class="home-section-head"><div><span>DEMANDA X REAL</span><h2>Performance de produção</h2></div></div><div id="homeYesterdayProduction"></div></article>'+
-      '<article class="panel home-focus-panel"><div class="home-section-head"><div><span>MIX PRODUZIDO</span><h2>Modelos do dia</h2></div></div><div id="homeYesterdayModels"></div></article>'+
-    '</div>'+
+  '<section class="home-block" id="home-production">'+
+    '<div class="home-block-title"><div><span>02 • PRODUÇÃO</span><h2>Plano x realizado</h2></div><p>Resultado consolidado da janela operacional.</p></div>'+
+    '<article class="panel home-focus-panel home-production-panel"><div class="home-section-head"><div><span>DEMANDA X REAL</span><h2>Performance de produção</h2></div></div><div id="homeYesterdayProduction"></div></article>'+
   '</section>'+
-  '<section class="home-block">'+
-    '<div class="home-block-title"><div><span>03 • EFICIÊNCIA</span><h2>Desempenho por máquina</h2></div><p>OEE oficial do L2L com OA, PPP, Yield e produção.</p></div>'+
+  '<section class="home-block" id="home-flow">'+
+    '<div class="home-block-title"><div><span>03 • FLUXO DE PRODUTOS</span><h2>Produtos por processo e turno</h2></div><p>Injetoras e Acabamento separados, dentro da mesma visão.</p></div>'+
+    '<article class="panel home-wide-panel home-products-panel"><div class="home-section-head"><div><span>MIX PRODUZIDO</span><h2>Injetoras → Acabamento</h2></div></div><div id="homeYesterdayModels"></div></article>'+
+  '</section>'+
+  '<section class="home-block" id="home-efficiency">'+
+    '<div class="home-block-title"><div><span>04 • EFICIÊNCIA</span><h2>OEE por linha</h2></div><p>OEE, OA, PPP, Yield e produção de cada máquina.</p></div>'+
     '<div class="panel home-wide-panel"><div id="homeYesterdayOee"></div></div>'+
   '</section>'+
-  '<section class="home-block">'+
-    '<div class="home-block-title"><div><span>04 • NÃO QUALIDADE</span><h2>Defeitos e causas</h2></div><p>Prioridade visual por quantidade para facilitar a tomada de ação.</p></div>'+
+  '<section class="home-block" id="home-quality">'+
+    '<div class="home-block-title"><div><span>05 • NÃO QUALIDADE</span><h2>Defeitos registrados</h2></div><p>Ocorrências priorizadas por quantidade, linha e modelo.</p></div>'+
     '<div class="panel home-wide-panel"><div id="homeYesterdayDefects"></div></div>'+
   '</section>'+
-  '<section class="home-block">'+
-    '<div class="home-block-title"><div><span>05 • OCORRÊNCIAS</span><h2>Dispatches e contramedidas</h2></div><p>Eventos abertos no L2L e comentários registrados nos passos de produção.</p></div>'+
+  '<section class="home-block" id="home-events">'+
+    '<div class="home-block-title"><div><span>06 • OCORRÊNCIAS</span><h2>Dispatches e contramedidas</h2></div><p>Eventos de manutenção e registros de produção do período.</p></div>'+
     '<div class="panel home-wide-panel"><div id="homeYesterdayEvents"></div></div>'+
   '</section>';
 }
