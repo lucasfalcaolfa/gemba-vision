@@ -2103,21 +2103,22 @@ function groupedByLine(rows){
   const map={};
   rows.forEach(r=>{
     const key=r.line||"Sem linha";
-    if(!map[key])map[key]={line:key,area:r.area||"",demand:0,actual:0,scrap:0,oee:[],availability:[],performance:[],quality:[]};
+    if(!map[key])map[key]={line:key,area:r.area||"",demand:0,actual:0,scrap:0,availability:[],performance:[],quality:[]};
     const g=map[key];
-    g.demand+=n(r.demand);g.actual+=n(r.actual);g.scrap+=n(r.scrap);
-    if(r.overall_equipment_effectiveness!==null&&r.overall_equipment_effectiveness!==undefined)g.oee.push(n(r.overall_equipment_effectiveness));
+    g.demand+=n(r.demand);
+    g.actual+=n(r.actual);
+    g.scrap+=n(r.scrap);
     if(r.operational_availability!==null&&r.operational_availability!==undefined)g.availability.push(n(r.operational_availability));
-    if(r.peff!==null&&r.peff!==undefined)g.performance.push(n(r.peff));
+    if(r.ppp!==null&&r.ppp!==undefined)g.performance.push(n(r.ppp));
     if(r.yield!==null&&r.yield!==undefined)g.quality.push(n(r.yield));
   });
-  return Object.values(map).map(g=>({
-    ...g,
-    oee:g.oee.length?g.oee.reduce((a,b)=>a+b,0)/g.oee.length:0,
-    availability:g.availability.length?g.availability.reduce((a,b)=>a+b,0)/g.availability.length:0,
-    performance:g.performance.length?g.performance.reduce((a,b)=>a+b,0)/g.performance.length:0,
-    quality:g.quality.length?g.quality.reduce((a,b)=>a+b,0)/g.quality.length:0
-  })).sort((a,b)=>a.line.localeCompare(b.line));
+  return Object.values(map).map(g=>{
+    const availability=g.availability.length?g.availability.reduce((a,b)=>a+b,0)/g.availability.length:0;
+    const performance=g.performance.length?g.performance.reduce((a,b)=>a+b,0)/g.performance.length:0;
+    const quality=g.quality.length?g.quality.reduce((a,b)=>a+b,0)/g.quality.length:0;
+    const oee=(availability*performance*quality)/10000;
+    return {...g,oee,availability,performance,quality};
+  }).sort((a,b)=>a.line.localeCompare(b.line));
 }
 
 function extractProductRows(rows){
@@ -2178,7 +2179,7 @@ function applyLiveData(page){
   if(page==="home"){
     const groups=groupedByLine(l2lRows);
     const demand=total(l2lRows,"demand"),actual=total(l2lRows,"actual"),scrap=total(l2lRows,"scrap");
-    const oeeAvg=avg(l2lRows,"overall_equipment_effectiveness"), perf=avg(l2lRows,"peff"), qual=avg(l2lRows,"yield");
+    const homeGroups=groupedByLine(l2lRows); const oeeAvg=homeGroups.length?homeGroups.reduce((s,g)=>s+g.oee,0)/homeGroups.length:0, perf=homeGroups.length?homeGroups.reduce((s,g)=>s+g.performance,0)/homeGroups.length:0, qual=homeGroups.length?homeGroups.reduce((s,g)=>s+g.quality,0)/homeGroups.length:0;
     const cards=document.querySelectorAll(".cards .card .value");
     if(cards[0])cards[0].textContent=fmtPct(oeeAvg);
     if(cards[1])cards[1].textContent=fmtPct(perf);
