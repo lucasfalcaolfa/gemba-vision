@@ -6926,3 +6926,157 @@ a:focus-visible{
     font-size:7px;
   }
 }
+
+/* Scrap detail — defects by shift and product */
+.scrap-shift-overview{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin:14px 0;
+}
+.scrap-shift-card{
+  border:1px solid #dfe7ec;
+  border-radius:12px;
+  background:#fff;
+  overflow:hidden;
+  box-shadow:0 4px 12px rgba(8,31,47,.035);
+}
+.scrap-shift-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:10px;
+  padding:12px 13px;
+  border-bottom:1px solid #e7edf0;
+  background:linear-gradient(180deg,#fbfcfd 0%,#f6f9fb 100%);
+}
+.scrap-shift-head span{
+  display:block;
+  font-size:6.5px;
+  font-weight:900;
+  letter-spacing:.7px;
+  color:#7d909d;
+}
+.scrap-shift-head h3{
+  margin:2px 0 0;
+  font-size:12px;
+  color:#173247;
+}
+.scrap-shift-head small{
+  display:block;
+  margin-top:2px;
+  font-size:7px;
+  color:#8797a1;
+}
+.scrap-shift-head>b{
+  padding:5px 8px;
+  border-radius:999px;
+  background:#eef4f7;
+  color:#496779;
+  font-size:7px;
+  white-space:nowrap;
+}
+.scrap-shift-columns{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+  padding:11px 12px;
+}
+.scrap-shift-columns>div>span{
+  display:block;
+  margin-bottom:7px;
+  font-size:7px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.55px;
+  color:#7b8f9b;
+}
+.scrap-shift-columns p{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  margin:0 0 6px;
+  padding:6px 7px;
+  border-radius:7px;
+  background:#f7fafb;
+}
+.scrap-shift-columns p:last-child{margin-bottom:0}
+.scrap-shift-columns p b{
+  min-width:0;
+  font-size:7.5px;
+  color:#28485c;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.scrap-shift-columns p em{
+  flex:0 0 auto;
+  font-size:7px;
+  font-style:normal;
+  font-weight:900;
+  color:#b3443f;
+}
+.scrap-occurrence-head{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+}
+.scrap-occurrence-head span{
+  display:block;
+  font-size:6.5px;
+  font-weight:900;
+  letter-spacing:.7px;
+  color:#7f919d;
+}
+.scrap-occurrence-head h3{
+  margin:2px 0 0;
+  font-size:12px;
+  color:#173247;
+}
+.scrap-occurrence-head small{
+  color:#8798a2;
+  font-size:7px;
+}
+.scrap-shift-chip,
+.scrap-source-chip{
+  display:inline-flex;
+  align-items:center;
+  min-height:22px;
+  padding:0 7px;
+  border-radius:999px;
+  font-size:7px;
+  font-weight:900;
+  white-space:nowrap;
+}
+.scrap-shift-chip{
+  background:#eef5f8;
+  color:#345f76;
+}
+.scrap-source-chip.detail{
+  background:#edf8f2;
+  color:#28724f;
+}
+.scrap-source-chip.dispatch{
+  background:#fff4e6;
+  color:#9a6815;
+}
+.scrap-detail-table td strong{
+  color:#173247;
+}
+@media(max-width:1100px){
+  .scrap-shift-overview{
+    grid-template-columns:1fr;
+  }
+}
+@media(max-width:700px){
+  .scrap-shift-columns{
+    grid-template-columns:1fr;
+  }
+  .scrap-occurrence-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+}
