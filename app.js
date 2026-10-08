@@ -69,7 +69,25 @@ const oeeData=[
 ];
 function pct(v){return v.toLocaleString("pt-BR",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"}
 function oee(){
-return '<div class="panel oee-filter-panel"><div class="oee-filter-head"><div><h2>Filtros de eficiência</h2><p>Selecione os filtros e clique em Aplicar filtros. Turnos: 1º 07:00–17:00 • 2º 17:00–02:00 • 3º 02:00–07:00.</p></div><div class="oee-filter-actions"><button class="filter-apply premium-apply" id="oeeApply"><span>✓</span> Aplicar filtros</button><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div></div><div class="oee-filters oee-filters-live oee-filters-datetime"><label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label><label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label><label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno • 07:00–17:00</option><option value="2">2º Turno • 17:00–02:00</option><option value="3">3º Turno • 02:00–07:00</option></select></label><label>Data / hora inicial<input id="oeeStartAt" type="datetime-local"></label><label>Data / hora final<input id="oeeEndAt" type="datetime-local"></label></div><div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div></div><div class="cards" id="oeeCards"></div><div class="section-grid oee-section-grid"><div class="panel"><h2>Comparativo de eficiência por linha</h2><div id="oeeTable"></div></div><div class="panel oee-chart-panel"><h2>Modelos com melhor eficiência</h2><div id="oeeChart"></div><div class="footer-note">Ranking conforme os filtros selecionados • atualização automática a cada 1 minuto.</div></div></div>';
+return '<div class="panel oee-filter-panel">'+
+  '<div class="oee-filter-head">'+
+    '<div><h2>Filtros de eficiência</h2><p>Filtros automáticos • qualquer alteração atualiza os dados do L2L imediatamente. Turnos: 1º 07:00–17:00 • 2º 17:00–02:00 • 3º 02:00–07:00.</p></div>'+
+    '<div class="oee-filter-actions"><div class="oee-auto-badge"><i></i><span>Atualização automática</span></div><button class="filter-reset" id="oeeReset">↺ Limpar filtros</button></div>'+
+  '</div>'+
+  '<div class="oee-filters oee-filters-live oee-filters-datetime">'+
+    '<label>Setor<select id="oeeArea"><option value="Todas">Toda a fábrica</option></select></label>'+
+    '<label>Linha<select id="oeeLinha"><option value="Todas">Todas as linhas</option></select></label>'+
+    '<label>Turno<select id="oeeShift"><option value="Todos">Todos os turnos</option><option value="1">1º Turno • 07:00–17:00</option><option value="2">2º Turno • 17:00–02:00</option><option value="3">3º Turno • 02:00–07:00</option></select></label>'+
+    '<label>Data / hora inicial<input id="oeeStartAt" type="datetime-local"></label>'+
+    '<label>Data / hora final<input id="oeeEndAt" type="datetime-local"></label>'+
+  '</div>'+
+  '<div class="filter-context" id="oeeContext">🟡 L2L: carregando...</div>'+
+'</div>'+
+'<div class="cards" id="oeeCards"></div>'+
+'<div class="section-grid oee-section-grid">'+
+  '<div class="panel"><h2>Comparativo de eficiência por linha</h2><div id="oeeTable"></div></div>'+
+  '<div class="panel oee-chart-panel"><h2>Modelos com melhor eficiência</h2><div id="oeeChart"></div><div class="footer-note">Ranking conforme os filtros selecionados • atualização automática a cada 1 minuto.</div></div>'+
+'</div>';
 }
 
 function dateTimeLocalValue(date,time){
@@ -219,12 +237,12 @@ function initOee(){
   const shift=document.getElementById("oeeShift");
   const startAt=document.getElementById("oeeStartAt");
   const endAt=document.getElementById("oeeEndAt");
-  const apply=document.getElementById("oeeApply");
   const reset=document.getElementById("oeeReset");
-  if(!area||!line||!shift||!startAt||!endAt||!apply||!reset)return;
+  if(!area||!line||!shift||!startAt||!endAt||!reset)return;
 
   if(!oeeFilterState.startDate)oeeFilterState.startDate=todayISO();
   if(!oeeFilterState.endDate)oeeFilterState.endDate=oeeFilterState.startDate;
+
   populateOeeFilters();
   area.value=oeeFilterState.area;
   line.value=oeeFilterState.line;
@@ -232,57 +250,82 @@ function initOee(){
   startAt.value=dateTimeLocalValue(oeeFilterState.startDate,oeeFilterState.start);
   endAt.value=dateTimeLocalValue(oeeFilterState.endDate,oeeFilterState.end);
 
+  let autoTimer=null;
+  let requestSerial=0;
+
   function refreshLineOptionsForDraft(){
     const source=oeeRows.length?oeeRows:l2lRows;
     const selectedArea=area.value;
-    const lines=[...new Set(source.filter(r=>selectedArea==="Todas"||r.area===selectedArea).map(r=>r.line).filter(Boolean))]
-      .sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
+    const lines=[...new Set(
+      source
+        .filter(r=>selectedArea==="Todas"||r.area===selectedArea)
+        .map(r=>r.line)
+        .filter(Boolean)
+    )].sort((a,b)=>oeeLineNumber(a)-oeeLineNumber(b)||String(a).localeCompare(String(b),"pt-BR",{numeric:true,sensitivity:"base"}));
+
     const current=line.value;
     line.innerHTML='<option value="Todas">Todas as linhas</option>'+lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
     line.value=lines.includes(current)?current:"Todas";
   }
 
-  area.addEventListener("change",refreshLineOptionsForDraft);
+  function syncStateFromControls(){
+    const first=splitDateTimeLocal(startAt.value,todayISO(),"00:00");
+    const last=splitDateTimeLocal(endAt.value,first.date,"23:59");
 
-  apply.addEventListener("click",async()=>{
-    apply.disabled=true;
-    apply.classList.add("loading");
-    apply.innerHTML='<span>⏳</span> Aplicando...';
-    try{
-      const first=splitDateTimeLocal(startAt.value,todayISO(),"00:00");
-      const last=splitDateTimeLocal(endAt.value,first.date,"23:59");
-      oeeFilterState.area=area.value;
-      oeeFilterState.line=line.value;
-      oeeFilterState.shift=shift.value;
-      oeeFilterState.startDate=first.date;
-      oeeFilterState.endDate=last.date<first.date?first.date:last.date;
-      oeeFilterState.start=first.time;
-      oeeFilterState.end=last.time;
+    oeeFilterState.area=area.value;
+    oeeFilterState.line=line.value;
+    oeeFilterState.shift=shift.value;
+    oeeFilterState.startDate=first.date;
+    oeeFilterState.endDate=last.date<first.date?first.date:last.date;
+    oeeFilterState.start=first.time;
+    oeeFilterState.end=last.time;
 
-      if(oeeFilterState.shift==="1"){
-        oeeFilterState.start="07:00";
-        oeeFilterState.end="17:00";
-      }else if(oeeFilterState.shift==="2"){
-        oeeFilterState.start="17:00";
-        oeeFilterState.end="02:00";
-      }else if(oeeFilterState.shift==="3"){
-        oeeFilterState.start="02:00";
-        oeeFilterState.end="07:00";
-      }
-      if(oeeFilterState.shift==="Todos"&&oeeFilterState.endDate===oeeFilterState.startDate&&oeeFilterState.end<=oeeFilterState.start){
-        oeeFilterState.end="23:59";
-        endAt.value=dateTimeLocalValue(oeeFilterState.endDate,oeeFilterState.end);
-      }
-      await refreshOeeRange();
-      renderOeeLive();
-    }finally{
-      apply.disabled=false;
-      apply.classList.remove("loading");
-      apply.innerHTML='<span>✓</span> Aplicar filtros';
+    if(oeeFilterState.shift==="1"){
+      oeeFilterState.start="07:00";
+      oeeFilterState.end="17:00";
+    }else if(oeeFilterState.shift==="2"){
+      oeeFilterState.start="17:00";
+      oeeFilterState.end="02:00";
+    }else if(oeeFilterState.shift==="3"){
+      oeeFilterState.start="02:00";
+      oeeFilterState.end="07:00";
+    }else if(oeeFilterState.endDate===oeeFilterState.startDate&&oeeFilterState.end<=oeeFilterState.start){
+      oeeFilterState.end="23:59";
+      endAt.value=dateTimeLocalValue(oeeFilterState.endDate,oeeFilterState.end);
     }
+  }
+
+  async function runAutoRefresh(){
+    const serial=++requestSerial;
+    syncStateFromControls();
+
+    const ctx=document.getElementById("oeeContext");
+    if(ctx)ctx.textContent="🟡 Atualizando automaticamente com dados do L2L...";
+
+    await refreshOeeRange();
+
+    if(serial!==requestSerial)return;
+    if(currentPage==="oee")renderOeeLive();
+  }
+
+  function scheduleAutoRefresh(delay=350){
+    clearTimeout(autoTimer);
+    autoTimer=setTimeout(runAutoRefresh,delay);
+  }
+
+  area.addEventListener("change",()=>{
+    refreshLineOptionsForDraft();
+    line.value="Todas";
+    scheduleAutoRefresh(100);
   });
 
+  line.addEventListener("change",()=>scheduleAutoRefresh(100));
+  shift.addEventListener("change",()=>scheduleAutoRefresh(100));
+  startAt.addEventListener("change",()=>scheduleAutoRefresh(250));
+  endAt.addEventListener("change",()=>scheduleAutoRefresh(250));
+
   reset.addEventListener("click",async()=>{
+    clearTimeout(autoTimer);
     oeeFilterState.area="Todas";
     oeeFilterState.line="Todas";
     oeeFilterState.shift="Todos";
@@ -290,16 +333,18 @@ function initOee(){
     oeeFilterState.endDate=todayISO();
     oeeFilterState.start="00:00";
     oeeFilterState.end="23:59";
+
     area.value="Todas";
     shift.value="Todos";
     refreshLineOptionsForDraft();
     line.value="Todas";
     startAt.value=dateTimeLocalValue(oeeFilterState.startDate,oeeFilterState.start);
     endAt.value=dateTimeLocalValue(oeeFilterState.endDate,oeeFilterState.end);
-    await refreshOeeRange();
+
+    await runAutoRefresh();
   });
 
-  if(!oeeRows.length)refreshOeeRange();
+  if(!oeeRows.length)runAutoRefresh();
   else renderOeeLive();
 }
 
