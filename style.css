@@ -4090,3 +4090,36 @@ nav.home-quick-nav .home-quick-link b{
     grid-template-columns:1fr;
   }
 }
+
+/* Live OEE comparison status */
+.oee-live-rank-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:10px;
+  padding:8px 10px;
+  border:1px solid #e1e8ec;
+  border-radius:9px;
+  background:#f8fbfc;
+}
+.oee-live-rank-head span{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  font-size:8px;
+  font-weight:800;
+  color:#4d697b;
+}
+.oee-live-rank-head span i{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#2ebd77;
+  box-shadow:0 0 0 3px rgba(46,189,119,.12);
+}
+.oee-live-rank-head b{
+  font-size:8px;
+  color:#6f8390;
+  font-weight:700;
+}
