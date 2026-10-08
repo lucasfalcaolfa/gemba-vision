@@ -1,5 +1,5 @@
-import { AppShell } from "@/components/AppShell";
+import { OverviewPage } from "@/components/pages/OverviewPage";
 
 export default function Page() {
-  return <AppShell />;
+  return <OverviewPage />;
 }
