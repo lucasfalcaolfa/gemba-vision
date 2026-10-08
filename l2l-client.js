@@ -36,6 +36,42 @@ window.L2L = {
     }
     return Array.isArray(payload.data) ? payload.data : [];
   },
+  async getOeeShiftRange(startDate, endDate, shift = "Todos", startTime = "00:00", endTime = "23:59") {
+    const first = startDate || new Date().toISOString().slice(0, 10);
+    const last = endDate || first;
+
+    const addDay = (iso, days = 1) => {
+      const d = new Date(iso + "T00:00:00");
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0, 10);
+    };
+
+    if (shift === "1" || shift === "2" || shift === "3") {
+      const dates = [];
+      const cursor = new Date(first + "T00:00:00");
+      const finish = new Date(last + "T00:00:00");
+      while (cursor <= finish) {
+        dates.push(cursor.toISOString().slice(0, 10));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
+      const windows = dates.map(day => {
+        if (shift === "1") return [day + " 07:00", day + " 17:00"];
+        if (shift === "2") return [day + " 17:00", addDay(day) + " 02:00"];
+        return [day + " 02:00", day + " 07:00"];
+      });
+
+      const results = await Promise.all(
+        windows.map(([start, end]) => this.getOeeSummaryWindow(start, end))
+      );
+      return results.flat();
+    }
+
+    return this.getOeeSummaryWindow(
+      first + " " + startTime,
+      last + " " + endTime
+    );
+  },
   async getDailyWindow(startDateTime, endDateTime) {
     const start = encodeURIComponent(startDateTime);
     const end = encodeURIComponent(endDateTime);
