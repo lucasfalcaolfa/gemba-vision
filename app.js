@@ -3075,11 +3075,44 @@ function initHomeQuickNavFollow(){
   topbar.appendChild(nav);
   nav.classList.add("home-quick-nav-topbar");
 
+  const links=[...nav.querySelectorAll(".home-quick-link")];
+  const sections=links
+    .map(link=>({link,section:document.querySelector(link.getAttribute("href"))}))
+    .filter(item=>item.section);
+
+  function updateActiveSection(){
+    const headerHeight=topbar.offsetHeight||122;
+    const marker=headerHeight+36;
+    let active=sections[0]||null;
+
+    sections.forEach(item=>{
+      const rect=item.section.getBoundingClientRect();
+      if(rect.top<=marker)active=item;
+    });
+
+    links.forEach(link=>link.classList.remove("is-current"));
+    if(active)active.link.classList.add("is-current");
+  }
+
   function update(){
     if(currentPage!=="home"||!document.body.contains(nav))return;
-    const endRect=lastSection.getBoundingClientRect();
-    const headerHeight=topbar.offsetHeight||122;
-    nav.classList.toggle("is-at-home-end",endRect.bottom<=headerHeight+8);
+
+    const doc=document.documentElement;
+    const scrollTop=window.scrollY||doc.scrollTop||0;
+    const viewportBottom=scrollTop+window.innerHeight;
+    const pageBottom=Math.max(
+      doc.scrollHeight,
+      document.body.scrollHeight,
+      doc.offsetHeight,
+      document.body.offsetHeight
+    );
+
+    const atRealEnd=viewportBottom>=pageBottom-24;
+    const lastRect=lastSection.getBoundingClientRect();
+    const lastContentEnding=lastRect.bottom<=window.innerHeight+12;
+
+    nav.classList.toggle("is-at-home-end",atRealEnd||lastContentEnding);
+    updateActiveSection();
   }
 
   let ticking=false;
@@ -3092,13 +3125,17 @@ function initHomeQuickNavFollow(){
     });
   };
 
+  const onResize=()=>update();
+
   window.addEventListener("scroll",onScroll,{passive:true});
   document.addEventListener("scroll",onScroll,{passive:true,capture:true});
+  window.addEventListener("resize",onResize,{passive:true});
   update();
 
   homeQuickNavCleanup=()=>{
     window.removeEventListener("scroll",onScroll);
     document.removeEventListener("scroll",onScroll,true);
+    window.removeEventListener("resize",onResize);
     document.body.classList.remove("home-nav-in-topbar");
     if(nav.parentNode===topbar)nav.remove();
   };
