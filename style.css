@@ -3891,3 +3891,78 @@ nav.home-quick-nav .home-quick-link b{
     grid-template-columns:1fr !important;
   }
 }
+
+/* Top 5 defects with expandable details */
+.home-defect-top5{
+  display:grid;
+  grid-template-columns:repeat(5,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:12px;
+}
+.home-defect-top-card{
+  display:grid;
+  grid-template-columns:28px 1fr auto;
+  gap:9px;
+  align-items:center;
+  padding:11px 12px;
+  border:1px solid #e3e9ed;
+  border-radius:11px;
+  background:#fff;
+  box-shadow:0 3px 10px rgba(10,35,52,.035);
+}
+.home-defect-top-card>div{
+  min-width:0;
+}
+.home-defect-top-card strong{
+  display:block;
+  font-size:9px;
+  color:#173247;
+}
+.home-defect-top-card small{
+  display:block;
+  margin-top:3px;
+  font-size:7px;
+  line-height:1.35;
+  color:#84949e;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.home-defect-top-card>b{
+  font-size:13px;
+  color:#b43e39;
+}
+.home-defect-more{
+  margin-top:6px;
+}
+.home-defect-toggle{
+  width:100%;
+  height:36px;
+  margin-top:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  border:1px solid #d8e3e9;
+  border-radius:9px;
+  background:#f7fafb;
+  color:#36566a;
+  font-size:8px;
+  font-weight:900;
+  cursor:pointer;
+}
+.home-defect-toggle:hover{
+  background:#eef5f8;
+}
+.home-defect-toggle b{
+  font-size:12px;
+}
+@media(max-width:1200px){
+  .home-defect-top5{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media(max-width:640px){
+  .home-defect-top5{
+    grid-template-columns:1fr;
+  }
+}
