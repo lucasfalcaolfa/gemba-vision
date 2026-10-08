@@ -4602,3 +4602,174 @@ body.modal-open{
     grid-template-columns:1fr;
   }
 }
+
+/* HSE weekly bulletin */
+.home-hse-panel{
+  padding:0;
+  overflow:hidden;
+  border:1px solid #dce5ea;
+  background:#fff;
+}
+.home-hse-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:14px 16px;
+  border-bottom:1px solid #e7edf0;
+  background:linear-gradient(180deg,#fff 0%,#f9fbfc 100%);
+}
+.home-hse-head>div:first-child>span{
+  display:block;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.8px;
+  color:#748a98;
+}
+.home-hse-head h3{
+  margin:3px 0 0;
+  font-size:13px;
+  color:#143146;
+}
+.home-hse-head p{
+  margin:3px 0 0;
+  font-size:8px;
+  color:#85949d;
+}
+.home-hse-live{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:7px 10px;
+  border:1px solid #d9e9df;
+  border-radius:999px;
+  background:#f4fbf7;
+  color:#397054;
+  font-size:7px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.home-hse-live i{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#2fbd75;
+  box-shadow:0 0 0 3px rgba(47,189,117,.12);
+}
+.home-hse-image-wrap{
+  position:relative;
+  display:block;
+  width:100%;
+  padding:14px;
+  border:0;
+  background:#f6f8fa;
+  cursor:pointer;
+  text-align:center;
+}
+.home-hse-image-wrap img{
+  display:block;
+  width:100%;
+  max-width:1180px;
+  margin:0 auto;
+  border:1px solid #d9e2e7;
+  border-radius:10px;
+  background:#fff;
+  box-shadow:0 8px 22px rgba(8,31,47,.07);
+}
+.home-hse-image-wrap>span{
+  position:absolute;
+  right:24px;
+  bottom:24px;
+  padding:7px 10px;
+  border-radius:8px;
+  background:rgba(14,52,78,.92);
+  color:#fff;
+  font-size:7px;
+  font-weight:900;
+  box-shadow:0 4px 12px rgba(0,0,0,.12);
+}
+.home-hse-modal{
+  position:fixed;
+  inset:0;
+  z-index:140;
+  display:none;
+}
+.home-hse-modal.open{display:block}
+.home-hse-modal-backdrop{
+  position:absolute;
+  inset:0;
+  background:rgba(6,20,31,.65);
+  backdrop-filter:blur(3px);
+}
+.home-hse-modal-panel{
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:min(1380px,calc(100vw - 32px));
+  max-height:92vh;
+  transform:translate(-50%,-50%);
+  overflow:auto;
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 30px 80px rgba(0,0,0,.28);
+}
+.home-hse-modal-head{
+  position:sticky;
+  top:0;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:14px 16px;
+  border-bottom:1px solid #e3eaee;
+  background:#fff;
+}
+.home-hse-modal-head span{
+  display:block;
+  font-size:7px;
+  font-weight:900;
+  letter-spacing:.8px;
+  color:#7c909d;
+}
+.home-hse-modal-head h2{
+  margin:2px 0 0;
+  font-size:16px;
+  color:#143146;
+}
+.home-hse-modal-head button{
+  width:36px;
+  height:36px;
+  border:1px solid #dce5ea;
+  border-radius:9px;
+  background:#f7fafb;
+  color:#486476;
+  font-size:20px;
+  cursor:pointer;
+}
+.home-hse-modal-body{
+  padding:16px;
+  background:#f4f7f9;
+}
+.home-hse-modal-body img{
+  display:block;
+  width:100%;
+  height:auto;
+  margin:0 auto;
+  border-radius:10px;
+  background:#fff;
+}
+@media(max-width:760px){
+  .home-hse-head{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .home-hse-live{
+    white-space:normal;
+  }
+  .home-hse-image-wrap>span{
+    position:static;
+    display:inline-flex;
+    margin-top:10px;
+  }
+}
