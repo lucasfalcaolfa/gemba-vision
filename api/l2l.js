@@ -100,6 +100,54 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  if (report === "stockpitches") {
+    const start=String(req.query.start||"").trim();
+    const end=String(req.query.end||"").trim();
+    if(!/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$/.test(start)||!/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$/.test(end)||start>=end){
+      return res.status(400).json({success:false,error:"Invalid stock pitches time window."});
+    }
+    try{
+      const site=await resolveNumericSite(start,end);
+      const [linesResult,areasResult,productsResult]=await Promise.all([
+        l2lGet("/api/1.0/lines/",{site,limit:2000}),
+        l2lGet("/api/1.0/areas/",{site,limit:2000}),
+        l2lGet("/api/1.0/productcomponents/",{site,limit:2000})
+      ]);
+      const entries=p=>Array.isArray(p?.data)?p.data:[];
+      const areas=new Map(entries(areasResult).map(x=>[String(x.id),x]));
+      const products=new Map(entries(productsResult).map(x=>[String(x.id),x]));
+      const refId=v=>v&&typeof v==="object"?(v.id??v.pk??null):v;
+      const productCode=v=>{
+        const obj=v&&typeof v==="object"?v:products.get(String(v));
+        return String(obj?(obj.code??obj.name??obj.part_number??obj.description??""):(typeof v==="string"&&!/^\\d+$/.test(v)?v:"")).trim();
+      };
+      const lines=new Map(entries(linesResult).map(line=>{
+        const areaRef=line.area;
+        const area=areas.get(String(refId(areaRef)));
+        const areaName=String(area?.name??area?.code??areaRef?.name??line.area_name??"").trim();
+        return [String(line.id),{name:String(line.name??line.code??"").trim(),area:areaName}];
+      }));
+      const payload=await l2lGet("/api/1.0/pitches/",{
+        site,pitch_start__gte:start.replace(" ","T")+":00",
+        pitch_start__lt:end.replace(" ","T")+":00",
+        limit:2000,order_by:"pitch_start"
+      });
+      const raw=entries(payload);
+      if(raw.length>=2000)throw new Error("L2L reached 2000 pitch rows; narrow the requested stock window to avoid incomplete totals.");
+      const rows=raw.map(p=>{
+        const lineId=refId(p.line),meta=lines.get(String(lineId))||{};
+        const productRef=p.actual_product??p.planned_product;
+        return {id:p.id,line_id:lineId,line:meta.name||String(lineId??""),
+          area:meta.area||"",start:p.pitch_start,end:p.pitch_end,
+          product:productCode(productRef),product_id:refId(productRef),
+          actual:Number(p.actual??0),scrap:Number(p.scrap??0)};
+      }).filter(p=>p.start&&p.line&&/^(?:FND|FND_ACAB|USI)$/i.test(p.area));
+      return res.status(200).json({success:true,data:rows,meta:{source:"L2L pitches",count:rows.length,raw_count:raw.length}});
+    }catch(err){
+      return res.status(err.status||502).json({success:false,error:err.message||"Unable to load stock pitches."});
+    }
+  }
+
   if (report === "pitchheat") {
     const start = String(req.query.start || "").trim();
     const end = String(req.query.end || "").trim();
