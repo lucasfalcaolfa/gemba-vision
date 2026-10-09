@@ -1678,9 +1678,9 @@ function initProduction(){
 }
 
 const STOCK_STAGE={
-  foundry:/^(FND)(?!.*ACAB)/i,
-  finishing:/ACAB/i,
-  downstream:/(USI|USIN|MACH|MECAN)/i
+  foundry:/^FND$/i,
+  finishing:/^FND_ACAB$/i,
+  downstream:/^USI(?:$|[ _])/i
 };
 
 let stockRows=[];
@@ -1831,15 +1831,13 @@ async function refreshStockRange(){
     const cursor=dateOf(first),finish=dateOf(last);
     if(!Number.isFinite(cursor.getTime())||!Number.isFinite(finish.getTime())||cursor>finish)throw new Error("Período inválido.");
     const collected=[];
+    // Daily endpoint must be queried once per date: multi-day windows can
+    // return aggregate rows and conceal the product dimension.
     while(cursor<=finish){
-      const chunkStart=iso(cursor);
-      const chunkEndDate=new Date(cursor);
-      chunkEndDate.setDate(chunkEndDate.getDate()+6);
-      if(chunkEndDate>finish)chunkEndDate.setTime(finish.getTime());
-      const chunkEnd=iso(chunkEndDate);
-      const chunk=await window.L2L.getDailyWindow(chunkStart+" 00:00",chunkEnd+" 23:59");
+      const day=iso(cursor);
+      const chunk=await window.L2L.getDaily(day,"00:00","23:59");
       collected.push(...chunk);
-      cursor.setDate(cursor.getDate()+7);
+      cursor.setDate(cursor.getDate()+1);
     }
     stockRows=collected;
     stockLoaded=true;
