@@ -2517,17 +2517,36 @@ function homeDefectSummary(rows,pitches=[]){
   const map={};
   homeDefectRows(rows).forEach(r=>{
     const defect=String(r.defect||"Sem descrição").trim()||"Sem descrição";
+    const defectKey=defect.toUpperCase();
     const pitchComment=findPitchComment(r);
-    const cause=String(r.cause||pitchComment||"Sem causa registrada").trim()||"Sem causa registrada";
-    const key=defect+"|"+cause;
-    if(!map[key])map[key]={defect,cause,qty:0,lines:new Set(),models:new Set()};
-    map[key].qty+=n(r.scrap||1);
-    if(r.line)map[key].lines.add(String(r.line));
-    if(r.product)map[key].models.add(String(r.product));
+    const cause=String(r.cause||pitchComment||"").trim();
+    const scrapQty=n(r.scrap);
+
+    if(!map[defectKey])map[defectKey]={
+      defect,
+      qty:0,
+      records:0,
+      lines:new Set(),
+      models:new Set(),
+      causes:new Set()
+    };
+
+    const item=map[defectKey];
+    item.qty+=scrapQty;
+    item.records+=1;
+    if(r.line)item.lines.add(String(r.line));
+    if(r.product&&String(r.product)!=="Sem modelo")item.models.add(String(r.product));
+    if(cause)item.causes.add(cause);
   });
+
   return Object.values(map)
-    .map(x=>({...x,lines:[...x.lines],models:[...x.models]}))
-    .sort((a,b)=>b.qty-a.qty);
+    .map(x=>({
+      ...x,
+      lines:[...x.lines],
+      models:[...x.models],
+      causes:[...x.causes]
+    }))
+    .sort((a,b)=>b.qty-a.qty||b.records-a.records||a.defect.localeCompare(b.defect,"pt-BR",{sensitivity:"base"}));
 }
 
 function homeTimeLabel(value){
@@ -2729,11 +2748,11 @@ function openHomeDefectDetail(index){
     .map(x=>'<option value="'+stockEsc(x.key)+'">'+stockEsc(x.key)+' ('+x.events+')</option>').join("");
 
   title.textContent=defect.defect||"Detalhes do defeito";
-  context.textContent=processLabel+" • "+fmt(defect.qty)+" ocorrência(s)/peça(s) • "+rows.length+" registro(s) • "+dispatches.length+" Dispatch(es) relacionados";
+  context.textContent=processLabel+" • "+fmt(defect.qty)+" peça(s) rejeitada(s) • "+rows.length+" registro(s) L2L • "+dispatches.length+" Dispatch(es) relacionados";
 
   body.innerHTML=
     '<div class="home-defect-modal-kpis">'+
-      '<div><span>Quantidade total</span><strong>'+fmt(defect.qty)+'</strong></div>'+
+      '<div><span>Peças rejeitadas</span><strong>'+fmt(defect.qty)+'</strong></div>'+
       '<div><span>Linhas afetadas</span><strong>'+defect.lines.length+'</strong></div>'+
       '<div><span>Modelos envolvidos</span><strong>'+defect.models.length+'</strong></div>'+
       '<div><span>Dispatches relacionados</span><strong>'+dispatches.length+'</strong></div>'+
@@ -2762,7 +2781,7 @@ function openHomeDefectDetail(index){
     '<div id="homeDefectRecords">'+
       (rows.length
         ? '<div class="table-scroll"><table class="home-defect-detail-table"><thead><tr><th>Data/Hora</th><th>Linha</th><th>Modelo</th><th>Qtd.</th></tr></thead><tbody>'+
-            rows.map(r=>'<tr data-line="'+stockEsc(String(r.line||""))+'" data-product="'+stockEsc(String(r.product||""))+'"><td>'+stockEsc(r.date?new Date(r.date).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"-")+'</td><td>'+stockEsc(r.line||"-")+'</td><td>'+stockEsc(r.product||"-")+'</td><td><b>'+fmt(r.scrap||1)+'</b></td></tr>').join("")+
+            rows.map(r=>'<tr data-line="'+stockEsc(String(r.line||""))+'" data-product="'+stockEsc(String(r.product||""))+'"><td>'+stockEsc(r.date?new Date(r.date).toLocaleString("pt-BR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"-")+'</td><td>'+stockEsc(r.line||"-")+'</td><td>'+stockEsc(r.product||"-")+'</td><td><b>'+fmt(n(r.scrap))+'</b></td></tr>').join("")+
           '</tbody></table></div>'
         : '<div class="empty-state">Nenhum registro detalhado encontrado para este defeito.</div>')+
     '</div>';
@@ -2912,14 +2931,14 @@ function renderHomeYesterday(){
   if(defectsEl){
     defectsEl.innerHTML=defects.length
       ? '<div class="home-defect-summary home-defect-summary-two">'+
-          '<div><span>Total • '+processLabel+'</span><strong>'+fmt(defectQty)+'</strong><small>ocorrências/peças</small></div>'+
-          '<div><span>Principal defeito</span><strong>'+stockEsc(topDefect?.defect||"-")+'</strong><small>'+fmt(topDefect?.qty||0)+' registro(s)</small></div>'+
+          '<div><span>Total • '+processLabel+'</span><strong>'+fmt(defectQty)+'</strong><small>peças rejeitadas no L2L</small></div>'+
+          '<div><span>Principal defeito</span><strong>'+stockEsc(topDefect?.defect||"-")+'</strong><small>'+fmt(topDefect?.qty||0)+' peça(s) • '+fmt(topDefect?.records||0)+' registro(s)</small></div>'+
         '</div>'+
         '<div class="home-defect-top5">'+
           defects.slice(0,5).map((d,i)=>'<button type="button" class="home-defect-top-card" onclick="openHomeDefectDetail('+i+')" aria-label="Abrir detalhes do defeito '+stockEsc(d.defect)+'">'+
   '<div class="home-defect-card-top"><span class="defect-priority p'+Math.min(3,i+1)+'">#'+(i+1)+'</span><span class="home-defect-severity '+(i===0?"critical":i<3?"attention":"normal")+'">'+(i===0?"Maior impacto":i<3?"Prioridade":"Monitorar")+'</span></div>'+
   '<div class="home-defect-card-main"><strong>'+stockEsc(d.defect)+'</strong><span class="home-defect-qty">'+fmt(d.qty)+'</span></div>'+
-  '<div class="home-defect-card-meta"><span><b>Linha</b>'+stockEsc(d.lines.join(", ")||"-")+'</span><span><b>Modelo</b>'+stockEsc(d.models.join(", ")||"-")+'</span></div>'+
+  '<div class="home-defect-card-meta"><span><b>Linha</b>'+stockEsc(d.lines.join(", ")||"-")+'</span><span><b>Modelo</b>'+stockEsc(d.models.join(", ")||"-")+'</span><span><b>Registros L2L</b>'+fmt(d.records)+'</span></div>'+
   '<div class="home-defect-card-action"><span>Visualizar detalhes completos</span><b>→</b></div>'+
 '</button>').join("")+
         '</div>'+
