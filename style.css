@@ -10851,3 +10851,108 @@ body .topbar.gemba-professional-header .gemba-header-center small{
   body .topbar.gemba-professional-header .gemba-header-center strong{font-size:13px;letter-spacing:.35px}
   body .topbar.gemba-professional-header .gemba-header-center small{font-size:7px;letter-spacing:.4px}
 }
+
+
+/* Gemba Vision adaptive shell — desktops, tablets and phones */
+.mobile-menu-toggle,.mobile-nav-backdrop{display:none}
+body .topbar.gemba-professional-header{grid-template-columns:minmax(135px,245px) minmax(0,1fr) minmax(125px,220px) !important}
+body .topbar.gemba-professional-header .gemba-header-center{min-width:0;grid-column:2}
+body .topbar.gemba-professional-header .clock{min-width:0}
+#content,.page,.panel,.cards,.grid,.section-grid{min-width:0}
+.table-scroll,.stock-live-table,.stock-by-model-table{max-width:100%;overflow-x:auto}
+.table-scroll{overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+canvas{max-width:100%}
+img{max-width:100%}
+@media(min-width:901px) and (max-width:1200px){
+  .sidebar{flex-basis:190px;width:190px}
+  #content{width:calc(100% - 190px)}
+  .page{padding:18px}
+  .cards{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .section-grid{grid-template-columns:minmax(0,1fr)}
+  .stock-filter-grid,.stock-filter-grid-range{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  .stock-filter-grid>*{min-width:0}
+}
+@media(max-width:900px){
+  body .topbar.gemba-professional-header{
+    display:grid !important;
+    grid-template-columns:42px minmax(80px,135px) minmax(0,1fr) minmax(78px,130px) !important;
+    gap:8px !important;
+    padding:0 12px !important;
+    height:72px !important;min-height:72px !important;
+    position:sticky !important;top:0 !important;
+  }
+  body .topbar.gemba-professional-header .brand{grid-column:2;height:72px !important;width:100% !important}
+  body .topbar.gemba-professional-header .brand:before{height:72px !important;left:-8px !important}
+  body .topbar.gemba-professional-header .brand-logo{width:min(125px,100%) !important}
+  body .topbar.gemba-professional-header .brand:after{display:none !important}
+  body .topbar.gemba-professional-header .gemba-header-center{grid-column:3;padding:0 2px;gap:3px}
+  body .topbar.gemba-professional-header .gemba-header-center strong{font-size:clamp(12px,2.1vw,18px);letter-spacing:.8px;white-space:normal}
+  body .topbar.gemba-professional-header .gemba-header-center small{font-size:8px;letter-spacing:.6px}
+  body .topbar.gemba-professional-header .clock{grid-column:4;padding-left:6px !important}
+  body .topbar.gemba-professional-header .clock span{display:none !important}
+  body .topbar.gemba-professional-header .clock b{font-size:clamp(13px,2vw,18px) !important}
+  .mobile-menu-toggle{
+    display:flex;grid-column:1;flex-direction:column;align-items:center;justify-content:center;
+    gap:4px;width:40px;height:40px;border:1px solid rgba(255,255,255,.22);
+    border-radius:9px;background:rgba(255,255,255,.07);color:#fff;padding:9px;z-index:80
+  }
+  .mobile-menu-toggle span{display:block;width:21px;height:2px;border-radius:1px;background:currentColor}
+  .app{min-height:calc(100dvh - 72px) !important;display:block !important}
+  .sidebar{
+    position:fixed !important;top:72px !important;bottom:0 !important;left:0 !important;
+    height:calc(100dvh - 72px) !important;width:min(290px,85vw) !important;
+    max-width:290px !important;z-index:95 !important;transform:translateX(-105%);
+    transition:transform .22s ease;box-shadow:5px 0 24px rgba(0,0,0,.18);
+    overflow-y:auto !important;visibility:hidden
+  }
+  body.mobile-nav-open .sidebar{transform:translateX(0);visibility:visible}
+  body.mobile-nav-open{overflow:hidden}
+  .mobile-nav-backdrop{
+    position:fixed;inset:72px 0 0;background:rgba(1,15,26,.55);
+    border:0;width:100%;z-index:90;cursor:pointer
+  }
+  body.mobile-nav-open .mobile-nav-backdrop{display:block}
+  #content{width:100% !important;max-width:100% !important;overflow-x:hidden}
+  .page{padding:16px !important}
+  .cards,.stock-live-kpis{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:10px}
+  .section-grid{grid-template-columns:1fr !important}
+  .page-head{flex-wrap:wrap;align-items:flex-start}
+  .stock-filter-grid,.stock-filter-grid-range{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+  .stock-filter-grid>*{min-width:0;max-width:100%}
+  .panel{padding:14px}
+  .refresh{white-space:normal}
+  .scrap-shift-overview{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
+}
+@media(max-width:560px){
+  body .topbar.gemba-professional-header{
+    grid-template-columns:36px 84px minmax(0,1fr) 58px !important;
+    gap:4px !important;padding:0 7px !important;height:64px !important;min-height:64px !important
+  }
+  body .topbar.gemba-professional-header .brand{height:64px !important;padding:0 !important}
+  body .topbar.gemba-professional-header .brand:before{height:64px !important}
+  body .topbar.gemba-professional-header .brand-logo{width:84px !important}
+  body .topbar.gemba-professional-header .gemba-header-center strong{font-size:12px !important;letter-spacing:.25px !important}
+  body .topbar.gemba-professional-header .gemba-header-center small{font-size:7px;letter-spacing:.3px}
+  body .topbar.gemba-professional-header .clock{padding-left:3px !important}
+  body .topbar.gemba-professional-header .clock b{font-size:11px !important}
+  .mobile-menu-toggle{width:34px;height:36px;padding:5px}
+  .mobile-menu-toggle span{width:19px}
+  .sidebar{top:64px !important;height:calc(100dvh - 64px) !important}
+  .mobile-nav-backdrop{inset:64px 0 0}
+  .app{min-height:calc(100dvh - 64px) !important}
+  .page{padding:10px !important}
+  .page-head h1{font-size:21px}
+  .cards,.stock-live-kpis{grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:8px}
+  .card{padding:12px}
+  .card .value{font-size:clamp(17px,5vw,26px)}
+  .stock-filter-grid,.stock-filter-grid-range{grid-template-columns:1fr !important}
+  .stock-filter-reset{width:100%}
+  .stock-filter-head{display:block}
+  .stock-filter-head .stock-live-badge{display:block;width:100%;margin-top:10px}
+  .scrap-shift-overview{grid-template-columns:1fr !important}
+  .table-scroll{max-width:100%;overflow-x:auto}
+  .page-head .refresh{max-width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+  .sidebar{transition:none !important}
+}
