@@ -3148,7 +3148,7 @@ function initHomeQuickNavFollow(){
       doc.scrollHeight,
       document.body?document.body.scrollHeight:0
     );
-    const atRealPageEnd=(scrollTop+viewport)>=pageHeight-20;
+    const atRealPageEnd=(scrollTop+viewport)>=pageHeight-80;
     nav.classList.toggle("is-at-home-end",atRealPageEnd);
   }
 
