@@ -384,7 +384,7 @@ module.exports = async function handler(req, res) {
       let scrapPayload = await l2lGet("/api/1.0/scrapdetail/", {
         site: numericSite,
         start__gte: startIso,
-        start__lte: endIso,
+        start__lt: endIso,
         limit: 2000,
         order_by: "-start",
       });
@@ -414,8 +414,19 @@ module.exports = async function handler(req, res) {
         return found ? (found.name ?? found.code ?? found.description ?? String(found.id)) : (value ?? fallback);
       };
 
-      const startDate = new Date(start.replace(" ", "T"));
-      const endDate = new Date(end.replace(" ", "T"));
+      // Os limites do dia operacional são interpretados no horário de Manaus (UTC-04).
+      // Registros do L2L com fuso explícito preservam seu próprio offset.
+      const scrapTimestamp = (value) => {
+        if (!value) return NaN;
+        const raw = String(value).trim().replace(" ", "T");
+        const withZone = /(?:Z|[+-]\\d{2}:?\\d{2})$/i.test(raw) ? raw : raw + "-04:00";
+        return Date.parse(withZone);
+      };
+      const startTime = scrapTimestamp(start);
+      const endTime = scrapTimestamp(end);
+      if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || endTime <= startTime) {
+        return res.status(400).json({ success: false, error: "Invalid scrap details date range." });
+      }
       const rows = Array.isArray(scrapPayload?.data) ? scrapPayload.data : [];
       const normalized = rows.map(row => {
         const whenRaw = row.start || row.created || row.end || null;
@@ -454,10 +465,10 @@ module.exports = async function handler(req, res) {
           scrap: Number(row.scrap || 0),
         };
       }).filter(row => {
-        if (!row.date) return true;
-        const d = new Date(row.date);
-        if (Number.isNaN(d.getTime()) || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) return true;
-        return d >= startDate && d <= endDate;
+        const time = scrapTimestamp(row.date);
+        // Sem data válida, não é possível atribuir o rejeito ao dia consultado.
+        // Limite final exclusivo evita duplicar registros entre dias consecutivos.
+        return Number.isFinite(time) && time >= startTime && time < endTime;
       });
 
       return res.status(200).json({ success: true, data: normalized });
