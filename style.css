@@ -10490,3 +10490,50 @@ body.home-nav-in-topbar .home-executive-hero{
     scroll-margin-top:124px !important;
   }
 }
+
+
+/* Gemba Vision | Corporate header refinement — 2026-10-09 */
+body.home-nav-in-topbar .topbar{
+  background:linear-gradient(115deg,#071a2c 0%,#092b41 54%,#06243b 100%) !important;
+  border-bottom:1px solid rgba(131,184,209,.23) !important;
+  box-shadow:0 9px 28px rgba(3,20,35,.18) !important;
+}
+body.home-nav-in-topbar .topbar .title{
+  font-weight:800 !important;
+  letter-spacing:2.4px !important;
+  text-shadow:0 2px 12px rgba(0,0,0,.12);
+}
+body.home-nav-in-topbar .topbar .clock{
+  border-left:1px solid rgba(255,255,255,.14);
+  padding-left:18px;
+}
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar{
+  border-top:1px solid rgba(255,255,255,.10) !important;
+  padding-top:5px !important;
+  gap:7px !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar .home-quick-link{
+  border:1px solid transparent !important;
+  border-radius:9px !important;
+  transition:background .2s ease,border-color .2s ease,box-shadow .2s ease,transform .2s ease !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar .home-quick-link:hover{
+  background:rgba(255,255,255,.075) !important;
+  border-color:rgba(146,213,241,.25) !important;
+  transform:translateY(-1px);
+}
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar .home-quick-link.active,
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar .home-quick-link[aria-current="page"]{
+  background:linear-gradient(180deg,rgba(16,91,124,.68),rgba(7,58,85,.86)) !important;
+  border-color:rgba(80,188,226,.68) !important;
+  box-shadow:inset 0 -2px 0 #51c8dd,0 2px 12px rgba(0,0,0,.13) !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar .home-quick-link:focus-visible{
+  outline:2px solid #86d7ee !important;
+  outline-offset:2px;
+}
+@media(max-width:760px){
+  body.home-nav-in-topbar .topbar .title{letter-spacing:1px !important}
+  body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar{gap:3px !important}
+  body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar .home-quick-link{padding:5px !important}
+}
