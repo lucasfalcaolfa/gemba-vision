@@ -988,13 +988,45 @@ function renderOeeLive(){
 
 let productionRows=[];
 let productionLoading=false;
+let productionAutoRefreshTimer=null;
+const PRODUCTION_REFRESH_MS=15000;
 let prodSectorChartInstance=null;
 let prodLineChartInstance=null;
-const productionFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"",endDate:"",start:"00:00",end:"23:59"};
+const productionFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"",endDate:"",start:"07:00",end:"07:00"};
+
+function productionOperationalWindow(){
+  const now=new Date();
+  const start=new Date(now);
+  start.setHours(7,0,0,0);
+  if(now<start)start.setDate(start.getDate()-1);
+  const end=new Date(start);
+  end.setDate(end.getDate()+1);
+  const iso=d=>{
+    const y=d.getFullYear();
+    const m=String(d.getMonth()+1).padStart(2,"0");
+    const day=String(d.getDate()).padStart(2,"0");
+    return y+"-"+m+"-"+day;
+  };
+  return {startDate:iso(start),endDate:iso(end),start:"07:00",end:"07:00"};
+}
+
+function stopProductionAutoRefresh(){
+  if(productionAutoRefreshTimer){
+    clearInterval(productionAutoRefreshTimer);
+    productionAutoRefreshTimer=null;
+  }
+}
+
+function startProductionAutoRefresh(){
+  stopProductionAutoRefresh();
+  productionAutoRefreshTimer=setInterval(()=>{
+    if(currentPage==="production"&&!document.hidden)refreshProductionRange();
+  },PRODUCTION_REFRESH_MS);
+}
 
 function production(){
   return '<div class="panel oee-filter-panel">'+
-    '<div class="oee-filter-head"><div><h2>Filtros de produção</h2><p>Dados reais do L2L para demanda, produção atual, scrap e atingimento. Turnos: 1º 07:00–17:00 • 2º 17:00–02:00 • 3º 02:00–07:00 • atualização a cada 1 minuto.</p></div><button class="filter-reset" id="prodReset">↺ Limpar filtros</button></div>'+
+    '<div class="oee-filter-head"><div><h2>Filtros de produção</h2><p>Dados reais do L2L para demanda, produção atual, scrap e atingimento. Dia operacional: 07:00 → 07:00 • atualização automática a cada 15 segundos.</p></div><div class="production-live-actions"><span class="production-live-badge"><i></i> TEMPO REAL • 15s</span><button class="filter-reset" id="prodReset">↺ Limpar filtros</button></div></div>'+
     '<div class="oee-filters oee-filters-live">'+
       '<label>Setor<select id="prodArea"><option value="Todas">Toda a fábrica</option></select></label>'+
       '<label>Linha<select id="prodLinha"><option value="Todas">Todas as linhas</option></select></label>'+
@@ -1014,7 +1046,7 @@ function production(){
     '<div class="panel"><h2>Atingimento por linha</h2><div class="chart-wrap"><canvas id="prodLineChart"></canvas></div></div>'+
     '<div class="panel"><h2>Visão executiva</h2><div id="prodExecutive"></div></div>'+
   '</div>'+
-  '<div class="panel"><h2>Todas as linhas — produção em tempo real</h2><div id="prodTable"></div><div class="footer-note">Fonte: L2L • Demanda = demand • Produção atual = actual • atualização automática a cada 1 minuto.</div></div>'+
+  '<div class="panel"><h2>Todas as linhas — produção em tempo real</h2><div id="prodTable"></div><div class="footer-note">Fonte: L2L • Demanda = demand • Produção atual = actual • atualização automática a cada 15 segundos.</div></div>'+
   '<div class="scrap-modal" id="scrapModal" aria-hidden="true"><div class="scrap-modal-backdrop" onclick="closeScrapDetails()"></div><section class="scrap-modal-panel" role="dialog" aria-modal="true" aria-labelledby="scrapModalTitle"><div class="scrap-modal-head"><div><span>DETALHAMENTO L2L</span><h2 id="scrapModalTitle">Scrap / Defeitos</h2></div><button type="button" class="scrap-close" onclick="closeScrapDetails()" aria-label="Fechar">×</button></div><div class="scrap-modal-context" id="scrapModalContext"></div><div id="scrapModalBody"><div class="empty-state">Carregando detalhes...</div></div></section></div>';
 }
 
@@ -1531,8 +1563,13 @@ function initProduction(){
   const reset=document.getElementById("prodReset");
   if(!area||!line||!shift||!startDate||!endDate||!start||!end||!reset)return;
 
-  if(!productionFilterState.startDate)productionFilterState.startDate=todayISO();
-  if(!productionFilterState.endDate)productionFilterState.endDate=productionFilterState.startDate;
+  if(!productionFilterState.startDate||!productionFilterState.endDate){
+    const liveWindow=productionOperationalWindow();
+    productionFilterState.startDate=liveWindow.startDate;
+    productionFilterState.endDate=liveWindow.endDate;
+    productionFilterState.start=liveWindow.start;
+    productionFilterState.end=liveWindow.end;
+  }
   startDate.value=productionFilterState.startDate;
   endDate.value=productionFilterState.endDate;
   start.value=productionFilterState.start;
@@ -1583,10 +1620,11 @@ function initProduction(){
     productionFilterState.area="Todas";
     productionFilterState.line="Todas";
     productionFilterState.shift="Todos";
-    productionFilterState.startDate=todayISO();
-    productionFilterState.endDate=productionFilterState.startDate;
-    productionFilterState.start="00:00";
-    productionFilterState.end="23:59";
+    const liveWindow=productionOperationalWindow();
+    productionFilterState.startDate=liveWindow.startDate;
+    productionFilterState.endDate=liveWindow.endDate;
+    productionFilterState.start=liveWindow.start;
+    productionFilterState.end=liveWindow.end;
     startDate.value=productionFilterState.startDate;
     endDate.value=productionFilterState.endDate;
     start.value=productionFilterState.start;
@@ -1595,8 +1633,8 @@ function initProduction(){
     await refreshProductionRange();
   });
 
-  if(!productionRows.length)refreshProductionRange();
-  else renderProductionLive();
+  startProductionAutoRefresh();
+  refreshProductionRange();
 }
 
 const STOCK_STAGE={
@@ -3341,7 +3379,10 @@ function render(page){
     homeQuickNavCleanup();
     homeQuickNavCleanup=null;
   }
-  if(currentPage==="production"&&page!=="production")destroyProdCharts();
+  if(currentPage==="production"&&page!=="production"){
+    stopProductionAutoRefresh();
+    destroyProdCharts();
+  }
   currentPage=page;
   document.getElementById("content").innerHTML=shell(pages[page]);
   if(page==="home")initHome();
