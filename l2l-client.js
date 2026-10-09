@@ -12,6 +12,15 @@ window.L2L = {
     }
     return Array.isArray(payload.data) ? payload.data : [];
   },
+  async getStockPitches(startDateTime,endDateTime){
+    const start=encodeURIComponent(startDateTime);
+    const end=encodeURIComponent(endDateTime);
+    const response=await fetch("/api/l2l?report=stockpitches&start="+start+"&end="+end);
+    const payload=await response.json();
+    if(!response.ok||payload.success===false)throw new Error(payload.error||"Falha na consulta de pitches por produto.");
+    if(!Array.isArray(payload.data))throw new Error("L2L não retornou lista de pitches por produto.");
+    return payload.data;
+  },
   async getPitchHeat(startDate, endDate, startTime = "00:00", endTime = "23:59") {
     const first = startDate || new Date().toISOString().slice(0, 10);
     const last = endDate || first;
