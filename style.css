@@ -10589,3 +10589,12 @@ body.home-nav-in-topbar .home-executive-hero{scroll-margin-top:156px !important}
  body.home-nav-in-topbar .sidebar{top:122px !important;height:calc(100vh - 122px) !important}
  body.home-nav-in-topbar .home-block,body.home-nav-in-topbar .home-executive-hero{scroll-margin-top:136px !important}
 }
+
+/* Always show home navigation, including when scrolling to the last section. */
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar,
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar.is-at-home-end{
+  opacity:1 !important;
+  visibility:visible !important;
+  transform:none !important;
+  pointer-events:auto !important;
+}
