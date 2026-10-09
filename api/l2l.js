@@ -103,7 +103,7 @@ module.exports = async function handler(req, res) {
   if (report === "stockpitches") {
     const start=String(req.query.start||"").trim();
     const end=String(req.query.end||"").trim();
-    if(!/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$/.test(start)||!/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$/.test(end)||start>=end){
+    if(!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(start)||!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(end)||start>=end){
       return res.status(400).json({success:false,error:"Invalid stock pitches time window."});
     }
     try{
@@ -119,7 +119,7 @@ module.exports = async function handler(req, res) {
       const refId=v=>v&&typeof v==="object"?(v.id??v.pk??null):v;
       const productCode=v=>{
         const obj=v&&typeof v==="object"?v:products.get(String(v));
-        return String(obj?(obj.code??obj.name??obj.part_number??obj.description??""):(typeof v==="string"&&!/^\\d+$/.test(v)?v:"")).trim();
+        return String(obj?(obj.code??obj.name??obj.part_number??obj.description??""):(typeof v==="string"&&!/^\d+$/.test(v)?v:"")).trim();
       };
       const lines=new Map(entries(linesResult).map(line=>{
         const areaRef=line.area;
