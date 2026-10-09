@@ -1685,6 +1685,8 @@ const STOCK_STAGE={
 
 let stockRows=[];
 let stockLoading=false;
+let stockLoaded=false;
+let stockFetchError="";
 const stockFilterState={startDate:"2026-09-15",endDate:"",model:"Todos"};
 
 function stock(){
@@ -1822,12 +1824,18 @@ async function refreshStockRange(){
   try{
     const first=stockFilterState.startDate||"2026-09-15";
     const last=stockFilterState.endDate||todayISO();
-    stockRows=await window.L2L.getRange(first,last,"00:00","23:59");
+    const fetched=await window.L2L.getRange(first,last,"00:00","23:59");
+    stockRows=fetched;
+    stockLoaded=true;
+    stockFetchError="";
     l2lLastUpdate=new Date();
     l2lError="";
     if(currentPage==="stock")updateStock();
   }catch(err){
-    l2lError=err.message||"Falha ao consultar L2L";
+    stockFetchError=err.message||"Falha ao consultar L2L";
+    stockLoaded=false;
+    stockRows=[];
+    l2lError=stockFetchError;
     if(currentPage==="stock")updateStock();
   }finally{
     stockLoading=false;
@@ -1848,7 +1856,7 @@ function renderStockByModel(rows){
 }
 
 function updateStock(){
-  const source=stockRows.length?stockRows:l2lRows;
+  const source=stockLoaded?stockRows:[];
   const position=calculateL2LStock(source);
   populateStockModels(position);
   const visible=stockFilteredPosition(position);
@@ -1873,18 +1881,18 @@ function updateStock(){
     if(negative.length)pending.innerHTML+='<p style="padding:10px;color:#b45309">⚠ '+negative.length+' modelo(s) com diferença negativa. Verificar saldo inicial, correspondência e perdas antes de tratar o valor como estoque físico.</p>';
   }
   const status=document.getElementById("stockLiveStatus");
-  if(status)status.textContent=liveStamp();
+  if(status)status.textContent=stockFetchError?"🔴 "+stockFetchError:(stockLoaded?liveStamp():"🟡 Aguardando consulta do L2L");
 
   const context=document.getElementById("stockContext");
   if(context){
     const startLabel=(stockFilterState.startDate||"2026-09-15").split("-").reverse().join("/");
     const endLabel=(stockFilterState.endDate||todayISO()).split("-").reverse().join("/");
     const modelLabel=stockFilterState.model==="Todos"?"Todos os modelos":stockFilterState.model;
-    context.textContent=liveStamp()+" • Acumulado "+startLabel+" → "+endLabel+" • "+modelLabel+" • cálculo por produção (não substitui inventário físico) • "+(calculateL2LStock.unmatched?.length||0)+" registros de Usinagem não conciliados • atualização a cada 1 minuto";
+    context.textContent=(stockFetchError?"🔴 Erro na coleta do estoque: "+stockFetchError:stockLoaded?liveStamp():"🟡 Sem dados de estoque confirmados")+" • Acumulado "+startLabel+" → "+endLabel+" • "+modelLabel+" • cálculo por produção (não substitui inventário físico) • "+(calculateL2LStock.unmatched?.length||0)+" registros de Usinagem não conciliados • atualização a cada 1 minuto";
   }
 
   const cards=document.getElementById("stockCards");
-  if(cards)cards.innerHTML=
+  if(cards&&!stockLoaded){cards.innerHTML='<div class="empty-state">' +(stockFetchError?"Falha ao buscar estoque do L2L. Nenhum saldo anterior será usado como atual.":"Aguardando dados do L2L...") +'</div>';}else if(cards)cards.innerHTML=
     card("Inacabados",fmt(totalI),totalI>0?"warn":"")+
     card("Acabados",fmt(totalA),totalA>0?"good":"")+
     card("Total",fmt(totalI+totalA))+
