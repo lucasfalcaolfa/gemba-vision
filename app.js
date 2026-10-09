@@ -427,9 +427,9 @@ function mainGauge(value,thresholds=null){
   return '<div class="ref-main-gauge"><svg viewBox="0 0 220 138" role="img" aria-label="OEE '+fmtPct(v)+'"><path class="ref-gauge-track" d="M25 112 A85 85 0 0 1 195 112" pathLength="100"></path><path class="ref-gauge-value '+tone+'" d="M25 112 A85 85 0 0 1 195 112" pathLength="100" stroke-dasharray="'+v+' 100"></path><text x="110" y="62" text-anchor="middle" class="ref-gauge-label">OEE</text><text x="110" y="88" text-anchor="middle" class="ref-gauge-delta '+(n(v)>=85?"delta-up":"delta-down")+'">'+(n(v)>=85?"▲":"▼")+Math.abs(n(v)-85).toFixed(0)+'%</text><text x="110" y="116" text-anchor="middle" class="ref-gauge-number '+tone+'">'+fmt(v,0)+'%</text></svg></div>';
 }
 
-function miniMetric(value,label,target=85){
+function miniMetric(value,label,target=85,thresholds=null){
   const v=Math.max(0,Math.min(100,n(value)));
-  const tone=gaugeTone(v);
+  const tone=fndOeeTone(v,thresholds);
   const icon=label==="OA"?"▣":label==="PPP"?"⚙":"◎";
   return '<div class="ref-metric-row"><div class="ref-mini-circle '+tone+'" style="--pct:'+v+'"><div class="ref-mini-inner"><span class="ref-mini-icon">'+icon+'</span><span class="ref-mini-value">'+fmt(v,0)+'%</span></div></div><strong>'+label+'</strong>'+deltaMarkup(v,target)+'</div>';
 }
@@ -512,7 +512,7 @@ function lineGaugeCard(g){
     '<div class="pro-card-head"><div><div class="pro-card-kicker">'+(g.area||"Setor")+'</div><h3>'+g.line+'</h3></div><span class="pro-status '+statusCls+'">'+status+'</span></div>'+
     '<div class="pro-card-body">'+(g.pitchCount?'<div style="font-size:11px;color:#53778a;margin-bottom:8px">OEE '+(g.source==="Pitches concluídos"?"pitches concluídos":"resumo L2L")+' • pitches '+fmtPct(g.pitchOee)+' • diário '+fmtPct(g.dailyOee)+(g.auditDifference>=1?' • ⚠ conferir diferença':'')+'</div>':'')+mainGauge(g.oee,thresholds)+
       '<div class="pro-divider"></div>'+
-      '<div class="pro-metrics">'+miniMetric(g.availability,"OA",85)+miniMetric(g.performance,"PPP",85)+miniMetric(g.quality,"Yield",85)+'</div>'+
+      '<div class="pro-metrics">'+miniMetric(g.availability,"OA",85,thresholds)+miniMetric(g.performance,"PPP",85,thresholds)+miniMetric(g.quality,"Yield",85,thresholds)+'</div>'+
       (g.pitchCount?'<div style="font-size:10px;color:#6e8290;margin-top:7px">OA, PPP e Yield: valores do resumo diário L2L.</div>':'')+
     '</div>'+
     '<div class="pro-card-foot"><div><span>Meta OEE</span><strong>85%</strong></div><div><span>Atingimento</span><strong>'+fmtPct(attainment)+'</strong></div><div><span>Produção</span><strong>'+fmt(g.actual)+' / '+fmt(g.demand)+'</strong></div></div>'+
