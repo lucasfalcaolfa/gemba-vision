@@ -1719,49 +1719,63 @@ function stockStage(area){
 }
 
 function stockProductRows(row){
-  // L2L reporting 'products' may be a dictionary keyed by product code,
-  // not necessarily an array of objects with product_name.
-  const isCode=v=>/^(?:31GQ|41NN|17111|17100)[-_A-Z0-9]+$/i.test(String(v||"").trim());
-  const label=v=>{
-    if(v&&typeof v==="object")return label(v.product_code??v.code??v.product_name??v.name??v.part_number??v.description??"");
-    return String(v??"").trim();
+  const codePattern=/(?:31GQ|41NN|17111|17100)[-A-Z0-9]{6,}/i;
+  const clean=v=>String(v??"").trim().toUpperCase();
+  const codeOf=v=>{
+    if(v&&typeof v==="object")return codeOf(v.product_code??v.code??v.product_name??v.name??v.part_number??v.description??v.model??"");
+    const raw=clean(v);
+    return raw.match(codePattern)?.[0]||"";
   };
-  const quantity=v=>{
-    if(typeof v==="number")return Number.isFinite(v)?v:0;
-    if(typeof v==="string"&&v.trim()!==""&&!Number.isNaN(Number(v)))return Number(v);
-    if(v&&typeof v==="object"){
-      for(const key of ["actual","production_actual","quantity","qty","produced","good","total_actual"]){
-        if(v[key]!==undefined&&v[key]!==null&&Number.isFinite(Number(v[key])))return Number(v[key]);
-      }
+  const numberOf=v=>{
+    if(v===null||v===undefined||v==="")return null;
+    const number=Number(v);
+    return Number.isFinite(number)?number:null;
+  };
+  const valueOf=v=>{
+    if(typeof v!=="object"||v===null)return numberOf(v);
+    for(const key of ["actual","actual_parts","production_actual","quantity","qty","produced","total","count","good","total_actual"]){
+      const n=numberOf(v[key]);
+      if(n!==null)return n;
     }
     return null;
   };
   const found=new Map();
-  const add=(code,value)=>{
-    const c=label(code).toUpperCase();
-    const q=quantity(value);
-    if(!isCode(c)||q===null)return;
-    found.set(c,(found.get(c)||0)+q);
+  const add=(code,qty)=>{
+    const model=codeOf(code),amount=valueOf(qty);
+    if(model&&amount!==null)found.set(model,(found.get(model)||0)+amount);
   };
   const groups=[row.products,row.product_data,row.product_details,row.product_summaries,row.products_data];
   for(const group of groups){
-    if(!group||typeof group!=="object")continue;
-    const values=Array.isArray(group)?group:Object.entries(group);
-    for(const entry of values){
-      const key=Array.isArray(group)?null:entry[0];
-      const item=Array.isArray(group)?entry:entry[1];
-      if(item&&typeof item==="object"){
-        const code=label(item.product_code??item.product_name??item.product??item.name??item.model??item.part_number??item.productcomponent??item.product_component??key);
-        add(code,item);
-      }else if(key)add(key,item);
+    if(!group)continue;
+    if(Array.isArray(group)){
+      for(const item of group){
+        if(item&&typeof item==="object"){
+          add(item.product_code??item.product_name??item.product??item.code??item.name??item.model??item.part_number,item);
+        }
+      }
+    }else if(typeof group==="object"){
+      for(const [key,item] of Object.entries(group)){
+        if(item&&typeof item==="object"){
+          add(item.product_code??item.product_name??item.product??item.code??item.name??item.model??item.part_number??key,item);
+        }else add(key,item);
+      }
     }
     if(found.size)break;
   }
-  if(!found.size){
-    const code=label(row.product_code??row.product_name??row.product??row.name??row.model??row.part_number);
-    add(code,row);
-  }
+  if(!found.size)add(row.product_code??row.product_name??row.product??row.model??row.part_number,row);
   return found.size?[...found].map(([model,qty])=>({model,qty})):[{model:"GERAL",qty:n(row.actual)}];
+}
+function stockProductShape(rows){
+  const examples=rows.filter(r=>stockStage(r.area)).slice(0,100);
+  for(const r of examples){
+    const v=r.products;
+    if(v===undefined||v===null)continue;
+    const type=Array.isArray(v)?"lista":typeof v;
+    const first=Array.isArray(v)?v[0]:(typeof v==="object"?Object.values(v)[0]:v);
+    const keys=first&&typeof first==="object"?Object.keys(first).slice(0,14).join(", "):typeof first;
+    return "products: "+type+"; estrutura do primeiro item: "+keys;
+  }
+  return "products ausente nos registros de produção amostrados";
 }
 
 // Product-family reconciliation supplied by production-code list.
@@ -1904,9 +1918,10 @@ function updateStock(){
   const noModelRows=source.filter(r=>stockStage(r.area)).length;
   const sampleFields=source.find(r=>stockStage(r.area))||source[0]||{};
   const stockFieldHints=Object.keys(sampleFields).slice(0,22).join(", ");
+  const stockProductHints=stockProductShape(source);
   const hasNamedProducts=position.length>0;
   const stockDataWarning=stockLoaded&&!hasNamedProducts
-    ?(noModelRows?"O L2L retornou "+noModelRows+" registros de produção, mas nenhum modelo identificável para estoque. Campos recebidos: "+stockFieldHints:"O L2L não retornou produções das etapas consultadas no período.")
+    ?(noModelRows?"O L2L retornou "+noModelRows+" registros de produção, mas nenhum modelo identificável para estoque. Campos recebidos: "+stockFieldHints+" • "+stockProductHints:"O L2L não retornou produções das etapas consultadas no período.")
     :"";
 
   populateStockModels(position);
