@@ -1822,12 +1822,26 @@ async function refreshStockRange(){
   if(stockLoading)return;
   stockLoading=true;
   const status=document.getElementById("stockLiveStatus");
-  if(status)status.textContent="🟡 Consultando L2L...";
+  if(status)status.textContent="🟡 Consultando L2L em blocos...";
   try{
     const first=stockFilterState.startDate||"2026-09-15";
     const last=stockFilterState.endDate||todayISO();
-    const fetched=await window.L2L.getRange(first,last,"00:00","23:59");
-    stockRows=fetched;
+    const dateOf=str=>new Date(str+"T00:00:00");
+    const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    const cursor=dateOf(first),finish=dateOf(last);
+    if(!Number.isFinite(cursor.getTime())||!Number.isFinite(finish.getTime())||cursor>finish)throw new Error("Período inválido.");
+    const collected=[];
+    while(cursor<=finish){
+      const chunkStart=iso(cursor);
+      const chunkEndDate=new Date(cursor);
+      chunkEndDate.setDate(chunkEndDate.getDate()+6);
+      if(chunkEndDate>finish)chunkEndDate.setTime(finish.getTime());
+      const chunkEnd=iso(chunkEndDate);
+      const chunk=await window.L2L.getDailyWindow(chunkStart+" 00:00",chunkEnd+" 23:59");
+      collected.push(...chunk);
+      cursor.setDate(cursor.getDate()+7);
+    }
+    stockRows=collected;
     stockLoaded=true;
     stockFetchError="";
     l2lLastUpdate=new Date();
@@ -1843,7 +1857,6 @@ async function refreshStockRange(){
     stockLoading=false;
   }
 }
-
 function renderStockByModel(rows){
   const el=document.getElementById("stockByModel");
   if(!el)return;
@@ -1860,6 +1873,12 @@ function renderStockByModel(rows){
 function updateStock(){
   const source=stockLoaded?stockRows:[];
   const position=calculateL2LStock(source);
+  const noModelRows=source.filter(r=>stockStage(r.area)).length;
+  const hasNamedProducts=position.length>0;
+  const stockDataWarning=stockLoaded&&!hasNamedProducts
+    ?(noModelRows?"O L2L retornou "+noModelRows+" registros de produção, mas nenhum modelo identificável para estoque.":"O L2L não retornou produções das etapas consultadas no período.")
+    :"";
+
   populateStockModels(position);
   const visible=stockFilteredPosition(position);
 
@@ -1887,14 +1906,14 @@ function updateStock(){
     pending.innerHTML+='<p style="padding:10px;color:#b45309">⚠ '+unknown.length+' registro(s) de produção sem código de produto ('+fmt(unknown.reduce((sum,r)=>sum+r.qty,0))+' peças). Não considerados nos saldos por modelo.</p>';
   }
   const status=document.getElementById("stockLiveStatus");
-  if(status)status.textContent=stockFetchError?"🔴 "+stockFetchError:(stockLoaded?liveStamp():"🟡 Aguardando consulta do L2L");
+  if(status)status.textContent=stockFetchError?"🔴 "+stockFetchError:(stockDataWarning?"🟠 "+stockDataWarning:stockLoaded?liveStamp():"🟡 Aguardando consulta do L2L");
 
   const context=document.getElementById("stockContext");
   if(context){
     const startLabel=(stockFilterState.startDate||"2026-09-15").split("-").reverse().join("/");
     const endLabel=(stockFilterState.endDate||todayISO()).split("-").reverse().join("/");
     const modelLabel=stockFilterState.model==="Todos"?"Todos os modelos":stockFilterState.model;
-    context.textContent=(stockFetchError?"🔴 Erro na coleta do estoque: "+stockFetchError:stockLoaded?liveStamp():"🟡 Sem dados de estoque confirmados")+" • Acumulado "+startLabel+" → "+endLabel+" • "+modelLabel+" • cálculo por produção (não substitui inventário físico) • "+(calculateL2LStock.unmatched?.length||0)+" registros de Usinagem não conciliados • atualização a cada 1 minuto";
+    context.textContent=(stockFetchError?"🔴 Erro na coleta do estoque: "+stockFetchError:stockDataWarning?"🟠 "+stockDataWarning:stockLoaded?liveStamp():"🟡 Sem dados de estoque confirmados")+" • Acumulado "+startLabel+" → "+endLabel+" • "+modelLabel+" • cálculo por produção (não substitui inventário físico) • "+(calculateL2LStock.unmatched?.length||0)+" registros de Usinagem não conciliados • atualização a cada 1 minuto";
   }
 
   const cards=document.getElementById("stockCards");
