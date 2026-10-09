@@ -1195,7 +1195,8 @@ function productionAreaCard(a){
     '<div class="prod-area-head"><div><span>SETOR</span><h3>'+a.area+'</h3></div><strong class="'+cls+'">'+fmtPct(a.attainment)+'</strong></div>'+
     '<div class="prod-area-grid">'+
       '<div><span>Demanda</span><b>'+fmt(a.demand)+'</b></div>'+
-      '<div><span>Produção atual</span><b>'+fmt(a.actual)+'</b></div>'+'<div><span>Scrap</span><b>'+fmt(a.scrap)+'</b></div>'+
+      '<div><span>Produção atual</span><b>'+fmt(a.actual)+'</b></div>'+
+      '<div><span>Scrap</span><b>'+fmt(a.scrap)+'</b><button type="button" class="line-scrap-btn has-scrap" onclick="openScrapDetails(\'Todas\',\''+stockEsc(String(a.area)).replace(/'/g,"&#39;")+'\')">Ver defeitos ↗</button></div>'+
     '</div>'+
     '<div class="prod-area-foot">'+a.lineCount+' linha(s) no L2L</div>'+
   '</article>';
@@ -1324,9 +1325,12 @@ function scrapDateTime(value){
 }
 
 function resolveScrapArea(row){
-  if(row.area)return String(row.area);
-  const match=(productionRows.length?productionRows:l2lRows).find(r=>String(r.line||"")===String(row.line||""));
-  return match?.area||"";
+  const match=(productionRows.length?productionRows:l2lRows).find(r=>
+    (row.line_id!=null&&r.line_id!=null&&String(r.line_id)===String(row.line_id))||
+    String(r.line||"")===String(row.line||"")
+  );
+  // The production summary is the authority for the displayed sector name.
+  return match?.area||((row.area&&!/^\\d+$/.test(String(row.area)))?String(row.area):"");
 }
 
 function scrapSummary(rows){
@@ -1513,8 +1517,10 @@ async function openScrapDetails(lineOverride="", areaOverride=""){
 }
 
 function lineScrapButton(g){
-  const disabled=n(g.scrap)<=0;
-  return '<button type="button" class="line-scrap-btn '+(disabled?'zero':'has-scrap')+'" '+(disabled?'disabled':'onclick="openScrapDetails(\''+String(g.line).replace(/'/g,"&#39;")+'\',\''+String(g.area||"").replace(/'/g,"&#39;")+'\')"')+' title="'+(disabled?'Sem scrap registrado nesta linha':'Clique para ver os defeitos desta linha')+'"><span>'+fmt(g.scrap)+'</span>'+(disabled?'':'<small>Ver defeitos ↗</small>')+'</button>';
+  const qty=n(g.scrap);
+  const line=stockEsc(String(g.line||"")).replace(/'/g,"&#39;");
+  const area=stockEsc(String(g.area||"")).replace(/'/g,"&#39;");
+  return '<button type="button" class="line-scrap-btn '+(qty>0?'has-scrap':'zero')+'" onclick="openScrapDetails(\''+line+'\',\''+area+'\')" title="Consultar os defeitos detalhados desta linha diretamente no L2L"><span>'+fmt(qty)+'</span><small>Ver defeitos ↗</small></button>';
 }
 
 function renderProductionLive(){
