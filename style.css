@@ -10721,3 +10721,10 @@ body.home-nav-in-topbar .home-executive-hero{scroll-margin-top:144px !important}
  body.home-nav-in-topbar .sidebar{top:116px !important;height:calc(100vh - 116px) !important}
  body.home-nav-in-topbar .home-block,body.home-nav-in-topbar .home-executive-hero{scroll-margin-top:130px !important}
 }
+
+/* Stock: allow verbose L2L diagnostics to wrap rather than squeezing the title. */
+.stock-filter-head{align-items:flex-start;flex-wrap:wrap;min-width:0}
+.stock-filter-head>div:first-child{flex:1 1 220px;min-width:220px}
+.stock-filter-head .stock-live-badge{flex:0 1 auto;max-width:100%;white-space:normal;overflow-wrap:anywhere;line-height:1.5}
+.stock-filter-panel .filter-context{overflow-wrap:anywhere;white-space:normal}
+@media(max-width:850px){.stock-filter-head{display:block}.stock-filter-head .stock-live-badge{display:block;margin-top:10px}}
