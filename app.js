@@ -1719,18 +1719,21 @@ function stockStage(area){
 }
 
 function stockProductRows(row){
-  let products=row.products;
-  let list=[];
-  if(Array.isArray(products))list=products;
-  else if(products&&typeof products==="object")list=Object.values(products);
-  const codeOf=v=>v&&typeof v==="object"
-    ? (v.code??v.product_code??v.name??v.description??v.id??"")
-    : (v??"");
-  const normalized=list.filter(x=>x&&typeof x==="object").map(p=>({
-    model:String(codeOf(p.product_code??p.product_name??p.product??p.name??p.model??p.part_number??p.description)).trim(),
-    qty:n(p.actual??p.production_actual??p.quantity??p.qty??0)
-  })).filter(x=>x.model&&x.model!=="[object Object]");
-  if(normalized.length)return normalized;
+  const codeOf=v=>{
+    if(v&&typeof v==="object")return codeOf(v.product_code??v.code??v.name??v.description??v.part_number??"");
+    return String(v??"").trim();
+  };
+  const modelOf=p=>codeOf(p.product_code??p.product_name??p.product??p.name??p.model??p.part_number??p.description??p.productcomponent??p.product_component);
+  const qtyOf=p=>n(p.actual??p.production_actual??p.quantity??p.qty??p.produced??0);
+  const groups=[row.products,row.product_data,row.product_details,row.product_summaries,row.products_data];
+  for(const group of groups){
+    const list=Array.isArray(group)?group:(group&&typeof group==="object"?Object.values(group):[]);
+    const products=list.filter(p=>p&&typeof p==="object").map(p=>({model:modelOf(p),qty:qtyOf(p)})).filter(p=>p.model);
+    if(products.length)return products;
+  }
+  // show_products may flatten the report to one row per product.
+  const model=modelOf(row);
+  if(model)return [{model,qty:qtyOf(row)}];
   return [{model:"GERAL",qty:n(row.actual)}];
 }
 
@@ -1872,6 +1875,8 @@ function updateStock(){
   const source=stockLoaded?stockRows:[];
   const position=calculateL2LStock(source);
   const noModelRows=source.filter(r=>stockStage(r.area)).length;
+  const sampleFields=source.find(r=>stockStage(r.area))||source[0]||{};
+  const stockFieldHints=Object.keys(sampleFields).slice(0,22).join(", ");
   const hasNamedProducts=position.length>0;
   const stockDataWarning=stockLoaded&&!hasNamedProducts
     ?(noModelRows?"O L2L retornou "+noModelRows+" registros de produção, mas nenhum modelo identificável para estoque.":"O L2L não retornou produções das etapas consultadas no período.")
