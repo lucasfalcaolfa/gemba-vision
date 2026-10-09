@@ -1305,7 +1305,7 @@ function productionScrapCard(scrap){
     : productionFilterState.area!=="Todas"
       ? productionFilterState.area
       : "Todas as linhas";
-  return '<button type="button" class="card prod-scrap-kpi" onclick="openScrapDetails()" title="Clique para ver os defeitos, causas, modelos, turnos e datas do scrap"><div class="label">Scrap <span class="scrap-drill-icon">↗</span></div><div class="value '+cls+'">'+fmt(scrap)+'</div><div class="scrap-kpi-hint">'+scope+' • clique para detalhar</div></button>';
+  return '<button type="button" class="card prod-scrap-kpi" onclick="openScrapDetails()" title="Ver produto, defeito, data, hora, turno e quantidade do scrap"><div class="label">Scrap <span class="scrap-drill-icon">↗</span></div><div class="value '+cls+'">'+fmt(scrap)+'</div><div class="scrap-kpi-hint">'+scope+' • clique para detalhar</div></button>';
 }
 
 function closeScrapDetails(){
@@ -1385,7 +1385,7 @@ async function openScrapDetails(lineOverride="", areaOverride=""){
   modal.classList.add("open");
   modal.setAttribute("aria-hidden","false");
   document.body.classList.add("modal-open");
-  body.innerHTML='<div class="scrap-loading"><div class="scrap-spinner"></div><strong>Consultando defeitos, turnos e produtos no L2L...</strong></div>';
+  body.innerHTML='<div class="scrap-loading"><div class="scrap-spinner"></div><strong>Consultando produto, defeito, horário e turno no L2L...</strong></div>';
 
   const startDate=productionFilterState.startDate||todayISO();
   const endDate=productionFilterState.endDate||startDate;
@@ -1406,30 +1406,28 @@ async function openScrapDetails(lineOverride="", areaOverride=""){
     return shiftDisplay(shiftFromHour(d.getHours())).split(" • ")[0];
   };
 
+  // Associate a product only with a pitch covering the exact event time.
+  // Do not guess using a nearby pitch or unrelated dispatch.
   const matchPitch=(line,date,pitches)=>{
     const targetTime=date?new Date(date).getTime():NaN;
-    const sameLine=(pitches||[]).filter(p=>String(p.line||"")===String(line||""));
-    if(!sameLine.length)return null;
-    if(Number.isNaN(targetTime))return sameLine[0];
-
-    const exact=sameLine.find(p=>{
-      const s=new Date(p.start||0).getTime();
-      const e=new Date(p.end||p.start||0).getTime();
-      return !Number.isNaN(s)&&!Number.isNaN(e)&&targetTime>=s&&targetTime<=e;
-    });
-    if(exact)return exact;
-
-    return sameLine
-      .map(p=>({p,diff:Math.abs(targetTime-new Date(p.start||0).getTime())}))
-      .filter(x=>Number.isFinite(x.diff))
-      .sort((a,b)=>a.diff-b.diff)[0]?.p||null;
+    if(!Number.isFinite(targetTime))return null;
+    return (pitches||[]).find(p=>{
+      if(String(p.line||"")!==String(line||""))return false;
+      const start=new Date(p.start||p.pitch_start||0).getTime();
+      const end=new Date(p.end||p.pitch_end||0).getTime();
+      return Number.isFinite(start)&&Number.isFinite(end)&&targetTime>=start&&targetTime<end;
+    })||null;
   };
 
   try{
-    const [scrapRowsRaw,homeContext]=await Promise.all([
-      window.L2L.getScrapDetailsWindow(startDateTime,endDateTime).catch(()=>[]),
-      window.L2L.getHomeContextWindow(startDateTime,endDateTime).catch(()=>({pitches:[],dispatches:[]}))
-    ]);
+    const scrapRowsRaw=await window.L2L.getScrapDetailsWindow(startDateTime,endDateTime);
+    let homeContext={pitches:[],dispatches:[]};
+    let enrichmentWarning="";
+    try{
+      homeContext=await window.L2L.getHomeContextWindow(startDateTime,endDateTime);
+    }catch(e){
+      enrichmentWarning="Complemento de dados indisponível; produtos sem vínculo confirmado aparecem como não informados.";
+    }
 
     const pitches=Array.isArray(homeContext?.pitches)?homeContext.pitches:[];
     const dispatches=Array.isArray(homeContext?.dispatches)?homeContext.dispatches:[];
@@ -1445,59 +1443,8 @@ async function openScrapDetails(lineOverride="", areaOverride=""){
       };
     });
 
-    // Esta visão é exclusiva para defeitos de produto.
-    // Dispatches operacionais (paradas, limpeza, manutenção etc.) não viram ocorrências.
-    // Eles são usados apenas como apoio para enriquecer registros reais de Scrap Detail.
-    const operationalTerms=[
-      "LIMPEZA","LIMPAR","CLEAN","PARADA","DOWNTIME","MANUTENCAO","MANUTENÇÃO",
-      "PREVENTIVA","CORRETIVA","SETUP","AJUSTE","TROCA DE FERRAMENTA","TROCA FERRAMENTA",
-      "FALTA DE MATERIAL","FALTA MATERIAL","FALTA DE OPERADOR","FALTA OPERADOR",
-      "LUBRIFICACAO","LUBRIFICAÇÃO","AQUECIMENTO","QUEBRA DE MAQUINA","QUEBRA DE MÁQUINA"
-    ];
-
-    const cleanText=value=>String(value||"")
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g,"")
-      .toUpperCase();
-
-    const isOperationalEvent=d=>{
-      const text=cleanText([
-        d.dispatch_type,
-        d.description,
-        d.reason,
-        d.machine
-      ].filter(Boolean).join(" "));
-      return operationalTerms.some(term=>text.includes(cleanText(term)));
-    };
-
-    rows=rows.map(r=>{
-      const sameLineDispatches=dispatches
-        .filter(d=>String(d.line||"")===String(r.line||""))
-        .filter(d=>!isOperationalEvent(d));
-
-      if(!sameLineDispatches.length)return r;
-
-      const when=r.date?new Date(r.date).getTime():NaN;
-      const nearest=sameLineDispatches
-        .map(d=>({
-          d,
-          diff:Number.isNaN(when)?0:Math.abs(when-new Date(d.created||d.completed||0).getTime())
-        }))
-        .filter(x=>Number.isFinite(x.diff))
-        .sort((a,b)=>a.diff-b.diff)[0]?.d;
-
-      if(!nearest)return r;
-
-      return {
-        ...r,
-        product:(r.product&&r.product!=="Sem modelo")
-          ? r.product
-          : (nearest.product||r.product||"Sem modelo"),
-        cause:r.cause||nearest.reason||"",
-        source:"Scrap Detail"
-      };
-    });
-
+    // Operational dispatches cannot substantiate which product caused a reject.
+    // Product and defect fields come from Scrap Detail or an exact matching pitch.
     rows=rows.filter(r=>
       (activeArea==="Todas"||!activeArea||String(r.area)===String(activeArea)) &&
       (activeLine==="Todas"||!activeLine||String(r.line)===String(activeLine)) &&
@@ -1508,7 +1455,7 @@ async function openScrapDetails(lineOverride="", areaOverride=""){
 
     const contextArea=activeArea;
     const contextLine=activeLine;
-    ctx.textContent='L2L • '+(contextArea==="Todas"||!contextArea?"Todos os setores":contextArea)+' • '+(contextLine==="Todas"||!contextLine?"Todas as linhas":contextLine)+' • '+startDate.split("-").reverse().join("/")+(endDate!==startDate?' → '+endDate.split("-").reverse().join("/"):'')+' • '+startTime+'–'+endTime;
+    ctx.textContent='L2L • '+(contextArea==="Todas"||!contextArea?"Todos os setores":contextArea)+' • '+(contextLine==="Todas"||!contextLine?"Todas as linhas":contextLine)+' • '+startDate.split("-").reverse().join("/")+(endDate!==startDate?' → '+endDate.split("-").reverse().join("/"):'')+' • '+startTime+'–'+endTime+(enrichmentWarning?' • ⚠ '+enrichmentWarning:'');
 
     const title=document.getElementById("scrapModalTitle");
     if(title)title.textContent=contextLine && contextLine!=="Todas" ? 'Scrap / Defeitos — '+contextLine : 'Scrap / Defeitos';
@@ -1556,7 +1503,7 @@ async function openScrapDetails(lineOverride="", areaOverride=""){
         scrapGroupCards("Defeitos por produto",byModel)+
         scrapGroupCards("Ranking de defeitos",byDefect)+
       '</div>'+
-      '<section class="scrap-occurrence-section"><div class="scrap-occurrence-head"><div><span>DETALHAMENTO L2L</span><h3>Defeitos de produto</h3></div><small>Somente registros de qualidade / scrap</small></div>'+
+      '<section class="scrap-occurrence-section"><div class="scrap-occurrence-head"><div><span>DETALHAMENTO L2L</span><h3>Produto, defeito, horário e turno</h3></div><small>Registros individuais de qualidade / scrap • mais recentes primeiro</small></div>'+
         '<div class="scrap-table-wrap"><table class="scrap-detail-table"><thead><tr><th>Data / Hora</th><th>Turno</th><th>Linha</th><th>Produto / Modelo</th><th>Defeito</th><th>Causa / Motivo</th><th>Qtd.</th></tr></thead><tbody>'+
         rows.map(r=>'<tr><td>'+stockEsc(scrapDateTime(r.date))+'</td><td><span class="scrap-shift-chip">'+stockEsc(r.shift||"Sem turno")+'</span></td><td><b>'+stockEsc(r.line||"-")+'</b></td><td><strong>'+stockEsc(r.product||"Sem modelo")+'</strong></td><td><span class="defect-chip">'+stockEsc(r.defect||"Sem categoria")+'</span></td><td>'+stockEsc(r.cause||"Não informada")+'</td><td><b>'+fmt(r.scrap||1)+'</b></td></tr>').join("")+
       '</tbody></table></div></section>';
