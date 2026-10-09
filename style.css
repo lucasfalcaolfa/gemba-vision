@@ -8611,3 +8611,85 @@ body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar.is-at-home-end{
     margin-bottom:52px !important;
   }
 }
+
+
+/* =========================================================
+   HOME TOP — PERMANENT FIXED EXECUTIVE HEADER
+   Final behavior requested: the full blue header stays locked
+   to the viewport during the entire Home scroll.
+   ========================================================= */
+body.home-nav-in-topbar .topbar{
+  position:fixed !important;
+  top:0 !important;
+  left:0 !important;
+  right:0 !important;
+  width:100% !important;
+  height:144px !important;
+  z-index:1000 !important;
+  transform:none !important;
+  -webkit-transform:none !important;
+  will-change:auto !important;
+}
+
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar{
+  position:absolute !important;
+  left:24px !important;
+  right:24px !important;
+  bottom:8px !important;
+  top:auto !important;
+  z-index:2 !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+  transform:none !important;
+}
+
+/* Do not hide the quick navigation at the bottom anymore. */
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar.is-at-home-end{
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+  transform:none !important;
+}
+
+/* Reserve exactly the fixed-header space so content starts below it. */
+body.home-nav-in-topbar .app{
+  margin-top:144px !important;
+  min-height:calc(100vh - 144px) !important;
+}
+body.home-nav-in-topbar .sidebar{
+  position:fixed !important;
+  top:144px !important;
+  bottom:0 !important;
+  height:auto !important;
+  left:0 !important;
+}
+body.home-nav-in-topbar #content{
+  margin-left:226px !important;
+  width:calc(100% - 226px) !important;
+}
+body.home-nav-in-topbar .home-block,
+body.home-nav-in-topbar .home-executive-hero{
+  scroll-margin-top:164px !important;
+}
+
+@media(max-width:1280px){
+  body.home-nav-in-topbar #content{
+    margin-left:194px !important;
+    width:calc(100% - 194px) !important;
+  }
+}
+@media(max-width:960px){
+  body.home-nav-in-topbar .topbar{height:136px !important}
+  body.home-nav-in-topbar .app{margin-top:136px !important}
+  body.home-nav-in-topbar .sidebar{top:136px !important}
+  body.home-nav-in-topbar #content{
+    margin-left:68px !important;
+    width:calc(100% - 68px) !important;
+  }
+}
+@media(max-width:640px){
+  body.home-nav-in-topbar .topbar{height:122px !important}
+  body.home-nav-in-topbar .app{margin-top:122px !important}
+  body.home-nav-in-topbar .sidebar{top:122px !important}
+}
