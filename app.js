@@ -11,15 +11,7 @@ stock:{title:"Controle de Estoque",sub:"Estoque da Fundição — Inacabado e Ac
 function shell(p){return '<div class="page"><div class="page-head"><div><h1>'+p.title+'</h1><p>'+p.sub+'</p></div><div class="refresh">● Atualização: automática</div></div>'+p.html+'</div>'}
 function card(label,value,cls=""){return '<div class="card"><div class="label">'+label+'</div><div class="value '+cls+'">'+value+'</div></div>'}
 function home(){
-  return '<nav class="home-quick-nav" aria-label="Resumo da Visão Geral">'+
-    '<a class="home-quick-link home-quick-link-hse" href="#home-hse"><span>HSE</span><b>Segurança</b></a>'+
-    '<a class="home-quick-link" href="#home-result"><span>01</span><b>Resultado</b></a>'+
-    '<a class="home-quick-link" href="#home-production"><span>02</span><b>Produção</b></a>'+
-    '<a class="home-quick-link" href="#home-flow"><span>03</span><b>Produtos</b></a>'+
-    '<a class="home-quick-link" href="#home-efficiency"><span>04</span><b>OEE</b></a>'+
-    '<a class="home-quick-link" href="#home-quality"><span>05</span><b>Não Qualidade</b></a>'+
-    '<a class="home-quick-link" href="#home-events"><span>06</span><b>Ocorrências</b></a>'+
-  '</nav>'+'<section class="home-executive-hero panel">'+
+  return '<section class="home-executive-hero panel">'+
     '<div class="home-executive-main">'+
       '<div class="home-executive-copy">'+
         '<span class="home-executive-kicker">GESTÃO À VISTA • FND</span>'+
