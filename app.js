@@ -497,9 +497,10 @@ function lineGaugeCard(g){
   const attainment=g.demand?g.actual/g.demand*100:0;
   return '<article class="pro-oee-card">'+
     '<div class="pro-card-head"><div><div class="pro-card-kicker">'+(g.area||"Setor")+'</div><h3>'+g.line+'</h3></div><span class="pro-status '+statusCls+'">'+status+'</span></div>'+
-    '<div class="pro-card-body">'+(g.source==="Pitches concluídos"?'<div style="font-size:11px;color:#53778a;margin-bottom:8px">OEE: '+g.pitchCount+' pitches concluídos • resumo diário '+fmtPct(g.dailyOee)+(Math.abs(g.oee-g.dailyOee)>=1?' • ⚠ Diferença entre fontes':'')+'</div>':'')+mainGauge(g.oee)+
+    '<div class="pro-card-body">'+(g.pitchCount?'<div style="font-size:11px;color:#53778a;margin-bottom:8px">OEE '+(g.source==="Pitches concluídos"?"pitches concluídos":"resumo L2L")+' • pitches '+fmtPct(g.pitchOee)+' • diário '+fmtPct(g.dailyOee)+(g.auditDifference>=1?' • ⚠ conferir diferença':'')+'</div>':'')+mainGauge(g.oee)+
       '<div class="pro-divider"></div>'+
-      '<div class="pro-metrics">'+(g.source==="Pitches concluídos"?'<span style="font-size:11px;line-height:1.4;color:#607d8b">OA, PPP e Yield: consultar no resumo diário; não usados no OEE ponderado.</span>':miniMetric(g.availability,"OA",85)+miniMetric(g.performance,"PPP",85)+miniMetric(g.quality,"Yield",85))+'</div>'+
+      '<div class="pro-metrics">'+miniMetric(g.availability,"OA",85)+miniMetric(g.performance,"PPP",85)+miniMetric(g.quality,"Yield",85)+'</div>'+
+      (g.pitchCount?'<div style="font-size:10px;color:#6e8290;margin-top:7px">OA, PPP e Yield: valores do resumo diário L2L.</div>':'')+
     '</div>'+
     '<div class="pro-card-foot"><div><span>Meta OEE</span><strong>85%</strong></div><div><span>Atingimento</span><strong>'+fmtPct(attainment)+'</strong></div><div><span>Produção</span><strong>'+fmt(g.actual)+' / '+fmt(g.demand)+'</strong></div></div>'+
   '</article>';
@@ -975,8 +976,14 @@ function renderOeeLive(){
   const groups=groupedByLine(rows).map(g=>{
     const audit=oeePitchAudit.get(g.line);
     if(!audit)return g;
-    return {...g,oee:audit.oee,source:"Pitches concluídos",pitchCount:audit.count,
-      dailyOee:g.oee};
+    // Small differences remain on the official daily metric until L2L's
+    // exact aggregation is documented. Material gaps show audited pitches.
+    const deviation=Math.abs(audit.oee-g.oee);
+    const usePitches=deviation>=3;
+    return {...g,oee:usePitches?audit.oee:g.oee,
+      source:usePitches?"Pitches concluídos":"Resumo L2L (conciliação)",
+      pitchCount:audit.count,pitchOee:audit.oee,dailyOee:g.oee,
+      auditDifference:deviation};
   });
   const selectedArea=oeeFilterState.area==="Todas"?"Toda a fábrica":oeeFilterState.area;
   const selectedLine=oeeFilterState.line==="Todas"?"Todas as linhas":oeeFilterState.line;
