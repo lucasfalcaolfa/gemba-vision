@@ -994,7 +994,7 @@ const productionFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"
 
 function production(){
   return '<div class="panel oee-filter-panel">'+
-    '<div class="oee-filter-head"><div><h2>Filtros de produção</h2><p>Dados reais do L2L para demanda, produção atual e produzido líquido. Turnos: 1º 07:00–17:00 • 2º 17:00–02:00 • 3º 02:00–07:00 • atualização a cada 1 minuto.</p></div><button class="filter-reset" id="prodReset">↺ Limpar filtros</button></div>'+
+    '<div class="oee-filter-head"><div><h2>Filtros de produção</h2><p>Dados reais do L2L para demanda, produção atual, scrap e atingimento. Turnos: 1º 07:00–17:00 • 2º 17:00–02:00 • 3º 02:00–07:00 • atualização a cada 1 minuto.</p></div><button class="filter-reset" id="prodReset">↺ Limpar filtros</button></div>'+
     '<div class="oee-filters oee-filters-live">'+
       '<label>Setor<select id="prodArea"><option value="Todas">Toda a fábrica</option></select></label>'+
       '<label>Linha<select id="prodLinha"><option value="Todas">Todas as linhas</option></select></label>'+
@@ -1014,7 +1014,7 @@ function production(){
     '<div class="panel"><h2>Atingimento por linha</h2><div class="chart-wrap"><canvas id="prodLineChart"></canvas></div></div>'+
     '<div class="panel"><h2>Visão executiva</h2><div id="prodExecutive"></div></div>'+
   '</div>'+
-  '<div class="panel"><h2>Todas as linhas — produção em tempo real</h2><div id="prodTable"></div><div class="footer-note">Fonte: L2L • Demanda = demand • Produção atual = actual • Produzido líquido = actual − scrap • atualização automática a cada 1 minuto.</div></div>'+
+  '<div class="panel"><h2>Todas as linhas — produção em tempo real</h2><div id="prodTable"></div><div class="footer-note">Fonte: L2L • Demanda = demand • Produção atual = actual • atualização automática a cada 1 minuto.</div></div>'+
   '<div class="scrap-modal" id="scrapModal" aria-hidden="true"><div class="scrap-modal-backdrop" onclick="closeScrapDetails()"></div><section class="scrap-modal-panel" role="dialog" aria-modal="true" aria-labelledby="scrapModalTitle"><div class="scrap-modal-head"><div><span>DETALHAMENTO L2L</span><h2 id="scrapModalTitle">Scrap / Defeitos</h2></div><button type="button" class="scrap-close" onclick="closeScrapDetails()" aria-label="Fechar">×</button></div><div class="scrap-modal-context" id="scrapModalContext"></div><div id="scrapModalBody"><div class="empty-state">Carregando detalhes...</div></div></section></div>';
 }
 
@@ -1093,9 +1093,7 @@ function productionAreaCard(a){
     '<div class="prod-area-head"><div><span>SETOR</span><h3>'+a.area+'</h3></div><strong class="'+cls+'">'+fmtPct(a.attainment)+'</strong></div>'+
     '<div class="prod-area-grid">'+
       '<div><span>Demanda</span><b>'+fmt(a.demand)+'</b></div>'+
-      '<div><span>Produção atual</span><b>'+fmt(a.actual)+'</b></div>'+
-      '<div><span>Produzido líquido</span><b>'+fmt(a.net)+'</b></div>'+
-      '<div><span>Scrap</span><b>'+fmt(a.scrap)+'</b></div>'+
+      '<div><span>Produção atual</span><b>'+fmt(a.actual)+'</b></div>'+'<div><span>Scrap</span><b>'+fmt(a.scrap)+'</b></div>'+
     '</div>'+
     '<div class="prod-area-foot">'+a.lineCount+' linha(s) no L2L</div>'+
   '</article>';
@@ -1488,9 +1486,7 @@ function renderProductionLive(){
   if(cards){
     cards.innerHTML=
       card("Demanda",fmt(demand))+
-      card("Produção atual",fmt(actual),actual>=demand&&demand>0?"good":"")+
-      card("Produzido líquido",fmt(net),net>0?"good":"")+
-      card("Atingimento",fmtPct(attainment),attainment>=100?"good":attainment>=95?"warn":"bad")+
+      card("Produção atual",fmt(actual),actual>=demand&&demand>0?"good":"")+card("Atingimento",fmtPct(attainment),attainment>=100?"good":attainment>=95?"warn":"bad")+
       productionScrapCard(scrap);
   }
 
@@ -1515,11 +1511,9 @@ function renderProductionLive(){
   if(table){
     const allGroups=[...groups].sort((a,b)=>(a.area||"").localeCompare(b.area||"")||a.line.localeCompare(b.line));
     table.innerHTML=allGroups.length
-      ? '<div class="table-scroll"><table><tr><th>Setor</th><th>Linha</th><th>Demanda</th><th>Produção atual</th><th>Produzido líquido</th><th>Scrap</th><th>Atingimento</th><th>Status</th></tr>'+
-        allGroups.map(g=>{
-          const netLine=Math.max(0,g.actual-g.scrap);
-          const pct=g.demand?g.actual/g.demand*100:0;
-          return '<tr><td>'+g.area+'</td><td><b>'+g.line+'</b></td><td>'+fmt(g.demand)+'</td><td><b>'+fmt(g.actual)+'</b></td><td>'+fmt(netLine)+'</td><td>'+lineScrapButton(g)+'</td><td>'+fmtPct(pct)+'</td><td>'+(pct>=100?"🟢":pct>=95?"🟡":"🔴")+'</td></tr>';
+      ? '<div class="table-scroll"><table><tr><th>Setor</th><th>Linha</th><th>Demanda</th><th>Produção atual</th><th>Scrap</th><th>Atingimento</th><th>Status</th></tr>'+
+        allGroups.map(g=>{const pct=g.demand?g.actual/g.demand*100:0;
+          return '<tr><td>'+g.area+'</td><td><b>'+g.line+'</b></td><td>'+fmt(g.demand)+'</td><td><b>'+fmt(g.actual)+'</b></td><td>'+lineScrapButton(g)+'</td><td>'+fmtPct(pct)+'</td><td>'+(pct>=100?"🟢":pct>=95?"🟡":"🔴")+'</td></tr>';
         }).join("")+
         '</table></div>'
       : '<div class="empty-state">Nenhum dado de produção encontrado para os filtros selecionados.</div>';
@@ -2610,9 +2604,7 @@ function homeProcessKpis(title,subtitle,metrics,processClass){
     '<div class="home-process-kpi-head"><div><span>PROCESSO</span><h3>'+title+'</h3><p>'+subtitle+'</p></div><b>'+metrics.groups.length+' linha(s)</b></div>'+
     '<div class="home-process-kpi-grid">'+
       '<article class="home-exec-kpi primary"><span>Demanda</span><strong>'+fmt(metrics.demand)+'</strong><small>Planejado no período</small></article>'+
-      '<article class="home-exec-kpi '+(metrics.attainment>=100?"success":metrics.attainment>=95?"attention":"critical")+'"><span>Produção real</span><strong>'+fmt(metrics.actual)+'</strong><small>'+fmtPct(metrics.attainment)+' de atingimento</small></article>'+
-      '<article class="home-exec-kpi"><span>Produzido líquido</span><strong>'+fmt(metrics.net)+'</strong><small>Produção − scrap</small></article>'+
-      '<article class="home-exec-kpi '+(metrics.avgOee>=85?"success":metrics.avgOee>=70?"attention":"critical")+'"><span>OEE médio</span><strong>'+fmtPct(metrics.avgOee)+'</strong><small>'+metrics.groups.length+' linha(s) monitorada(s)</small></article>'+
+      '<article class="home-exec-kpi '+(metrics.attainment>=100?"success":metrics.attainment>=95?"attention":"critical")+'"><span>Produção real</span><strong>'+fmt(metrics.actual)+'</strong><small>'+fmtPct(metrics.attainment)+' de atingimento</small></article>'+'<article class="home-exec-kpi '+(metrics.avgOee>=85?"success":metrics.avgOee>=70?"attention":"critical")+'"><span>OEE médio</span><strong>'+fmtPct(metrics.avgOee)+'</strong><small>'+metrics.groups.length+' linha(s) monitorada(s)</small></article>'+
       '<article class="home-exec-kpi '+(metrics.defectQty>0?"critical":"success")+'"><span>Não qualidade</span><strong>'+fmt(metrics.defectQty)+'</strong><small>'+metrics.defects.length+' tipo(s) de defeito</small></article>'+
     '</div>'+
   '</section>';
