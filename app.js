@@ -1866,21 +1866,29 @@ async function refreshStockRange(){
   if(stockLoading)return;
   stockLoading=true;
   const status=document.getElementById("stockLiveStatus");
-  if(status)status.textContent="🟡 Consultando L2L em blocos...";
+  if(status)status.textContent="🟡 Consultando pitches por produto no L2L...";
   try{
     const first=stockFilterState.startDate||"2026-09-15";
     const last=stockFilterState.endDate||todayISO();
-    const dateOf=str=>new Date(str+"T00:00:00");
-    const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
-    const cursor=dateOf(first),finish=dateOf(last);
+    const cursor=new Date(first+"T00:00:00"),finish=new Date(last+"T00:00:00");
     if(!Number.isFinite(cursor.getTime())||!Number.isFinite(finish.getTime())||cursor>finish)throw new Error("Período inválido.");
-    const collected=[];
-    // Daily endpoint must be queried once per date: multi-day windows can
-    // return aggregate rows and conceal the product dimension.
+    const pad=v=>String(v).padStart(2,"0");
+    const iso=d=>d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+    const time=d=>iso(d)+" "+pad(d.getHours())+":"+pad(d.getMinutes());
+    const now=new Date(),collected=[],ids=new Set();
     while(cursor<=finish){
-      const day=iso(cursor);
-      const chunk=await window.L2L.getDaily(day,"00:00","23:59");
-      collected.push(...chunk);
+      if(cursor>now)break;
+      const start=new Date(cursor);
+      const stop=new Date(cursor);stop.setDate(stop.getDate()+1);
+      if(stop>now)stop.setTime(now.getTime());
+      if(stop<=start)break;
+      const chunk=await window.L2L.getStockPitches(time(start),time(stop));
+      for(const item of chunk){
+        const key=String(item.id??item.line+"|"+item.start+"|"+item.product);
+        if(ids.has(key))continue;
+        ids.add(key);
+        collected.push(item);
+      }
       cursor.setDate(cursor.getDate()+1);
     }
     stockRows=collected;
@@ -1890,7 +1898,7 @@ async function refreshStockRange(){
     l2lError="";
     if(currentPage==="stock")updateStock();
   }catch(err){
-    stockFetchError=err.message||"Falha ao consultar L2L";
+    stockFetchError=err.message||"Falha ao consultar pitches do L2L";
     stockLoaded=false;
     stockRows=[];
     l2lError=stockFetchError;
@@ -1921,7 +1929,7 @@ function updateStock(){
   const stockProductHints=stockProductShape(source);
   const hasNamedProducts=position.length>0;
   const stockDataWarning=stockLoaded&&!hasNamedProducts
-    ?(noModelRows?"O L2L retornou "+noModelRows+" registros de produção, mas nenhum modelo identificável para estoque. Campos recebidos: "+stockFieldHints+" • "+stockProductHints:"O L2L não retornou produções das etapas consultadas no período.")
+    ?(noModelRows?"O L2L retornou "+noModelRows+" pitches, mas nenhum modelo identificável. Campos: "+stockFieldHints:"O L2L não retornou pitches das três etapas no período.")
     :"";
 
   populateStockModels(position);
