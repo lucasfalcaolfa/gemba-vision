@@ -3141,15 +3141,8 @@ function initHomeQuickNavFollow(){
     links.forEach(link=>link.classList.remove("is-current"));
     if(active)active.link.classList.add("is-current");
 
-    const doc=document.documentElement;
-    const scrollTop=window.scrollY||doc.scrollTop||0;
-    const viewport=window.innerHeight||doc.clientHeight||0;
-    const pageHeight=Math.max(
-      doc.scrollHeight,
-      document.body?document.body.scrollHeight:0
-    );
-    const atRealPageEnd=(scrollTop+viewport)>=pageHeight-80;
-    nav.classList.toggle("is-at-home-end",atRealPageEnd);
+    // Keep the informational navigation visible even at the page bottom.
+    nav.classList.remove("is-at-home-end");
   }
 
   let ticking=false;
