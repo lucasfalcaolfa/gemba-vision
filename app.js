@@ -179,6 +179,33 @@ function hasShiftDetail(rows){
   return rows.some(r=>rowShift(r)!=="");
 }
 
+// OEE audit: never treat a future or unfinished pitch as a complete hour.
+// Times returned by L2L use the plant's local clock, as in the shift dashboard.
+let oeePitchAudit=new Map();
+let oeeAuditWarning="";
+function auditPitchOee(pitches,start,end,now){
+  const byLine=new Map(),seen=new Set();
+  for(const p of pitches){
+    const line=String(p.line||"").trim();
+    const from=new Date(String(p.pitch_start||"").replace(" ","T"));
+    const to=new Date(String(p.pitch_end||"").replace(" ","T"));
+    const minutes=Number(p.planned_production_minutes);
+    const value=Number(p.oee);
+    const key=String(p.id??line+"|"+p.pitch_start+"|"+p.pitch_end);
+    if(!line||seen.has(key)||!Number.isFinite(from.getTime())||!Number.isFinite(to.getTime()))continue;
+    seen.add(key);
+    if(from<start||to>end||to>now||from>=to||!Number.isFinite(minutes)||minutes<=0||!Number.isFinite(value))continue;
+    const a=byLine.get(line)||{sum:0,minutes:0,count:0,last:null};
+    a.sum+=minutes*value;a.minutes+=minutes;a.count++;a.last=to;
+    byLine.set(line,a);
+  }
+  return new Map([...byLine].map(([line,a])=>[line,{oee:a.sum/a.minutes,count:a.count,minutes:a.minutes,last:a.last}]));
+}
+function oeeWindowBounds(){
+  const first=new Date((oeeFilterState.startDate||todayISO())+"T"+oeeFilterState.start+":00");
+  const last=new Date((oeeFilterState.endDate||todayISO())+"T"+oeeFilterState.end+":00");
+  return {first,last,now:new Date()};
+}
 async function refreshOeeRange(){
   if(oeeLoading)return;
   oeeLoading=true;
@@ -204,6 +231,24 @@ async function refreshOeeRange(){
       ).catch(()=>[])
     ]);
 
+    // Pitch audit is displayed only for ongoing operational-day windows.
+    // If pitches cannot be fetched, keep daily values and flag the limitation.
+    oeePitchAudit=new Map();
+    oeeAuditWarning="";
+    const bounds=oeeWindowBounds();
+    const isLive=bounds.first<=bounds.now&&bounds.last>=bounds.now&&
+      oeeFilterState.shift==="Todos";
+    if(isLive){
+      try{
+        const fmtLocal=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+        const pitchRows=await window.L2L.getPitchHeat(
+          fmtLocal(bounds.first).slice(0,10),fmtLocal(bounds.now).slice(0,10),
+          fmtLocal(bounds.first).slice(11),fmtLocal(bounds.now).slice(11)
+        );
+        oeePitchAudit=auditPitchOee(pitchRows,bounds.first,bounds.now,bounds.now);
+        if(!oeePitchAudit.size)oeeAuditWarning="Sem pitches concluídos na janela — OEE do resumo diário";
+      }catch(e){oeeAuditWarning="Auditoria de pitches indisponível — exibindo OEE do resumo diário";}
+    }
     oeeRows=summaryRows;
     oeeProductRows=productRows;
     l2lLastUpdate=new Date();
@@ -452,9 +497,9 @@ function lineGaugeCard(g){
   const attainment=g.demand?g.actual/g.demand*100:0;
   return '<article class="pro-oee-card">'+
     '<div class="pro-card-head"><div><div class="pro-card-kicker">'+(g.area||"Setor")+'</div><h3>'+g.line+'</h3></div><span class="pro-status '+statusCls+'">'+status+'</span></div>'+
-    '<div class="pro-card-body">'+mainGauge(g.oee)+
+    '<div class="pro-card-body">'+(g.source==="Pitches concluídos"?'<div style="font-size:11px;color:#53778a;margin-bottom:8px">OEE: '+g.pitchCount+' pitches concluídos • resumo diário '+fmtPct(g.dailyOee)+'</div>':'')+mainGauge(g.oee)+
       '<div class="pro-divider"></div>'+
-      '<div class="pro-metrics">'+miniMetric(g.availability,"OA",85)+miniMetric(g.performance,"PPP",85)+miniMetric(g.quality,"Yield",85)+'</div>'+
+      '<div class="pro-metrics">'+(g.source==="Pitches concluídos"?'<span style="font-size:11px;line-height:1.4;color:#607d8b">OA, PPP e Yield: consultar no resumo diário; não usados no OEE ponderado.</span>':miniMetric(g.availability,"OA",85)+miniMetric(g.performance,"PPP",85)+miniMetric(g.quality,"Yield",85))+'</div>'+
     '</div>'+
     '<div class="pro-card-foot"><div><span>Meta OEE</span><strong>85%</strong></div><div><span>Atingimento</span><strong>'+fmtPct(attainment)+'</strong></div><div><span>Produção</span><strong>'+fmt(g.actual)+' / '+fmt(g.demand)+'</strong></div></div>'+
   '</article>';
@@ -927,7 +972,12 @@ function renderOeeLive(){
 
   const rows=getFilteredOeeRows();
   const source=oeeRows.length?oeeRows:l2lRows;
-  const groups=groupedByLine(rows);
+  const groups=groupedByLine(rows).map(g=>{
+    const audit=oeePitchAudit.get(g.line);
+    if(!audit)return g;
+    return {...g,oee:audit.oee,source:"Pitches concluídos",pitchCount:audit.count,
+      dailyOee:g.oee};
+  });
   const selectedArea=oeeFilterState.area==="Todas"?"Toda a fábrica":oeeFilterState.area;
   const selectedLine=oeeFilterState.line==="Todas"?"Todas as linhas":oeeFilterState.line;
   const selectedShift=oeeFilterState.shift==="Todos"?"Todos os turnos":shiftDisplay(oeeFilterState.shift);
@@ -948,7 +998,7 @@ function renderOeeLive(){
   }
 
   const ctx=document.getElementById("oeeContext");
-  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(oeeFilterState.startDate||"")+(oeeFilterState.endDate&&oeeFilterState.endDate!==oeeFilterState.startDate?" → "+oeeFilterState.endDate:"")+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s) • OEE oficial L2L";
+  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(oeeFilterState.startDate||"")+(oeeFilterState.endDate&&oeeFilterState.endDate!==oeeFilterState.startDate?" → "+oeeFilterState.endDate:"")+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s) • "+(oeePitchAudit.size?"OEE ponderado por pitches concluídos": "OEE resumo L2L")+(oeeAuditWarning?" • ⚠ "+oeeAuditWarning:"");
 
   const table=document.getElementById("oeeTable");
   if(table){
@@ -3408,3 +3458,4 @@ function render(page){
 document.querySelectorAll(".nav").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));b.classList.add("active");render(b.dataset.page)}));
 function tick(){const d=new Date();document.getElementById("date").textContent=d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});document.getElementById("time").textContent=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
 render("home");tick();setInterval(tick,1000);refreshL2L();setInterval(refreshL2L,60000);
+setInterval(()=>{if(currentPage==="oee"&&!document.hidden&&!oeeLoading)refreshOeeRange()},60000);
