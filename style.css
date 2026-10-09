@@ -9367,3 +9367,45 @@ body.home-nav-in-topbar .home-executive-hero{
     scroll-margin-top:116px !important;
   }
 }
+
+
+/* Production live monitoring */
+.production-live-actions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:10px;
+  flex-wrap:wrap;
+}
+.production-live-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:34px;
+  padding:0 11px;
+  border:1px solid #cfe8da;
+  border-radius:999px;
+  background:#eef9f3;
+  color:#28724f;
+  font-size:8px;
+  font-weight:900;
+  letter-spacing:.45px;
+  white-space:nowrap;
+}
+.production-live-badge i{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#2fc279;
+  box-shadow:0 0 0 4px rgba(47,194,121,.12);
+  animation:productionLivePulse 1.8s ease-in-out infinite;
+}
+@keyframes productionLivePulse{
+  0%,100%{transform:scale(1);opacity:1}
+  50%{transform:scale(.75);opacity:.55}
+}
+@media(max-width:760px){
+  .production-live-actions{
+    justify-content:flex-start;
+  }
+}
