@@ -1879,7 +1879,7 @@ function updateStock(){
   const stockFieldHints=Object.keys(sampleFields).slice(0,22).join(", ");
   const hasNamedProducts=position.length>0;
   const stockDataWarning=stockLoaded&&!hasNamedProducts
-    ?(noModelRows?"O L2L retornou "+noModelRows+" registros de produção, mas nenhum modelo identificável para estoque.":"O L2L não retornou produções das etapas consultadas no período.")
+    ?(noModelRows?"O L2L retornou "+noModelRows+" registros de produção, mas nenhum modelo identificável para estoque. Campos recebidos: "+stockFieldHints:"O L2L não retornou produções das etapas consultadas no período.")
     :"";
 
   populateStockModels(position);
