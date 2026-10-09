@@ -421,9 +421,9 @@ function deltaMarkup(value,target=85){
   return '<span class="metric-delta '+cls+'" title="Diferença em relação à referência de '+target+'%">'+arrow+Math.abs(diff).toFixed(0)+'%</span>';
 }
 
-function mainGauge(value){
+function mainGauge(value,thresholds=null){
   const v=Math.max(0,Math.min(100,n(value)));
-  const tone=gaugeTone(v);
+  const tone=fndOeeTone(v,thresholds);
   return '<div class="ref-main-gauge"><svg viewBox="0 0 220 138" role="img" aria-label="OEE '+fmtPct(v)+'"><path class="ref-gauge-track" d="M25 112 A85 85 0 0 1 195 112" pathLength="100"></path><path class="ref-gauge-value '+tone+'" d="M25 112 A85 85 0 0 1 195 112" pathLength="100" stroke-dasharray="'+v+' 100"></path><text x="110" y="62" text-anchor="middle" class="ref-gauge-label">OEE</text><text x="110" y="88" text-anchor="middle" class="ref-gauge-delta '+(n(v)>=85?"delta-up":"delta-down")+'">'+(n(v)>=85?"▲":"▼")+Math.abs(n(v)-85).toFixed(0)+'%</text><text x="110" y="116" text-anchor="middle" class="ref-gauge-number '+tone+'">'+fmt(v,0)+'%</text></svg></div>';
 }
 
@@ -491,13 +491,26 @@ function sortOeeCardsByLine(groups){
   });
 }
 
+function fndOeeThresholds(g){
+  if(String(g.area||"").trim().toUpperCase()!=="FND")return null;
+  const match=String(g.line||"").match(/INJETORA\s+(?:ALUM[IÍ]NIO\s*)?AL?\s*([1-4])\s*$/i);
+  if(!match)return null;
+  return {"1":[65,70],"2":[60,67],"3":[60,70],"4":[80,85]}[match[1]]||null;
+}
+function fndOeeTone(value,thresholds){
+  if(!thresholds)return gaugeTone(value);
+  const v=n(value);
+  return v<thresholds[0]?"gauge-red":v<=thresholds[1]?"gauge-yellow":"gauge-green";
+}
 function lineGaugeCard(g){
-  const status=g.oee>=85?"Dentro da meta":g.oee>=70?"Atenção":"Crítico";
-  const statusCls=g.oee>=85?"status-ok":g.oee>=70?"status-watch":"status-critical";
+  const thresholds=fndOeeThresholds(g);
+  const level=fndOeeTone(g.oee,thresholds);
+  const status=level==="gauge-green"?"Dentro da meta":level==="gauge-yellow"?"Atenção":"Crítico";
+  const statusCls=level==="gauge-green"?"status-ok":level==="gauge-yellow"?"status-watch":"status-critical";
   const attainment=g.demand?g.actual/g.demand*100:0;
   return '<article class="pro-oee-card">'+
     '<div class="pro-card-head"><div><div class="pro-card-kicker">'+(g.area||"Setor")+'</div><h3>'+g.line+'</h3></div><span class="pro-status '+statusCls+'">'+status+'</span></div>'+
-    '<div class="pro-card-body">'+(g.pitchCount?'<div style="font-size:11px;color:#53778a;margin-bottom:8px">OEE '+(g.source==="Pitches concluídos"?"pitches concluídos":"resumo L2L")+' • pitches '+fmtPct(g.pitchOee)+' • diário '+fmtPct(g.dailyOee)+(g.auditDifference>=1?' • ⚠ conferir diferença':'')+'</div>':'')+mainGauge(g.oee)+
+    '<div class="pro-card-body">'+(g.pitchCount?'<div style="font-size:11px;color:#53778a;margin-bottom:8px">OEE '+(g.source==="Pitches concluídos"?"pitches concluídos":"resumo L2L")+' • pitches '+fmtPct(g.pitchOee)+' • diário '+fmtPct(g.dailyOee)+(g.auditDifference>=1?' • ⚠ conferir diferença':'')+'</div>':'')+mainGauge(g.oee,thresholds)+
       '<div class="pro-divider"></div>'+
       '<div class="pro-metrics">'+miniMetric(g.availability,"OA",85)+miniMetric(g.performance,"PPP",85)+miniMetric(g.quality,"Yield",85)+'</div>'+
       (g.pitchCount?'<div style="font-size:10px;color:#6e8290;margin-top:7px">OA, PPP e Yield: valores do resumo diário L2L.</div>':'')+
