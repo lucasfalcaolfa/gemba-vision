@@ -8,12 +8,13 @@
 </head>
 <body>
 <header class="topbar gemba-professional-header">
+  <button type="button" class="mobile-menu-toggle" id="mobileMenuToggle" aria-label="Abrir menu" aria-controls="siteSidebar" aria-expanded="false"><span></span><span></span><span></span></button>
   <div class="brand"><img class="brand-logo" src="https://www.aftermarket.astemo.com/japan/ja/ourcompany/assets/img/logo_astemo-mobility.png" alt="Astemo Mobility Beyond"></div>
   <div class="gemba-header-center"><strong>GEMBA VISION</strong><small>GESTÃO À VISTA</small></div>
   <div class="clock"><span id="date"></span><b id="time"></b></div>
 </header>
 <div class="app">
-<nav class="sidebar">
+<nav class="sidebar" id="siteSidebar">
   <button class="nav active" data-page="home">🏠 <span>Visão Geral</span></button>
   <button class="nav" data-page="safety">🦺 <span>Momento de Segurança</span></button>
   <button class="nav" data-page="oee">⚙️ <span>OEE / Eficiência</span></button>
@@ -24,10 +25,26 @@
   <button class="nav" data-page="quality">🔴 <span>Qualidade / Não Qualidade</span></button>
   <div class="side-footer">GESTÃO À VISTA<br><small>Atualização automática</small></div>
 </nav>
+<button class="mobile-nav-backdrop" type="button" id="mobileNavBackdrop" aria-label="Fechar menu"></button>
 <main id="content"></main>
 </div>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>\n<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 <script src="l2l-client.js?v=20261009-stock-pitches-v9"></script>
 <script src="app.js?v=20261009-remove-homenav-v11"></script>
+<script>
+(function(){
+ const toggle=document.getElementById('mobileMenuToggle');
+ const backdrop=document.getElementById('mobileNavBackdrop');
+ const sidebar=document.getElementById('siteSidebar');
+ if(!toggle||!sidebar||!backdrop)return;
+ const close=()=>{document.body.classList.remove('mobile-nav-open');toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-label','Abrir menu');};
+ toggle.addEventListener('click',()=>{const opened=document.body.classList.toggle('mobile-nav-open');toggle.setAttribute('aria-expanded',String(opened));toggle.setAttribute('aria-label',opened?'Fechar menu':'Abrir menu');});
+ backdrop.addEventListener('click',close);
+ sidebar.addEventListener('click',e=>{if(e.target.closest('button.nav'))close();});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape')close();});
+ window.addEventListener('resize',()=>{if(window.innerWidth>900)close();});
+})();
+</script>
 </body>
 </html>
