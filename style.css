@@ -8219,3 +8219,195 @@ body.home-nav-in-topbar .home-process-switch button.active small{
     grid-template-columns:1fr !important;
   }
 }
+
+
+/* =========================================================
+   HOME TOP SYSTEM — FINAL PROFESSIONAL FIX
+   Keeps header/nav visible through the Home scroll and
+   hides the secondary quick nav only at the real page end.
+   ========================================================= */
+body.home-nav-in-topbar .topbar{
+  position:fixed !important;
+  inset:0 0 auto 0 !important;
+  height:132px !important;
+  padding:0 28px 56px !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:26px !important;
+  background:
+    linear-gradient(90deg,#071d2f 0%,#082a40 58%,#0b354f 100%) !important;
+  border-bottom:1px solid rgba(255,255,255,.08) !important;
+  box-shadow:0 10px 28px rgba(3,18,30,.20) !important;
+  z-index:180 !important;
+  overflow:visible !important;
+}
+body.home-nav-in-topbar .brand{
+  height:76px !important;
+  flex:0 0 258px !important;
+}
+body.home-nav-in-topbar .brand:before{
+  height:76px !important;
+  opacity:.92 !important;
+}
+body.home-nav-in-topbar .brand-logo{
+  width:182px !important;
+}
+body.home-nav-in-topbar .title{
+  font-size:21px !important;
+  letter-spacing:2px !important;
+}
+body.home-nav-in-topbar .clock{
+  min-width:190px !important;
+}
+body.home-nav-in-topbar .clock span{
+  font-size:8px !important;
+  color:#a7bac6 !important;
+}
+body.home-nav-in-topbar .clock b{
+  font-size:17px !important;
+  color:#fff !important;
+}
+
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar{
+  position:absolute !important;
+  left:24px !important;
+  right:24px !important;
+  bottom:8px !important;
+  top:auto !important;
+  width:auto !important;
+  min-height:52px !important;
+  margin:0 !important;
+  padding:5px !important;
+  display:grid !important;
+  grid-template-columns:repeat(7,minmax(0,1fr)) !important;
+  align-items:stretch !important;
+  gap:6px !important;
+  border:1px solid rgba(255,255,255,.10) !important;
+  border-radius:11px !important;
+  background:rgba(7,42,64,.96) !important;
+  box-shadow:0 8px 20px rgba(1,18,29,.18) !important;
+  backdrop-filter:blur(12px) !important;
+  -webkit-backdrop-filter:blur(12px) !important;
+  transform:translateY(0) !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+  transition:opacity .22s ease,transform .22s ease,visibility .22s ease !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar.is-at-home-end{
+  opacity:0 !important;
+  transform:translateY(-8px) !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link{
+  min-height:40px !important;
+  padding:6px 10px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  border:1px solid transparent !important;
+  border-radius:8px !important;
+  background:transparent !important;
+  color:#d8e6ee !important;
+  text-decoration:none !important;
+  font-weight:800 !important;
+  transition:background .16s ease,border-color .16s ease,color .16s ease,transform .16s ease !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link span{
+  min-width:22px !important;
+  height:22px !important;
+  padding:0 6px !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  border-radius:7px !important;
+  background:#15516f !important;
+  color:#fff !important;
+  font-size:7px !important;
+  font-weight:900 !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link b{
+  color:inherit !important;
+  font-size:8px !important;
+  font-weight:900 !important;
+  white-space:nowrap !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link:hover{
+  background:rgba(255,255,255,.07) !important;
+  border-color:rgba(255,255,255,.09) !important;
+  transform:translateY(-1px) !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link.is-current{
+  background:#0d425d !important;
+  border-color:#1d617f !important;
+  color:#fff !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.02) !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link.is-current span{
+  background:#1b8f60 !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link-hse{
+  background:#0d4552 !important;
+  color:#e8fff5 !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link-hse span{
+  background:#16a365 !important;
+}
+
+body.home-nav-in-topbar .app{
+  margin-top:132px !important;
+  min-height:calc(100vh - 132px) !important;
+}
+body.home-nav-in-topbar .sidebar{
+  top:132px !important;
+  height:calc(100vh - 132px) !important;
+}
+body.home-nav-in-topbar .home-block,
+body.home-nav-in-topbar .home-executive-hero{
+  scroll-margin-top:152px !important;
+}
+
+@media(max-width:1100px){
+  body.home-nav-in-topbar .topbar{
+    height:124px !important;
+    padding:0 16px 52px !important;
+  }
+  body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar{
+    left:14px !important;
+    right:14px !important;
+    overflow-x:auto !important;
+    grid-template-columns:none !important;
+    display:flex !important;
+  }
+  body.home-nav-in-topbar nav.home-quick-nav .home-quick-link{
+    flex:0 0 auto !important;
+    min-width:126px !important;
+  }
+  body.home-nav-in-topbar .app{margin-top:124px !important}
+  body.home-nav-in-topbar .sidebar{
+    top:124px !important;
+    height:calc(100vh - 124px) !important;
+  }
+}
+@media(max-width:640px){
+  body.home-nav-in-topbar .topbar{
+    height:108px !important;
+    padding:0 8px 46px !important;
+  }
+  body.home-nav-in-topbar .brand{flex-basis:190px !important}
+  body.home-nav-in-topbar .title{font-size:16px !important}
+  body.home-nav-in-topbar .clock{min-width:0 !important}
+  body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar{
+    left:6px !important;
+    right:6px !important;
+    bottom:5px !important;
+    min-height:48px !important;
+  }
+  body.home-nav-in-topbar .app{margin-top:108px !important}
+  body.home-nav-in-topbar .sidebar{
+    top:108px !important;
+    height:calc(100vh - 108px) !important;
+  }
+}
