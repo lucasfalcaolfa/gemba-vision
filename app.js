@@ -1723,12 +1723,13 @@ function stockProductRows(row){
   let list=[];
   if(Array.isArray(products))list=products;
   else if(products&&typeof products==="object")list=Object.values(products);
-
+  const codeOf=v=>v&&typeof v==="object"
+    ? (v.code??v.product_code??v.name??v.description??v.id??"")
+    : (v??"");
   const normalized=list.filter(x=>x&&typeof x==="object").map(p=>({
-    model:String(p.product_name??p.product??p.name??p.model??p.product_code??p.part_number??p.description??"").trim(),
+    model:String(codeOf(p.product_code??p.product_name??p.product??p.name??p.model??p.part_number??p.description)).trim(),
     qty:n(p.actual??p.production_actual??p.quantity??p.qty??0)
-  })).filter(x=>x.model);
-
+  })).filter(x=>x.model&&x.model!=="[object Object]");
   if(normalized.length)return normalized;
   return [{model:"GERAL",qty:n(row.actual)}];
 }
@@ -1751,12 +1752,12 @@ function stockCanonicalModel(value,stage){
   return null;
 }
 function calculateL2LStock(rows){
-  const flow={},unmatched=[];
+  const flow={},unmatched=[],unidentified=[];
   rows.forEach(row=>{
     const stage=stockStage(row.area);
     if(!stage)return;
     stockProductRows(row).forEach(p=>{
-      if(p.model==="GERAL"||!p.model)return; // No product identity: cannot deduct safely.
+      if(p.model==="GERAL"||!p.model){unidentified.push({stage,line:row.line||"",qty:n(p.qty)});return;} // Product identity required.
       const model=stockCanonicalModel(p.model,stage);
       if(!model){
         if(stage==="downstream")unmatched.push({code:p.model,qty:n(p.qty),line:row.line||""});
@@ -1767,6 +1768,7 @@ function calculateL2LStock(rows){
     });
   });
   calculateL2LStock.unmatched=unmatched;
+  calculateL2LStock.unidentified=unidentified;
   return Object.values(flow).map(x=>({
     ...x,
     inacabado:Math.max(0,x.foundry-x.finishing),
@@ -1879,6 +1881,10 @@ function updateStock(){
       :'<div class="empty-state">Todos os códigos de Usinagem retornados com identificação foram conciliados no período.</div>';
     const negative=position.filter(x=>x.wipDifference<0||x.finishedDifference<0);
     if(negative.length)pending.innerHTML+='<p style="padding:10px;color:#b45309">⚠ '+negative.length+' modelo(s) com diferença negativa. Verificar saldo inicial, correspondência e perdas antes de tratar o valor como estoque físico.</p>';
+  }
+  if(pending && calculateL2LStock.unidentified?.length){
+    const unknown=calculateL2LStock.unidentified;
+    pending.innerHTML+='<p style="padding:10px;color:#b45309">⚠ '+unknown.length+' registro(s) de produção sem código de produto ('+fmt(unknown.reduce((sum,r)=>sum+r.qty,0))+' peças). Não considerados nos saldos por modelo.</p>';
   }
   const status=document.getElementById("stockLiveStatus");
   if(status)status.textContent=stockFetchError?"🔴 "+stockFetchError:(stockLoaded?liveStamp():"🟡 Aguardando consulta do L2L");
