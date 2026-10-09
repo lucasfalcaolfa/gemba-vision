@@ -8411,3 +8411,77 @@ body.home-nav-in-topbar .home-executive-hero{
     height:calc(100vh - 108px) !important;
   }
 }
+
+
+/* =========================================================
+   HOME FIXED TOP — viewport lock + compact professional layout
+   Keeps the executive header and quick navigation visible while
+   scrolling; JS still hides the quick navigation at real page end.
+   ========================================================= */
+body.home-nav-in-topbar .topbar{
+  position:fixed !important;
+  top:0 !important;
+  left:0 !important;
+  right:0 !important;
+  width:100% !important;
+  z-index:500 !important;
+  transform:translateZ(0) !important;
+  -webkit-transform:translateZ(0) !important;
+  will-change:transform;
+}
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar{
+  position:fixed !important;
+  top:76px !important;
+  left:24px !important;
+  right:24px !important;
+  bottom:auto !important;
+  width:auto !important;
+  z-index:510 !important;
+  border:1px solid rgba(143,190,215,.16) !important;
+  background:linear-gradient(180deg,rgba(8,49,73,.985),rgba(7,42,64,.985)) !important;
+  box-shadow:0 10px 24px rgba(1,18,29,.22) !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar.is-at-home-end{
+  opacity:0 !important;
+  transform:translate3d(0,-10px,0) !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+}
+body.home-nav-in-topbar .app{
+  margin-top:132px !important;
+}
+body.home-nav-in-topbar .home-process-kpi-grid{
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+}
+#prodCards{
+  grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+}
+.prod-area-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+}
+@media(max-width:1100px){
+  body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar{
+    top:70px !important;
+    left:14px !important;
+    right:14px !important;
+  }
+  body.home-nav-in-topbar .home-process-kpi-grid,
+  #prodCards{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+  .prod-area-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+@media(max-width:640px){
+  body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar{
+    top:58px !important;
+    left:6px !important;
+    right:6px !important;
+  }
+  body.home-nav-in-topbar .home-process-kpi-grid,
+  #prodCards,
+  .prod-area-grid{
+    grid-template-columns:1fr !important;
+  }
+}
