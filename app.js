@@ -1735,7 +1735,7 @@ function stockProductRows(row){
 const STOCK_FND_FAMILIES={
   K620:"31GQ-K620-01H0F",K310:"31GQ-K310-00A2F",
   K2K0:"31GQ-K2K0-00F2F",KVS0:"31GQ-KVS0-02P0F",
-  K1S0:"31GQ-K1S0-01J3F",KPV0:"41NN-PV70-00A0F",
+  K1S0:"31GQ-K1S0-01J3F",KPV0:"31GQ-KPV0-00A0F",PV70:"41NN-PV70-00A0F",
   KSS0:"31GQ-KSS0-02V0F",K0R0:"31GQ-K0R0-0000F",
   K680:"31GQ-K680-00A0F"
 };
@@ -1743,7 +1743,7 @@ function stockCanonicalModel(value,stage){
   const raw=String(value||"").trim().toUpperCase().replace(/[–—]/g,"-");
   if(stage!=="downstream")return raw;
   // Never map by approximate text similarity: family must match explicitly.
-  const matched=raw.match(/^31GQ-([A-Z0-9]{4})-/);
+  const matched=raw.match(/^(?:31GQ|41NN)-([A-Z0-9]{4})-/);
   if(matched&&STOCK_FND_FAMILIES[matched[1]])return STOCK_FND_FAMILIES[matched[1]];
   return null;
 }
