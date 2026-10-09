@@ -1687,7 +1687,8 @@ let stockRows=[];
 let stockLoading=false;
 let stockLoaded=false;
 let stockFetchError="";
-const stockFilterState={startDate:"2026-09-15",endDate:"",model:"Todos"};
+function stockMonthStart(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-01";}
+const stockFilterState={startDate:"",endDate:"",model:"Todos"};
 
 function stock(){
   return '<div class="panel stock-filter-panel">'+
@@ -1696,7 +1697,7 @@ function stock(){
       '<label>Data inicial<input id="stockStartDate" type="date"></label>'+
       '<label>Data final<input id="stockEndDate" type="date"></label>'+
       '<label>Modelo<select id="stockModel"><option value="Todos">Todos os modelos</option></select></label>'+
-      '<button type="button" id="stockReset" class="stock-filter-reset">↺ 15/09 até hoje</button>'+
+      '<button type="button" id="stockReset" class="stock-filter-reset">↺ 1º do mês até hoje</button>'+
     '</div>'+
     '<div class="filter-context" id="stockContext">Atualização automática a cada 1 minuto.</div>'+
   '</div>'+
@@ -1868,7 +1869,7 @@ async function refreshStockRange(){
   const status=document.getElementById("stockLiveStatus");
   if(status)status.textContent="🟡 Consultando pitches por produto no L2L...";
   try{
-    const first=stockFilterState.startDate||"2026-09-15";
+    const first=stockFilterState.startDate||stockMonthStart();
     const last=stockFilterState.endDate||todayISO();
     const cursor=new Date(first+"T00:00:00"),finish=new Date(last+"T00:00:00");
     if(!Number.isFinite(cursor.getTime())||!Number.isFinite(finish.getTime())||cursor>finish)throw new Error("Período inválido.");
@@ -1963,7 +1964,7 @@ function updateStock(){
 
   const context=document.getElementById("stockContext");
   if(context){
-    const startLabel=(stockFilterState.startDate||"2026-09-15").split("-").reverse().join("/");
+    const startLabel=(stockFilterState.startDate||stockMonthStart()).split("-").reverse().join("/");
     const endLabel=(stockFilterState.endDate||todayISO()).split("-").reverse().join("/");
     const modelLabel=stockFilterState.model==="Todos"?"Todos os modelos":stockFilterState.model;
     context.textContent=(stockFetchError?"🔴 Erro na coleta do estoque: "+stockFetchError:stockDataWarning?"🟠 "+stockDataWarning:stockLoaded?liveStamp():"🟡 Sem dados de estoque confirmados")+" • Acumulado "+startLabel+" → "+endLabel+" • "+modelLabel+" • cálculo por produção (não substitui inventário físico) • "+(calculateL2LStock.unmatched?.length||0)+" registros de Usinagem não conciliados • atualização a cada 1 minuto";
@@ -2015,13 +2016,13 @@ function initStock(){
   const reset=document.getElementById("stockReset");
   if(!startDate||!endDate||!model||!reset)return;
 
-  if(!stockFilterState.startDate)stockFilterState.startDate="2026-09-15";
+  if(!stockFilterState.startDate)stockFilterState.startDate=stockMonthStart();
   if(!stockFilterState.endDate)stockFilterState.endDate=todayISO();
   startDate.value=stockFilterState.startDate;
   endDate.value=stockFilterState.endDate;
 
   startDate.addEventListener("change",async()=>{
-    stockFilterState.startDate=startDate.value||"2026-09-15";
+    stockFilterState.startDate=startDate.value||stockMonthStart();
     if(stockFilterState.endDate<stockFilterState.startDate){
       stockFilterState.endDate=stockFilterState.startDate;
       endDate.value=stockFilterState.endDate;
@@ -2046,7 +2047,7 @@ function initStock(){
   });
 
   reset.addEventListener("click",async()=>{
-    stockFilterState.startDate="2026-09-15";
+    stockFilterState.startDate=stockMonthStart();
     stockFilterState.endDate=todayISO();
     stockFilterState.model="Todos";
     startDate.value=stockFilterState.startDate;
