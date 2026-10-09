@@ -9069,3 +9069,301 @@ body.home-nav-in-topbar .home-executive-hero{
     scroll-margin-top:128px !important;
   }
 }
+
+
+/* =========================================================
+   HOME EXECUTIVE HEADER — MANAGEMENT PRESENTATION
+   Final visual layer: balanced branding, clean hierarchy,
+   persistent navigation until the real end of the Home page.
+   ========================================================= */
+body.home-nav-in-topbar .topbar{
+  position:fixed !important;
+  inset:0 0 auto 0 !important;
+  height:118px !important;
+  display:grid !important;
+  grid-template-columns:230px minmax(300px,1fr) 220px !important;
+  grid-template-rows:66px 44px !important;
+  gap:0 20px !important;
+  align-items:center !important;
+  padding:0 20px 8px !important;
+  overflow:visible !important;
+  background:
+    linear-gradient(108deg,rgba(82,17,40,.96) 0 214px,rgba(82,17,40,0) 214px),
+    linear-gradient(90deg,#061e31 0%,#082b42 56%,#0a354f 100%) !important;
+  border:0 !important;
+  border-bottom:1px solid rgba(155,199,221,.18) !important;
+  box-shadow:0 7px 22px rgba(3,20,31,.18) !important;
+}
+
+body.home-nav-in-topbar .brand{
+  grid-column:1 !important;
+  grid-row:1 !important;
+  height:66px !important;
+  min-width:0 !important;
+  padding:0 18px 0 7px !important;
+  display:flex !important;
+  align-items:center !important;
+  overflow:visible !important;
+}
+body.home-nav-in-topbar .brand:before{
+  left:-20px !important;
+  top:0 !important;
+  width:228px !important;
+  height:66px !important;
+  opacity:.72 !important;
+  background:linear-gradient(110deg,#5d1632 0%,#3d1830 62%,rgba(8,31,49,0) 100%) !important;
+}
+body.home-nav-in-topbar .brand-logo{
+  width:155px !important;
+  max-width:155px !important;
+  height:auto !important;
+  max-height:50px !important;
+  object-fit:contain !important;
+  transform:translateY(2px) !important;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.12)) !important;
+}
+body.home-nav-in-topbar .brand:after{
+  left:55px !important;
+  top:48px !important;
+  font-size:8px !important;
+  font-weight:600 !important;
+  opacity:.82 !important;
+}
+
+body.home-nav-in-topbar .title{
+  grid-column:2 !important;
+  grid-row:1 !important;
+  align-self:center !important;
+  color:#fff !important;
+  font-size:19px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  letter-spacing:2.1px !important;
+  text-transform:uppercase !important;
+}
+body.home-nav-in-topbar .title:after{
+  content:"FND • GESTÃO À VISTA" !important;
+  display:block !important;
+  margin-top:7px !important;
+  color:#8eaabc !important;
+  font-size:6.5px !important;
+  line-height:1 !important;
+  font-weight:800 !important;
+  letter-spacing:1.25px !important;
+}
+
+body.home-nav-in-topbar .clock{
+  grid-column:3 !important;
+  grid-row:1 !important;
+  justify-self:end !important;
+  align-self:center !important;
+  min-width:190px !important;
+  margin:0 !important;
+  padding:2px 0 2px 20px !important;
+  border-left:1px solid rgba(155,199,221,.15) !important;
+  text-align:right !important;
+}
+body.home-nav-in-topbar .clock span{
+  display:block !important;
+  margin-bottom:5px !important;
+  color:#89a5b7 !important;
+  font-size:7px !important;
+  line-height:1.2 !important;
+  font-weight:700 !important;
+}
+body.home-nav-in-topbar .clock b{
+  display:block !important;
+  margin:0 !important;
+  color:#fff !important;
+  font-size:18px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  font-variant-numeric:tabular-nums !important;
+  letter-spacing:.7px !important;
+}
+
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar{
+  position:relative !important;
+  grid-column:1 / -1 !important;
+  grid-row:2 !important;
+  inset:auto !important;
+  width:100% !important;
+  min-height:44px !important;
+  margin:0 !important;
+  padding:4px !important;
+  display:grid !important;
+  grid-template-columns:repeat(7,minmax(0,1fr)) !important;
+  gap:4px !important;
+  align-items:center !important;
+  overflow:visible !important;
+  border:1px solid rgba(133,184,211,.20) !important;
+  border-radius:11px !important;
+  background:rgba(6,38,58,.76) !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025) !important;
+  backdrop-filter:blur(8px) !important;
+  -webkit-backdrop-filter:blur(8px) !important;
+}
+
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link{
+  min-width:0 !important;
+  min-height:34px !important;
+  padding:5px 8px !important;
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:8px !important;
+  border:1px solid transparent !important;
+  border-radius:8px !important;
+  background:transparent !important;
+  color:#c8dbe5 !important;
+  text-decoration:none !important;
+  white-space:nowrap !important;
+  box-shadow:none !important;
+  transform:none !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link:hover{
+  background:rgba(255,255,255,.045) !important;
+  border-color:rgba(142,195,220,.14) !important;
+  color:#fff !important;
+  transform:none !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link span{
+  flex:0 0 21px !important;
+  width:21px !important;
+  height:21px !important;
+  display:grid !important;
+  place-items:center !important;
+  border-radius:6px !important;
+  background:#154d6b !important;
+  color:#fff !important;
+  font-size:6.5px !important;
+  line-height:1 !important;
+  font-weight:900 !important;
+  letter-spacing:.1px !important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.07) !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link b{
+  min-width:0 !important;
+  overflow:hidden !important;
+  text-overflow:ellipsis !important;
+  color:inherit !important;
+  font-size:7.5px !important;
+  line-height:1 !important;
+  font-weight:800 !important;
+  letter-spacing:.05px !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link-hse span{
+  background:#1aa468 !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link.is-current{
+  background:linear-gradient(135deg,#124d69,#0f425c) !important;
+  border-color:rgba(92,177,216,.30) !important;
+  color:#fff !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04) !important;
+}
+body.home-nav-in-topbar nav.home-quick-nav .home-quick-link-hse.is-current{
+  background:linear-gradient(135deg,#115b47,#0e4b3c) !important;
+  border-color:rgba(73,197,137,.28) !important;
+}
+
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar.is-at-home-end{
+  opacity:0 !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+  transform:translateY(-8px) !important;
+}
+
+body.home-nav-in-topbar .app{
+  margin-top:118px !important;
+  min-height:calc(100vh - 118px) !important;
+}
+body.home-nav-in-topbar .sidebar{
+  top:118px !important;
+  height:calc(100vh - 118px) !important;
+}
+body.home-nav-in-topbar #content{
+  margin-left:226px !important;
+  width:calc(100% - 226px) !important;
+}
+body.home-nav-in-topbar .home-block,
+body.home-nav-in-topbar .home-executive-hero{
+  scroll-margin-top:132px !important;
+}
+
+@media(max-width:1280px){
+  body.home-nav-in-topbar .topbar{
+    grid-template-columns:190px minmax(230px,1fr) 190px !important;
+    gap:0 14px !important;
+    padding-left:14px !important;
+    padding-right:14px !important;
+  }
+  body.home-nav-in-topbar .brand-logo{
+    width:142px !important;
+    max-width:142px !important;
+  }
+  body.home-nav-in-topbar .title{font-size:17px !important}
+  body.home-nav-in-topbar #content{
+    margin-left:194px !important;
+    width:calc(100% - 194px) !important;
+  }
+}
+
+@media(max-width:960px){
+  body.home-nav-in-topbar .topbar{
+    height:112px !important;
+    grid-template-columns:135px minmax(150px,1fr) 115px !important;
+    grid-template-rows:62px 42px !important;
+    gap:0 8px !important;
+    padding:0 9px 8px !important;
+  }
+  body.home-nav-in-topbar .brand{height:62px !important}
+  body.home-nav-in-topbar .brand:before{height:62px !important;width:155px !important}
+  body.home-nav-in-topbar .brand-logo{width:118px !important;max-width:118px !important}
+  body.home-nav-in-topbar .brand:after{display:none !important}
+  body.home-nav-in-topbar .title{font-size:14px !important;letter-spacing:1.2px !important}
+  body.home-nav-in-topbar .title:after{font-size:5.5px !important}
+  body.home-nav-in-topbar .clock{min-width:0 !important;padding-left:8px !important}
+  body.home-nav-in-topbar .clock span{display:none !important}
+  body.home-nav-in-topbar .clock b{font-size:14px !important}
+  body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar{
+    display:flex !important;
+    overflow-x:auto !important;
+    overflow-y:hidden !important;
+    scrollbar-width:none !important;
+  }
+  body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar::-webkit-scrollbar{display:none !important}
+  body.home-nav-in-topbar nav.home-quick-nav .home-quick-link{
+    flex:0 0 auto !important;
+    min-width:112px !important;
+  }
+  body.home-nav-in-topbar .app{margin-top:112px !important}
+  body.home-nav-in-topbar .sidebar{top:112px !important;height:calc(100vh - 112px) !important}
+  body.home-nav-in-topbar #content{
+    margin-left:68px !important;
+    width:calc(100% - 68px) !important;
+  }
+}
+
+@media(max-width:640px){
+  body.home-nav-in-topbar .topbar{
+    height:104px !important;
+    grid-template-columns:104px minmax(110px,1fr) 72px !important;
+    grid-template-rows:56px 40px !important;
+    padding:0 6px 8px !important;
+  }
+  body.home-nav-in-topbar .brand{height:56px !important;padding-left:2px !important}
+  body.home-nav-in-topbar .brand:before{height:56px !important;width:116px !important}
+  body.home-nav-in-topbar .brand-logo{width:92px !important;max-width:92px !important}
+  body.home-nav-in-topbar .title{font-size:12px !important;letter-spacing:.9px !important}
+  body.home-nav-in-topbar .title:after{display:none !important}
+  body.home-nav-in-topbar .clock b{font-size:12px !important}
+  body.home-nav-in-topbar nav.home-quick-nav .home-quick-link{
+    min-width:98px !important;
+  }
+  body.home-nav-in-topbar .app{margin-top:104px !important}
+  body.home-nav-in-topbar .sidebar{top:104px !important;height:calc(100vh - 104px) !important}
+  body.home-nav-in-topbar .home-block,
+  body.home-nav-in-topbar .home-executive-hero{
+    scroll-margin-top:116px !important;
+  }
+}
