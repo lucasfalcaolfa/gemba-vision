@@ -8693,3 +8693,89 @@ body.home-nav-in-topbar .home-executive-hero{
   body.home-nav-in-topbar .app{margin-top:122px !important}
   body.home-nav-in-topbar .sidebar{top:122px !important}
 }
+
+
+/* =========================================================
+   HOME TOP — STATIC EXECUTIVE HEADER
+   Requested behavior: header stays at the start of the page and
+   scrolls away naturally with the content.
+   ========================================================= */
+body.home-nav-in-topbar .topbar{
+  position:relative !important;
+  top:auto !important;
+  left:auto !important;
+  right:auto !important;
+  width:100% !important;
+  z-index:60 !important;
+  transform:none !important;
+  -webkit-transform:none !important;
+  will-change:auto !important;
+}
+
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar{
+  position:absolute !important;
+  left:24px !important;
+  right:24px !important;
+  bottom:8px !important;
+  top:auto !important;
+  width:auto !important;
+  z-index:2 !important;
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+  transform:none !important;
+}
+
+body.home-nav-in-topbar nav.home-quick-nav.home-quick-nav-topbar.is-at-home-end{
+  opacity:1 !important;
+  visibility:visible !important;
+  pointer-events:auto !important;
+  transform:none !important;
+}
+
+body.home-nav-in-topbar .app{
+  margin-top:0 !important;
+  min-height:calc(100vh - 144px) !important;
+}
+
+body.home-nav-in-topbar .sidebar{
+  position:sticky !important;
+  top:0 !important;
+  bottom:auto !important;
+  left:auto !important;
+  height:100vh !important;
+}
+
+body.home-nav-in-topbar #content{
+  margin-left:0 !important;
+  width:calc(100% - 226px) !important;
+}
+
+body.home-nav-in-topbar .home-block,
+body.home-nav-in-topbar .home-executive-hero{
+  scroll-margin-top:20px !important;
+}
+
+@media(max-width:1280px){
+  body.home-nav-in-topbar #content{
+    margin-left:0 !important;
+    width:calc(100% - 194px) !important;
+  }
+}
+
+@media(max-width:960px){
+  body.home-nav-in-topbar #content{
+    margin-left:0 !important;
+    width:calc(100% - 68px) !important;
+  }
+  body.home-nav-in-topbar .sidebar{
+    top:0 !important;
+    height:100vh !important;
+  }
+}
+
+@media(max-width:640px){
+  body.home-nav-in-topbar .app{
+    margin-top:0 !important;
+  }
+}
