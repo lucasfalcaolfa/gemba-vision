@@ -134,7 +134,7 @@ let oeeHeatmapRows=[];
 let oeeHourlyHeatmapRows=[];
 let oeeHeatmapLoading=false;
 let oeeHeatmapKey="";
-const oeeFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"",endDate:"",start:"00:00",end:"23:59"};
+const oeeFilterState={area:"Todas",line:"Todas",shift:"Todos",startDate:"",endDate:"",start:"07:00",end:"23:59"};
 
 function normalizeShift(value){
   if(value===null||value===undefined||value==="")return "";
@@ -390,7 +390,7 @@ function initOee(){
     oeeFilterState.shift="Todos";
     oeeFilterState.startDate=todayISO();
     oeeFilterState.endDate=todayISO();
-    oeeFilterState.start="00:00";
+    oeeFilterState.start="07:00";
     oeeFilterState.end="23:59";
 
     area.value="Todas";
@@ -497,7 +497,7 @@ function lineGaugeCard(g){
   const attainment=g.demand?g.actual/g.demand*100:0;
   return '<article class="pro-oee-card">'+
     '<div class="pro-card-head"><div><div class="pro-card-kicker">'+(g.area||"Setor")+'</div><h3>'+g.line+'</h3></div><span class="pro-status '+statusCls+'">'+status+'</span></div>'+
-    '<div class="pro-card-body">'+(g.source==="Pitches concluídos"?'<div style="font-size:11px;color:#53778a;margin-bottom:8px">OEE: '+g.pitchCount+' pitches concluídos • resumo diário '+fmtPct(g.dailyOee)+'</div>':'')+mainGauge(g.oee)+
+    '<div class="pro-card-body">'+(g.source==="Pitches concluídos"?'<div style="font-size:11px;color:#53778a;margin-bottom:8px">OEE: '+g.pitchCount+' pitches concluídos • resumo diário '+fmtPct(g.dailyOee)+(Math.abs(g.oee-g.dailyOee)>=1?' • ⚠ Diferença entre fontes':'')+'</div>':'')+mainGauge(g.oee)+
       '<div class="pro-divider"></div>'+
       '<div class="pro-metrics">'+(g.source==="Pitches concluídos"?'<span style="font-size:11px;line-height:1.4;color:#607d8b">OA, PPP e Yield: consultar no resumo diário; não usados no OEE ponderado.</span>':miniMetric(g.availability,"OA",85)+miniMetric(g.performance,"PPP",85)+miniMetric(g.quality,"Yield",85))+'</div>'+
     '</div>'+
@@ -3458,4 +3458,3 @@ function render(page){
 document.querySelectorAll(".nav").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));b.classList.add("active");render(b.dataset.page)}));
 function tick(){const d=new Date();document.getElementById("date").textContent=d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});document.getElementById("time").textContent=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
 render("home");tick();setInterval(tick,1000);refreshL2L();setInterval(refreshL2L,60000);
-setInterval(()=>{if(currentPage==="oee"&&!document.hidden&&!oeeLoading)refreshOeeRange()},60000);
