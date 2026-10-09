@@ -1703,6 +1703,7 @@ function stock(){
   '<div class="panel"><div class="stock-section-head"><div><span>WIP / INACABADO</span><h2>Estoque Inacabado</h2><p>Produção da Fundição − consumo registrado no Acabamento.</p></div></div><div id="stockInacabado"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>PRODUTO ACABADO</span><h2>Estoque Acabado</h2><p>Produção do Acabamento − saída identificada no processo seguinte.</p></div></div><div id="stockAcabado"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>DETALHAMENTO POR MODELO</span><h2>Quantidade de cada modelo</h2><p>Visão consolidada de Inacabado, Acabado e Total por modelo no período selecionado.</p></div></div><div id="stockByModel"></div></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>CONCILIAÇÃO</span><h2>Códigos de Usinagem sem correspondência</h2><p>Registros não descontados para evitar baixa no modelo errado.</p></div></div><div id="stockUnmatched"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>CONSOLIDADO</span><h2>Resumo do Estoque</h2><p>Resumo calculado para a data e o modelo selecionados.</p></div></div><div id="stockResumo"></div></div>'+
   '<div class="stock-calculation-note"><strong>Atualização:</strong> o painel consulta novamente o L2L a cada <b>1 minuto</b>. Saldos estimados por produção: Inacabado = Injetora − Acabamento; Acabado = Acabamento − Usinagem conciliada. Não são estoque físico confirmado. Códigos sem correspondência não são descontados.</div>';
 }
@@ -1858,6 +1859,19 @@ function updateStock(){
   const finishing=visible.reduce((s,x)=>s+x.finishing,0);
   const downstream=visible.reduce((s,x)=>s+x.downstream,0);
 
+  const pending=document.getElementById("stockUnmatched");
+  if(pending){
+    const items=calculateL2LStock.unmatched||[];
+    const merged=new Map();
+    items.forEach(x=>merged.set(x.code,(merged.get(x.code)||0)+x.qty));
+    pending.innerHTML=merged.size
+      ?'<div class="table-scroll"><table><thead><tr><th>Código Usinagem</th><th>Produção não conciliada</th></tr></thead><tbody>'+
+        [...merged].sort((a,b)=>a[0].localeCompare(b[0])).map(([code,qty])=>'<tr><td>'+stockEsc(code)+'</td><td>'+fmt(qty)+'</td></tr>').join("")+
+        '</tbody></table></div>'
+      :'<div class="empty-state">Todos os códigos de Usinagem retornados com identificação foram conciliados no período.</div>';
+    const negative=position.filter(x=>x.wipDifference<0||x.finishedDifference<0);
+    if(negative.length)pending.innerHTML+='<p style="padding:10px;color:#b45309">⚠ '+negative.length+' modelo(s) com diferença negativa. Verificar saldo inicial, correspondência e perdas antes de tratar o valor como estoque físico.</p>';
+  }
   const status=document.getElementById("stockLiveStatus");
   if(status)status.textContent=liveStamp();
 
