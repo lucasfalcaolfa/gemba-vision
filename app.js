@@ -1719,22 +1719,49 @@ function stockStage(area){
 }
 
 function stockProductRows(row){
-  const codeOf=v=>{
-    if(v&&typeof v==="object")return codeOf(v.product_code??v.code??v.name??v.description??v.part_number??"");
+  // L2L reporting 'products' may be a dictionary keyed by product code,
+  // not necessarily an array of objects with product_name.
+  const isCode=v=>/^(?:31GQ|41NN|17111|17100)[-_A-Z0-9]+$/i.test(String(v||"").trim());
+  const label=v=>{
+    if(v&&typeof v==="object")return label(v.product_code??v.code??v.product_name??v.name??v.part_number??v.description??"");
     return String(v??"").trim();
   };
-  const modelOf=p=>codeOf(p.product_code??p.product_name??p.product??p.name??p.model??p.part_number??p.description??p.productcomponent??p.product_component);
-  const qtyOf=p=>n(p.actual??p.production_actual??p.quantity??p.qty??p.produced??0);
+  const quantity=v=>{
+    if(typeof v==="number")return Number.isFinite(v)?v:0;
+    if(typeof v==="string"&&v.trim()!==""&&!Number.isNaN(Number(v)))return Number(v);
+    if(v&&typeof v==="object"){
+      for(const key of ["actual","production_actual","quantity","qty","produced","good","total_actual"]){
+        if(v[key]!==undefined&&v[key]!==null&&Number.isFinite(Number(v[key])))return Number(v[key]);
+      }
+    }
+    return null;
+  };
+  const found=new Map();
+  const add=(code,value)=>{
+    const c=label(code).toUpperCase();
+    const q=quantity(value);
+    if(!isCode(c)||q===null)return;
+    found.set(c,(found.get(c)||0)+q);
+  };
   const groups=[row.products,row.product_data,row.product_details,row.product_summaries,row.products_data];
   for(const group of groups){
-    const list=Array.isArray(group)?group:(group&&typeof group==="object"?Object.values(group):[]);
-    const products=list.filter(p=>p&&typeof p==="object").map(p=>({model:modelOf(p),qty:qtyOf(p)})).filter(p=>p.model);
-    if(products.length)return products;
+    if(!group||typeof group!=="object")continue;
+    const values=Array.isArray(group)?group:Object.entries(group);
+    for(const entry of values){
+      const key=Array.isArray(group)?null:entry[0];
+      const item=Array.isArray(group)?entry:entry[1];
+      if(item&&typeof item==="object"){
+        const code=label(item.product_code??item.product_name??item.product??item.name??item.model??item.part_number??item.productcomponent??item.product_component??key);
+        add(code,item);
+      }else if(key)add(key,item);
+    }
+    if(found.size)break;
   }
-  // show_products may flatten the report to one row per product.
-  const model=modelOf(row);
-  if(model)return [{model,qty:qtyOf(row)}];
-  return [{model:"GERAL",qty:n(row.actual)}];
+  if(!found.size){
+    const code=label(row.product_code??row.product_name??row.product??row.name??row.model??row.part_number);
+    add(code,row);
+  }
+  return found.size?[...found].map(([model,qty])=>({model,qty})):[{model:"GERAL",qty:n(row.actual)}];
 }
 
 // Product-family reconciliation supplied by production-code list.
