@@ -1704,7 +1704,7 @@ function stock(){
   '<div class="panel"><div class="stock-section-head"><div><span>PRODUTO ACABADO</span><h2>Estoque Acabado</h2><p>Produção do Acabamento − saída identificada no processo seguinte.</p></div></div><div id="stockAcabado"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>DETALHAMENTO POR MODELO</span><h2>Quantidade de cada modelo</h2><p>Visão consolidada de Inacabado, Acabado e Total por modelo no período selecionado.</p></div></div><div id="stockByModel"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>CONSOLIDADO</span><h2>Resumo do Estoque</h2><p>Resumo calculado para a data e o modelo selecionados.</p></div></div><div id="stockResumo"></div></div>'+
-  '<div class="stock-calculation-note"><strong>Atualização:</strong> o painel consulta novamente o L2L a cada <b>1 minuto</b>. Os valores exibidos são calculados com os movimentos de produção retornados pelo L2L para a data selecionada.</div>';
+  '<div class="stock-calculation-note"><strong>Atualização:</strong> o painel consulta novamente o L2L a cada <b>1 minuto</b>. Saldos estimados por produção: Inacabado = Injetora − Acabamento; Acabado = Acabamento − Usinagem conciliada. Não são estoque físico confirmado. Códigos sem correspondência não são descontados.</div>';
 }
 
 function stockStage(area){
@@ -1730,22 +1730,46 @@ function stockProductRows(row){
   return [{model:"GERAL",qty:n(row.actual)}];
 }
 
+// Product-family reconciliation supplied by production-code list.
+// Only exact 31GQ family tokens are matched; unrelated machining codes stay unmatched.
+const STOCK_FND_FAMILIES={
+  K620:"31GQ-K620-01H0F",K310:"31GQ-K310-00A2F",
+  K2K0:"31GQ-K2K0-00F2F",KVS0:"31GQ-KVS0-02P0F",
+  K1S0:"31GQ-K1S0-01J3F",KPV0:"41NN-PV70-00A0F",
+  KSS0:"31GQ-KSS0-02V0F",K0R0:"31GQ-K0R0-0000F",
+  K680:"31GQ-K680-00A0F"
+};
+function stockCanonicalModel(value,stage){
+  const raw=String(value||"").trim().toUpperCase().replace(/[–—]/g,"-");
+  if(stage!=="downstream")return raw;
+  // Never map by approximate text similarity: family must match explicitly.
+  const matched=raw.match(/^31GQ-([A-Z0-9]{4})-/);
+  if(matched&&STOCK_FND_FAMILIES[matched[1]])return STOCK_FND_FAMILIES[matched[1]];
+  return null;
+}
 function calculateL2LStock(rows){
-  const flow={};
+  const flow={},unmatched=[];
   rows.forEach(row=>{
     const stage=stockStage(row.area);
     if(!stage)return;
     stockProductRows(row).forEach(p=>{
-      const model=p.model||"GERAL";
+      if(p.model==="GERAL"||!p.model)return; // No product identity: cannot deduct safely.
+      const model=stockCanonicalModel(p.model,stage);
+      if(!model){
+        if(stage==="downstream")unmatched.push({code:p.model,qty:n(p.qty),line:row.line||""});
+        return;
+      }
       if(!flow[model])flow[model]={model,foundry:0,finishing:0,downstream:0};
       flow[model][stage]+=n(p.qty);
     });
   });
-
+  calculateL2LStock.unmatched=unmatched;
   return Object.values(flow).map(x=>({
     ...x,
     inacabado:Math.max(0,x.foundry-x.finishing),
-    acabado:Math.max(0,x.finishing-x.downstream)
+    acabado:Math.max(0,x.finishing-x.downstream),
+    wipDifference:x.foundry-x.finishing,
+    finishedDifference:x.finishing-x.downstream
   })).sort((a,b)=>a.model.localeCompare(b.model));
 }
 
@@ -1842,7 +1866,7 @@ function updateStock(){
     const startLabel=(stockFilterState.startDate||"2026-09-15").split("-").reverse().join("/");
     const endLabel=(stockFilterState.endDate||todayISO()).split("-").reverse().join("/");
     const modelLabel=stockFilterState.model==="Todos"?"Todos os modelos":stockFilterState.model;
-    context.textContent=liveStamp()+" • Acumulado "+startLabel+" → "+endLabel+" • "+modelLabel+" • atualização automática a cada 1 minuto";
+    context.textContent=liveStamp()+" • Acumulado "+startLabel+" → "+endLabel+" • "+modelLabel+" • cálculo por produção (não substitui inventário físico) • "+(calculateL2LStock.unmatched?.length||0)+" registros de Usinagem não conciliados • atualização a cada 1 minuto";
   }
 
   const cards=document.getElementById("stockCards");
