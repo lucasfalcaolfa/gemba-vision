@@ -2224,18 +2224,6 @@ body.modal-open{overflow:hidden}
 .nav[data-page="heatmap"]{
   position:relative;
 }
-.nav[data-page="heatmap"]::after{
-  content:"";
-  width:6px;
-  height:6px;
-  border-radius:50%;
-  background:#22c55e;
-  margin-left:auto;
-  opacity:.75;
-}
-.nav[data-page="heatmap"].active::after{
-  background:#fff;
-}
 @media(max-width:1200px){
   .oee-filters-datetime,
   .heatmap-filters{
