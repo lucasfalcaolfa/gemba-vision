@@ -2518,6 +2518,7 @@ let homeYesterdayScrapRows=[];
 let homeCurrentDefects=[];
 let homeYesterdayContext={pitches:[],dispatches:[]};
 let homeYesterdayLoading=false;
+let homeOperationalRange=null;
 
 function previousDayISO(){
   const d=new Date();
@@ -2530,8 +2531,8 @@ function nextDayISO(iso){
   return localIsoDate(d);
 }
 
-function homeOperationalWindow(){
-  const startDate=previousDayISO();
+function homeOperationalWindow(startDateOverride=""){
+  const startDate=startDateOverride||homeOperationalRange?.startDate||previousDayISO();
   const endDate=nextDayISO(startDate);
   return {
     startDate,
@@ -2539,6 +2540,35 @@ function homeOperationalWindow(){
     start:startDate+" 07:00",
     end:endDate+" 07:00"
   };
+}
+
+function previousIsoDate(iso){
+  const d=new Date((iso||previousDayISO())+"T00:00:00");
+  d.setDate(d.getDate()-1);
+  return localIsoDate(d);
+}
+
+async function findLatestHomeProductionWindow(maxDays=31){
+  let date=previousDayISO();
+  let lastSuccessful=null;
+
+  for(let i=0;i<maxDays;i++){
+    const range=homeOperationalWindow(date);
+    try{
+      const rows=await window.L2L.getOeeSummaryWindow(range.start,range.end);
+      lastSuccessful={range,rows:Array.isArray(rows)?rows:[]};
+      const fndRows=homeFndRows(lastSuccessful.rows);
+      const produced=total(fndRows,"actual");
+      if(produced>0)return {...lastSuccessful,produced};
+    }catch(err){
+      // A falha de um dia não impede procurar uma data anterior disponível.
+    }
+    date=previousIsoDate(date);
+  }
+
+  // Se não houver produção no período pesquisado, mantém a data mais recente
+  // que respondeu no L2L para a tela continuar funcional.
+  return lastSuccessful||{range:homeOperationalWindow(previousDayISO()),rows:[],produced:0};
 }
 
 function isFndArea(value){
@@ -3122,27 +3152,28 @@ async function refreshHomeYesterday(){
   if(homeYesterdayLoading)return;
   homeYesterdayLoading=true;
   const status=document.getElementById("homeYesterdayStatus");
-  if(status)status.textContent="🟡 Consultando FND • janela operacional 07:00 → 07:00...";
+  if(status)status.textContent="🟡 Procurando o último dia com produção registrada no L2L...";
 
-  const windowRange=homeOperationalWindow();
   try{
-    const [summaryResult,productResult,scrapResult,contextResult]=await Promise.allSettled([
-      window.L2L.getOeeSummaryWindow(windowRange.start,windowRange.end),
+    const latest=await findLatestHomeProductionWindow(31);
+    const windowRange=latest.range;
+    homeOperationalRange=windowRange;
+
+    const [productResult,scrapResult,contextResult]=await Promise.allSettled([
       window.L2L.getDailyWindow(windowRange.start,windowRange.end),
       window.L2L.getScrapDetailsWindow(windowRange.start,windowRange.end),
       window.L2L.getHomeContextWindow(windowRange.start,windowRange.end)
     ]);
 
-    homeYesterdayRows=summaryResult.status==="fulfilled"?summaryResult.value:[];
+    homeYesterdayRows=Array.isArray(latest.rows)?latest.rows:[];
     homeYesterdayProductRows=productResult.status==="fulfilled"?productResult.value:[];
     homeYesterdayScrapRows=scrapResult.status==="fulfilled"?scrapResult.value:[];
     homeYesterdayContext=contextResult.status==="fulfilled"?contextResult.value:{pitches:[],dispatches:[]};
 
-    if(summaryResult.status==="rejected")throw summaryResult.reason;
     l2lLastUpdate=new Date();
     if(currentPage==="home")renderHomeYesterday();
   }catch(err){
-    if(status)status.textContent="🔴 Não foi possível carregar o resumo FND 07:00 → 07:00: "+(err.message||"falha no L2L");
+    if(status)status.textContent="🔴 Não foi possível localizar o último dia com produção no L2L: "+(err.message||"falha no L2L");
     if(currentPage==="home")renderHomeYesterday();
   }finally{
     homeYesterdayLoading=false;
