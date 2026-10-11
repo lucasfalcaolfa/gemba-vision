@@ -3331,8 +3331,16 @@ function initHomeQuickNavFollow(){
     links.forEach(link=>link.classList.remove("is-current"));
     if(active)active.link.classList.add("is-current");
 
-    // Keep the informational navigation visible even at the page bottom.
-    nav.classList.remove("is-at-home-end");
+    // Hide the quick navigation only when the user reaches the real end of the page.
+    const doc=document.documentElement;
+    const body=document.body;
+    const scrollBottom=window.scrollY+window.innerHeight;
+    const pageBottom=Math.max(
+      doc.scrollHeight,doc.offsetHeight,doc.clientHeight,
+      body.scrollHeight,body.offsetHeight
+    );
+    const atRealPageEnd=(pageBottom-scrollBottom)<=10;
+    nav.classList.toggle("is-at-home-end",atRealPageEnd);
   }
 
   let ticking=false;
