@@ -11474,3 +11474,32 @@ body.home-nav-in-topbar .home-executive-hero{
  #content .gv-executive-dashboard #homeHseToday:after{content:"Consulte o Momento de Segurança para ler o comunicado completo do dia.";display:block;text-align:center;padding:7px 16px;font-size:12px;color:#58788b}
  #content .gv-executive-dashboard #homeYesterdayProduction,#content .gv-executive-dashboard #homeYesterdayModels,#content .gv-executive-dashboard #homeYesterdayDefects,#content .gv-executive-dashboard #homeYesterdayEvents{overflow:hidden!important;max-height:100%!important}
 }
+
+
+/* v35 • Dedicated single-screen overview without safety panel */
+@media(min-width:1500px){
+ #content .gv-executive-dashboard{
+  grid-template-columns:minmax(0,1.2fr) minmax(0,1.2fr) minmax(0,1.2fr)!important;
+  grid-template-areas:"hero hero hero" "summary summary summary" "production production products" "oee oee oee" "quality events events"!important;
+ }
+}
+@media(min-width:1800px) and (min-height:850px){
+ #content .page:has(.gv-executive-dashboard){height:calc(100dvh - 72px)!important;max-height:calc(100dvh - 72px)!important;overflow:hidden!important;}
+ #content .gv-executive-dashboard{
+  height:100%!important;max-height:100%!important;min-height:0!important;
+  grid-template-rows:56px 106px minmax(0,2.1fr) minmax(0,1.55fr) minmax(0,1.65fr)!important;
+  gap:7px!important;overflow:hidden!important;
+ }
+ #content .gv-executive-dashboard>.home-block{overflow:hidden!important;min-height:0!important;}
+ #content .gv-executive-dashboard .home-block>.panel{height:100%!important;max-height:100%!important;min-height:0!important;overflow:hidden!important;}
+ #content .gv-executive-dashboard #homeYesterdayProduction,#content .gv-executive-dashboard #homeYesterdayModels,#content .gv-executive-dashboard #homeYesterdayOee,#content .gv-executive-dashboard #homeYesterdayDefects,#content .gv-executive-dashboard #homeYesterdayEvents{max-height:100%!important;overflow:hidden!important;}
+ #content .gv-executive-dashboard .gv-pbi-bars{gap:8px!important;}
+ #content .gv-executive-dashboard .gv-pbi-bar{grid-template-columns:115px minmax(0,1fr) 120px!important;}
+ #content .gv-executive-dashboard .gv-pbi-shifts section{padding:7px!important;}
+ #content .gv-executive-dashboard .gv-pbi-model{padding:5px 0!important;}
+ #content .gv-executive-dashboard .gv-pbi-events section>div{padding:5px 0!important;}
+ #content .gv-executive-dashboard .gv-pbi-defect{margin:8px 0!important;}
+}
+@media(min-width:851px) and (max-width:1499px){
+ #content .gv-executive-dashboard{grid-template-areas:"hero hero" "summary summary" "production products" "oee oee" "quality events"!important;}
+}
