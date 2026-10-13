@@ -1107,17 +1107,58 @@ function production(){
     '<div class="panel"><h2>Atingimento por linha</h2><div class="chart-wrap"><canvas id="prodLineChart"></canvas></div></div>'+
     '<div class="panel"><h2>Visão executiva</h2><div id="prodExecutive"></div></div>'+
   '</div>'+
+  '<div class="panel gv-prod-defects-panel"><div class="gv-prod-defects-title"><div><h2>Defeitos por produto</h2><p>Modelo • defeito registrado • linha • turno • quantidade</p></div><span id="prodDefectsStatus">Consultando L2L...</span></div><div id="prodDefectsByModel" class="gv-prod-defects-list"></div></div>'+
   '<div class="panel"><h2>Todas as linhas — produção em tempo real</h2><div id="prodTable"></div><div class="footer-note">Fonte: L2L • Demanda = demand • Produção atual = actual • atualização automática a cada 15 segundos.</div></div>'+
   '<div class="scrap-modal" id="scrapModal" aria-hidden="true"><div class="scrap-modal-backdrop" onclick="closeScrapDetails()"></div><section class="scrap-modal-panel" role="dialog" aria-modal="true" aria-labelledby="scrapModalTitle"><div class="scrap-modal-head"><div><span>DETALHAMENTO L2L</span><h2 id="scrapModalTitle">Scrap / Defeitos</h2></div><button type="button" class="scrap-close" onclick="closeScrapDetails()" aria-label="Fechar">×</button></div><div class="scrap-modal-context" id="scrapModalContext"></div><div id="scrapModalBody"><div class="empty-state">Carregando detalhes...</div></div></section></div>';
 }
 
+let productionDefectRows=[];
+let productionDefectError="";
+function renderProductionDefects(){
+ const mount=document.getElementById("prodDefectsByModel"),status=document.getElementById("prodDefectsStatus");
+ if(!mount)return;
+ const filtered=productionDefectRows.filter(r=>{
+  const area=productionFilterState.area,line=productionFilterState.line,shift=productionFilterState.shift;
+  const lineName=String(r.line||"");
+  const matchArea=area==="Todas"||r.area===area||(!r.area&&lineName.toUpperCase().includes(String(area).toUpperCase()));
+  const matchLine=line==="Todas"||lineName===line;
+  const rs=rowShift(r);
+  return matchArea&&matchLine&&(shift==="Todos"||rs===shift||!rs);
+ });
+ const groups=new Map();
+ filtered.forEach(r=>{
+  const product=String(r.product||"").trim()||"Modelo não informado";
+  const defect=String(r.defect||"").trim()||"Defeito não informado";
+  const line=String(r.line||"").trim()||"Linha não informada";
+  const shift=rowShift(r)||"";
+  const key=JSON.stringify([product,defect,line,shift]);
+  if(!groups.has(key))groups.set(key,{product,defect,line,shift,qty:0});
+  groups.get(key).qty+=n(r.scrap);
+ });
+ const items=[...groups.values()].sort((a,b)=>b.qty-a.qty);
+ if(status)status.textContent=productionDefectError||fmt(items.reduce((sum,r)=>sum+r.qty,0))+" peças • "+items.length+" combinações";
+ mount.innerHTML=items.length?
+  '<div class="table-scroll"><table class="gv-prod-defects-table"><thead><tr><th>Modelo</th><th>Defeito registrado</th><th>Linha</th><th>Turno</th><th>Quantidade</th></tr></thead><tbody>'+
+  items.map(r=>'<tr><td><b>'+stockEsc(r.product)+'</b></td><td>'+stockEsc(r.defect)+'</td><td>'+stockEsc(r.line)+'</td><td>'+(r.shift?r.shift+"º Turno":"Não informado")+'</td><td><b>'+fmt(r.qty)+'</b></td></tr>').join("")+
+  '</tbody></table></div>':
+  '<div class="empty-state">'+(productionDefectError?stockEsc(productionDefectError):"Nenhum defeito detalhado encontrado para os filtros selecionados.")+'</div>';
+}
 async function refreshProductionRange(){
   if(productionLoading)return;
   productionLoading=true;
   const ctx=document.getElementById("prodContext");
   if(ctx)ctx.textContent="🟡 Consultando L2L...";
   try{
-    productionRows=await window.L2L.getRange(productionFilterState.startDate||todayISO(),productionFilterState.endDate||productionFilterState.startDate||todayISO(),productionFilterState.start,productionFilterState.end);
+    const start=(productionFilterState.startDate||todayISO())+" "+(productionFilterState.start||"00:00");
+    const end=(productionFilterState.endDate||productionFilterState.startDate||todayISO())+" "+(productionFilterState.end||"23:59");
+    const [prodResponse,defectResponse]=await Promise.allSettled([
+      window.L2L.getRange(productionFilterState.startDate||todayISO(),productionFilterState.endDate||productionFilterState.startDate||todayISO(),productionFilterState.start,productionFilterState.end),
+      window.L2L.getScrapDetailsWindow(start,end)
+    ]);
+    if(prodResponse.status!=="fulfilled")throw prodResponse.reason;
+    productionRows=prodResponse.value;
+    productionDefectRows=defectResponse.status==="fulfilled"&&Array.isArray(defectResponse.value)?defectResponse.value:[];
+    productionDefectError=defectResponse.status==="rejected"?"Detalhamento de scrap indisponível no L2L.":"";
     l2lLastUpdate=new Date();
     l2lError="";
     if(currentPage==="production"){
@@ -1563,6 +1604,7 @@ function renderProductionLive(){
   renderProdSectorChart(areaGroups);
   renderProdLineChart(groups);
   renderProdExecutive(areaGroups,groups);
+  renderProductionDefects();
 
   const selectedArea=productionFilterState.area==="Todas"?"Toda a fábrica":productionFilterState.area;
   const selectedLine=productionFilterState.line==="Todas"?"Todas as linhas":productionFilterState.line;
