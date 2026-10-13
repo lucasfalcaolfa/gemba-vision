@@ -11378,3 +11378,46 @@ body.home-nav-in-topbar .home-executive-hero{
  #content .gv-executive-dashboard .home-block td,
  #content .gv-executive-dashboard .home-block th{padding:3px 5px!important}
 }
+
+
+/* v33 — root-cause fixes: legacy intrinsic card sizes and large content.
+   Full HD overview: real L2L data, compact visual; other pages untouched. */
+@media(min-width:1800px) and (min-height:850px){
+ #content .page:has(.gv-executive-dashboard){height:calc(100dvh - 72px)!important;overflow:hidden!important;}
+ #content .gv-executive-dashboard{grid-template-rows:60px 107px minmax(0,2.05fr) minmax(0,1.65fr) minmax(0,1.6fr)!important;min-height:0!important;max-height:100%;}
+ #content .gv-executive-dashboard>.home-block,#content .gv-executive-dashboard>.home-block>.panel{min-height:0!important;min-width:0!important;}
+ #content .gv-executive-dashboard .home-executive-main{padding:5px 8px!important;border:0!important;background:transparent!important;}
+ #content .gv-executive-dashboard .home-executive-status{min-width:0!important}
+ #content .gv-executive-dashboard .home-hse-showcase-grid{display:block!important;padding:0!important;background:#fff!important;}
+ #content .gv-executive-dashboard .home-hse-visual-card{min-height:0!important;height:135px!important;max-height:135px!important;border-radius:8px!important;}
+ #content .gv-executive-dashboard .home-hse-visual-card img,#content .gv-executive-dashboard .home-hse-visual-card canvas{width:100%!important;height:100%!important;object-fit:contain!important;}
+ #content .gv-executive-dashboard .home-hse-showcase-grid>:not(.home-hse-visual-card){min-height:0!important;padding:5px!important;}
+ #content .gv-executive-dashboard .home-process-products-head{padding:5px 7px!important;gap:5px!important;}
+ #content .gv-executive-dashboard .home-shift-product-grid{gap:5px!important;display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+ #content .gv-executive-dashboard .home-shift-product-card{padding:5px!important;min-width:0!important;}
+ #content .gv-executive-dashboard .home-shift-product-head{padding:2px!important;}
+ #content .gv-executive-dashboard .home-process-products{overflow:visible!important;}
+ #content .gv-executive-dashboard .home-prod-main{padding:5px!important;min-width:0!important;}
+ #content .gv-executive-dashboard .home-production-focus{padding:0!important;margin:0 0 6px!important;gap:5px!important;}
+ #content .gv-executive-dashboard .home-production-insight{padding:5px!important;min-width:0!important;}
+ #content .gv-executive-dashboard .home-prod-progress{margin-top:4px!important;}
+ #content .gv-executive-dashboard .home-machine-grid{height:100%!important;align-items:stretch!important;}
+ #content .gv-executive-dashboard .home-machine-head{padding:3px 5px!important;border:0!important;}
+ #content .gv-executive-dashboard .home-machine-head h3{font-size:12px!important;}
+ #content .gv-executive-dashboard .home-machine-status{padding:2px 4px!important;font-size:8px!important;}
+ #content .gv-executive-dashboard .home-machine-oee-main{padding:3px 5px!important;}
+ #content .gv-executive-dashboard .home-machine-metrics{padding:0!important;}
+ #content .gv-executive-dashboard .home-machine-metrics>div{padding:2px!important;min-width:0!important;}
+ #content .gv-executive-dashboard .home-defect-top5{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:4px!important;}
+ #content .gv-executive-dashboard .home-defect-top-card{padding:5px!important;min-width:0!important;gap:4px!important;}
+ #content .gv-executive-dashboard .home-defect-top-card:nth-child(n+5){display:none!important;}
+ #content .gv-executive-dashboard .home-defect-card-meta{display:none!important;}
+ #content .gv-executive-dashboard .home-defect-card-action{display:none!important;}
+ #content .gv-executive-dashboard .home-defect-summary{gap:4px!important;}
+ #content .gv-executive-dashboard .home-defect-summary>div{padding:4px!important;}
+ #content .gv-executive-dashboard #homeYesterdayDefects,
+ #content .gv-executive-dashboard #homeYesterdayEvents,
+ #content .gv-executive-dashboard #homeYesterdayModels,
+ #content .gv-executive-dashboard #homeHseToday{overflow:auto!important;overscroll-behavior:contain;max-height:100%!important;scrollbar-width:thin;}
+ #content .gv-executive-dashboard .home-defect-modal{overflow:visible!important;}
+}
