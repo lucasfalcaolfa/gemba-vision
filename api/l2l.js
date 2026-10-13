@@ -109,8 +109,8 @@ module.exports = async function handler(req, res) {
       const payload = await l2lGet("/api/1.0/productcomponents/", {site, limit:2000});
       const rows = Array.isArray(payload?.data) ? payload.data : [];
       const data = rows.map(p => ({
-        code: String(p.code ?? p.part_number ?? "").trim(),
-        description: String(p.description ?? p.name ?? "").trim()
+        code: String(p.code ?? p.part_number ?? p.product_code ?? p.name ?? "").trim(),
+        description: String(p.description ?? p.product_description ?? p.long_description ?? p.display_name ?? p.name ?? "").trim()
       })).filter(p => p.code && p.description && p.description.toUpperCase() !== p.code.toUpperCase());
       return res.status(200).json({success:true,data,meta:{count:data.length,truncated:rows.length>=2000}});
     } catch(err) {
