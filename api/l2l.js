@@ -100,6 +100,24 @@ module.exports = async function handler(req, res) {
     });
   }
 
+  if (report === "productcatalog") {
+    try {
+      const site = await resolveNumericSite(
+        String(req.query.start || "2026-10-01 00:00"),
+        String(req.query.end || "2026-10-02 00:00")
+      );
+      const payload = await l2lGet("/api/1.0/productcomponents/", {site, limit:2000});
+      const rows = Array.isArray(payload?.data) ? payload.data : [];
+      const data = rows.map(p => ({
+        code: String(p.code ?? p.part_number ?? "").trim(),
+        description: String(p.description ?? p.name ?? "").trim()
+      })).filter(p => p.code && p.description && p.description.toUpperCase() !== p.code.toUpperCase());
+      return res.status(200).json({success:true,data,meta:{count:data.length,truncated:rows.length>=2000}});
+    } catch(err) {
+      return res.status(err.status||502).json({success:false,error:err.message||"Catálogo de produtos indisponível."});
+    }
+  }
+
   if (report === "stockpitches") {
     const start=String(req.query.start||"").trim();
     const end=String(req.query.end||"").trim();
