@@ -3057,7 +3057,7 @@ function renderHomeYesterday(){
     process==="acabamento"?"Resumo das linhas de acabamento da FND.":"Resumo das linhas de injeção da FND.",
     metrics,
     process==="acabamento"?"finishing":"injection"
-  );
+  ) + '<div class="gv-dashboard-stock-note"><div><span>Inacabado</span><strong>—</strong><small>Consulte Estoque</small></div><div><span>Acabado</span><strong>—</strong><small>Consulte Estoque</small></div><div><span>Total do estoque</span><strong>—</strong><small>Sem saldo diário conciliado</small></div></div>';
 
   const prod=document.getElementById("homeYesterdayProduction");
   if(prod){
