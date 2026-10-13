@@ -3612,7 +3612,7 @@ const productCodePattern = /\\b(?:31GQ|41NN|17111|17100)-[A-Z0-9]+(?:-[A-Z0-9]+)
 function describeProductText(value) {
   return String(value).replace(productCodePattern, code => {
     const desc = productDescriptions.get(code.toUpperCase());
-    return desc ? desc + " (" + code + ")" : code;
+    return desc ? desc : code;
   });
 }
 function decorateProductNode(node) {
@@ -3624,9 +3624,9 @@ function decorateProductNode(node) {
     const result=old.replace(productCodePattern,(code,offset,whole)=>{
       const desc=productDescriptions.get(code.toUpperCase());
       if(!desc) return code;
-      const label=desc+" ("+code+")";
+      const label=desc;
       // Avoid formatting labels already expanded by a previous render.
-      if(whole.slice(0,offset).endsWith(desc+" (")) return code;
+      if(whole.slice(0,offset).endsWith(desc)) return code;
       return label;
     });
     if(result!==old) node.nodeValue=result;
