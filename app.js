@@ -3172,7 +3172,7 @@ function renderHomeShiftTabs(shifts){
  if(!mount)return;
  const esc=stockEsc;
  const safe=(Array.isArray(shifts)?shifts:[]).slice(0,3);
- const selectedBefore=document.querySelector("#homeYesterdayModels .gv-turno-models");
+ const selectedBefore=mount.querySelector(".gv-turno-panel:not([hidden]) .gv-turno-models");
  const priorScroll=selectedBefore?selectedBefore.scrollTop:0;
  mount.innerHTML='<div class="gv-turno-tabs" role="tablist" aria-label="Selecione o turno">'+
  safe.map((g,i)=>'<button type="button" role="tab" data-gv-shift="'+i+'" onclick="gvHomeSwitchShift('+i+')">'+esc(g.label||((i+1)+"º Turno"))+'</button>').join("")+'</div>'+
