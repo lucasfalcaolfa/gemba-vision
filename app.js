@@ -1894,11 +1894,13 @@ async function refreshStockRange(){
     l2lLastUpdate=new Date();
     l2lError="";
     if(currentPage==="stock")updateStock();
+    updateHomeStockCards();
   }catch(err){
     stockFetchError=err.message||"Falha ao consultar pitches do L2L";
     stockLoaded=false;
     stockRows=[];
     l2lError=stockFetchError;
+    updateHomeStockCards();
     if(currentPage==="stock")updateStock();
   }finally{
     stockLoading=false;
@@ -3007,6 +3009,33 @@ function closeHomeDefectDetail(){
   document.body.classList.remove("modal-open");
 }
 
+function homeStockSummaryHtml(){
+  let valueI="—",valueA="—",valueT="—";
+  let note=stockLoading?"Consultando L2L...":"Aguardando consulta";
+  if(stockLoaded){
+    const position=calculateL2LStock(stockRows);
+    const identified=position.length>0;
+    const missing=(calculateL2LStock.unidentified||[]).length>0 || (calculateL2LStock.unmatched||[]).length>0;
+    if(identified && !missing){
+      const i=position.reduce((sum,row)=>sum+n(row.inacabado),0);
+      const a=position.reduce((sum,row)=>sum+n(row.acabado),0);
+      valueI=fmt(i);valueA=fmt(a);valueT=fmt(i+a);
+      note="Calculado desde 1º do mês";
+    } else {
+      note=missing?"Pendência de conciliação":"Sem modelos identificados";
+    }
+  } else if(stockFetchError){note="Consulta de estoque indisponível";}
+  return '<div class="gv-dashboard-stock-note">'+
+    '<div><span>Inacabado</span><strong>'+valueI+'</strong><small>'+note+'</small></div>'+
+    '<div><span>Acabado</span><strong>'+valueA+'</strong><small>'+note+'</small></div>'+
+    '<div><span>Total do estoque</span><strong>'+valueT+'</strong><small>'+note+'</small></div>'+
+  '</div>';
+}
+function updateHomeStockCards(){
+ if(currentPage!=="home")return;
+ const el=document.querySelector("#homeYesterdayKpis .gv-dashboard-stock-note");
+ if(el)el.outerHTML=homeStockSummaryHtml();
+}
 function renderHomeYesterday(){
   if(currentPage!=="home")return;
 
@@ -3053,7 +3082,7 @@ function renderHomeYesterday(){
     process==="acabamento"?"Resumo das linhas de acabamento da FND.":"Resumo das linhas de injeção da FND.",
     metrics,
     process==="acabamento"?"finishing":"injection"
-  ) + '<div class="gv-dashboard-stock-note"><div><span>Inacabado</span><strong>—</strong><small>Consulte Estoque</small></div><div><span>Acabado</span><strong>—</strong><small>Consulte Estoque</small></div><div><span>Total do estoque</span><strong>—</strong><small>Sem saldo diário conciliado</small></div></div>';
+  ) + homeStockSummaryHtml();
 
   const prod=document.getElementById("homeYesterdayProduction");
   if(prod){
@@ -3430,6 +3459,11 @@ function initHomeQuickNavFollow(){
 }
 function initHome(){
   renderHomeYesterday();
+  if(!stockLoading && !stockLoaded){
+    stockFilterState.startDate=stockMonthStart();
+    stockFilterState.endDate=todayISO();
+    refreshStockRange();
+  }
   refreshHomeYesterday();
   refreshHseBulletin();
   initHomeQuickNavFollow();
