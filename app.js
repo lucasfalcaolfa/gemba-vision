@@ -3152,6 +3152,26 @@ function renderHomeYesterday(){
   }
 
   renderHomeEvents();
+  renderHomePowerBiSummary();
+}
+
+function renderHomePowerBiSummary(){
+ if(currentPage!=="home")return;
+ const process=homeProcessFilter,m=homeProcessMetrics(homeFndRows(homeYesterdayRows),process,homeYesterdayScrapRows),gs=m.groups,esc=stockEsc;
+ const mx=Math.max(1,...gs.map(g=>g.demand));
+ const prod=document.getElementById("homeYesterdayProduction");
+ if(prod)prod.innerHTML='<div class="gv-legend">■ Real &nbsp; <span>■ Plano</span></div><div class="gv-pbi-bars">'+gs.map(g=>'<div class="gv-pbi-bar"><b>'+esc(g.line)+'</b><div><i style="width:'+Math.min(100,g.actual/mx*100)+'%"></i><em style="width:'+Math.min(100,g.demand/mx*100)+'%"></em></div><span>'+fmt(g.actual)+' / '+fmt(g.demand)+'</span></div>').join("")+'</div><div class="gv-pbi-footer">Atendimento: <b>'+fmtPct(m.attainment)+'</b> · Desvio: '+fmt(m.actual-m.demand)+' peças</div>';
+ const shifts=homeShiftProductGroups(homeYesterdayContext?.pitches||[],process),sums=shifts.map(g=>g.products.reduce((a,p)=>a+n(p.actual),0)),overall=sums.reduce((a,b)=>a+b,0);
+ const models=document.getElementById("homeYesterdayModels");
+ if(models)models.innerHTML='<div class="gv-pbi-total"><b>'+fmt(overall)+'</b> peças por turno</div><div class="gv-pbi-shifts">'+shifts.map((g,i)=>'<section><header>'+esc(g.label)+' <b>'+fmt(sums[i])+'</b></header><div class="gv-pbi-track"><i style="width:'+(overall?sums[i]/overall*100:0)+'%"></i></div>'+g.products.slice(0,3).map(p=>'<div class="gv-pbi-model"><span title="'+esc(p.product)+'">'+esc(stockModelDescription(p.product)||p.product)+'</span><b>'+fmt(p.actual)+'</b></div>').join("")+'</section>').join("")+'</div>';
+ const oee=document.getElementById("homeYesterdayOee");
+ if(oee)oee.innerHTML='<div class="gv-pbi-machines">'+gs.map(g=>'<article class="'+(g.oee>=85?'good':g.oee>=70?'warn':'bad')+'"><header><b>'+esc(g.line)+'</b><strong>'+fmtPct(g.oee)+'</strong></header><div class="gv-pbi-track"><i style="width:'+Math.max(0,Math.min(100,g.oee))+'%"></i></div><div class="gv-pbi-metrics"><span>OA <b>'+fmtPct(g.availability)+'</b></span><span>PPP <b>'+fmtPct(g.performance)+'</b></span><span>Yield <b>'+fmtPct(g.quality)+'</b></span></div><small>'+fmt(g.actual)+' / '+fmt(g.demand)+' peças</small></article>').join("")+'</div>';
+ const defects=document.getElementById("homeYesterdayDefects"),maxDef=Math.max(1,...m.defects.slice(0,5).map(d=>d.qty));
+ if(defects)defects.innerHTML='<div class="gv-pbi-total"><b>'+fmt(m.defectQty)+'</b> peças rejeitadas · '+m.defects.length+' tipos</div>'+m.defects.slice(0,5).map(d=>'<div class="gv-pbi-defect"><span title="'+esc(d.defect)+'">'+esc(d.defect)+'</span><div><i style="width:'+d.qty/maxDef*100+'%"></i></div><b>'+fmt(d.qty)+'</b></div>').join("");
+ const dispatch=(homeYesterdayContext?.dispatches||[]).filter(d=>homeProcessFromLine(d.line)===process).slice().sort((a,b)=>new Date(b.created||0)-new Date(a.created||0));
+ const comments=(homeYesterdayContext?.pitches||[]).filter(p=>homeProcessFromLine(p.line)===process&&String(p.comment||"").trim());
+ const ev=document.getElementById("homeYesterdayEvents");
+ if(ev)ev.innerHTML='<div class="gv-pbi-events"><section><header>Dispatches <strong>'+dispatch.length+'</strong></header>'+dispatch.slice(0,4).map(d=>'<div><small>'+esc(d.line||"-")+'</small><span title="'+esc(d.description||"")+'">'+esc(d.dispatch_type||d.description||"Dispatch")+'</span><small>'+homeTimeLabel(d.created)+'</small></div>').join("")+'</section><section><header>Contramedidas <strong>'+comments.length+'</strong></header>'+comments.slice(0,4).map(p=>'<div><small>'+esc(p.line||"-")+'</small><span title="'+esc(p.comment)+'">'+esc(p.comment)+'</span><small>'+homeTimeLabel(p.start)+'</small></div>').join("")+'</section></div>';
 }
 
 async function refreshHomeYesterday(){
