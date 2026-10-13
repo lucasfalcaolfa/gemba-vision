@@ -3606,4 +3606,59 @@ function render(page){
 }
 document.querySelectorAll(".nav").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));b.classList.add("active");render(b.dataset.page)}));
 function tick(){const d=new Date();document.getElementById("date").textContent=d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});document.getElementById("time").textContent=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
+// Visual labels only: never replace product codes used by stock calculations or filters.
+const productDescriptions = new Map();
+const productCodePattern = /\\b(?:31GQ|41NN|17111|17100)-[A-Z0-9]+(?:-[A-Z0-9]+)+\\b/gi;
+function describeProductText(value) {
+  return String(value).replace(productCodePattern, code => {
+    const desc = productDescriptions.get(code.toUpperCase());
+    return desc ? desc + " (" + code + ")" : code;
+  });
+}
+function decorateProductNode(node) {
+  if(node.nodeType === 3) {
+    if(!node.parentElement || node.parentElement.closest("script,style,textarea,code")) return;
+    const old = node.nodeValue;
+    if(!old || !productCodePattern.test(old)) { productCodePattern.lastIndex=0; return; }
+    productCodePattern.lastIndex=0;
+    const result=old.replace(productCodePattern,(code,offset,whole)=>{
+      const desc=productDescriptions.get(code.toUpperCase());
+      if(!desc) return code;
+      const label=desc+" ("+code+")";
+      // Avoid formatting labels already expanded by a previous render.
+      if(whole.slice(Math.max(0,offset-desc.length-3),offset)===desc+" (") return code;
+      return label;
+    });
+    if(result!==old) node.nodeValue=result;
+    return;
+  }
+  if(node.nodeType!==1) return;
+  if(node.matches("script,style,textarea,code"))return;
+  const walk=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);
+  const texts=[];
+  while(walk.nextNode())texts.push(walk.currentNode);
+  texts.forEach(decorateProductNode);
+}
+const productDescriptionObserver=new MutationObserver(records=>{
+  for(const record of records){
+    if(record.type==="characterData")decorateProductNode(record.target);
+    else record.addedNodes.forEach(decorateProductNode);
+  }
+});
+productDescriptionObserver.observe(document.getElementById("content"),{subtree:true,childList:true,characterData:true});
+async function loadProductDescriptions(){
+  try {
+    const response=await fetch("/api/l2l?report=productcatalog",{cache:"no-store"});
+    if(!response.ok)throw new Error("Catálogo indisponível");
+    const payload=await response.json();
+    if(payload.success===false||!Array.isArray(payload.data))throw new Error("Catálogo inválido");
+    payload.data.forEach(p=>{
+      const code=String(p.code||"").trim().toUpperCase();
+      const desc=String(p.description||"").trim();
+      if(code&&desc&&code!==desc.toUpperCase())productDescriptions.set(code,desc);
+    });
+    decorateProductNode(document.getElementById("content"));
+  }catch(error){console.warn("Descrições L2L indisponíveis; mantendo códigos originais.",error);}
+}
+loadProductDescriptions();
 render("home");tick();setInterval(tick,1000);refreshL2L();setInterval(refreshL2L,60000);
