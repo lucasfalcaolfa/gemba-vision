@@ -11268,3 +11268,19 @@ body.home-nav-in-topbar .home-executive-hero{
   #content .home-dashboard-page{padding:12px;display:flex;flex-direction:column;gap:12px}
   #content .home-dashboard-page .home-block{min-width:0}
 }
+
+
+/* Keep existing injection/finishing switch operational in the compact header. */
+@media(min-width:1180px){
+ #content .home-dashboard-page{grid-template-rows:auto 82px minmax(104px,.8fr) minmax(170px,1.45fr) minmax(150px,1.3fr) minmax(158px,1.3fr)}
+ #content .home-dashboard-page .home-executive-controls{display:flex!important;align-items:center;justify-content:flex-end;padding:0!important;margin:0!important;gap:8px}
+ #content .home-dashboard-page .home-process-filter-copy{display:none!important}
+ #content .home-dashboard-page .home-process-switch{display:flex!important;gap:5px}
+ #content .home-dashboard-page .home-process-switch button{padding:4px 8px!important;min-height:27px!important;max-height:30px}
+ #content .home-dashboard-page .home-process-switch button small{display:none!important}
+ #content .home-dashboard-page .home-process-switch button b{font-size:10px!important}
+ #content .home-dashboard-page .home-executive-hero{display:flex;align-items:center;justify-content:space-between;gap:10px}
+}
+@media(min-width:1180px) and (max-height:800px){
+ #content .home-dashboard-page{grid-template-rows:auto 72px 98px minmax(110px,1fr) minmax(110px,1fr) minmax(110px,1fr)}
+}
