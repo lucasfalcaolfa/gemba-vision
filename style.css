@@ -11735,3 +11735,14 @@ body.home-nav-in-topbar .home-executive-hero{
 .gv-quality-line>small{font-size:11px;color:#71889d}
 @media(max-width:1300px){.gv-quality-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.gv-quality-grid{grid-template-columns:1fr}}
 @media(max-width:720px){.gv-quality-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.gv-quality-row{grid-template-columns:100px 1fr 35px 40px}.gv-quality-toolbar{flex-direction:column;align-items:start}}
+
+
+/* Quality period filter v44 */
+.gv-quality-filter{display:grid;grid-template-columns:repeat(4,minmax(0,1fr)) auto auto;gap:10px;align-items:end;padding:14px 16px;border:1px solid #dce6ee;border-radius:12px;background:#fff;box-shadow:0 2px 9px rgba(15,45,75,.035)}
+.gv-quality-filter label{display:flex;flex-direction:column;gap:6px;min-width:0;color:#46677f;font-size:11px;font-weight:800;letter-spacing:.15px}
+.gv-quality-filter input{box-sizing:border-box;width:100%;min-width:0;height:38px;border:1px solid #cddde9;border-radius:7px;padding:7px 9px;background:#f8fbfd;color:#143e61;font:600 12px inherit}
+.gv-quality-filter button{height:38px;border:1px solid #1b5988;background:#164f7d;color:#fff;border-radius:8px;padding:0 14px;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}
+.gv-quality-filter #qualityReset{background:#f1f6fa;color:#205579;border-color:#cbdce9}
+.gv-quality-filter button:hover{filter:brightness(.95)}
+@media(max-width:1400px){.gv-quality-filter{grid-template-columns:repeat(4,minmax(0,1fr))}.gv-quality-filter button{min-width:0}}
+@media(max-width:760px){.gv-quality-filter{grid-template-columns:repeat(2,minmax(0,1fr))}}
