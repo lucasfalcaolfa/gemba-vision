@@ -10,7 +10,7 @@ actions:{title:"Ações tomadas",sub:"Acompanhamento das ações corretivas e me
 stock:{title:"Controle de Estoque",sub:"Estoque da Fundição — Inacabado e Acabado",html:stock()}
 };
 function actionsTaken(){return '<section class="panel"><div class="stock-section-head"><div><span>GESTÃO DE MELHORIAS</span><h2>Registro de ações tomadas</h2><p>Área destinada ao acompanhamento das ações realizadas, responsáveis, prazos e resultados.</p></div></div><div class="empty-state">Nenhuma ação cadastrada. A página está preparada para receber os registros da equipe.</div></section>'}
-function shell(p){return '<div class="page'+(p===pages.home?' home-dashboard-page':'')+'"><div class="page-head"><div><h1>'+p.title+'</h1><p>'+p.sub+'</p></div><div class="refresh">● Atualização: automática</div></div>'+p.html+'</div>'}
+function shell(p){return '<div class="page"><div class="page-head"><div><h1>'+p.title+'</h1><p>'+p.sub+'</p></div><div class="refresh">● Atualização: automática</div></div>'+p.html+'</div>'}
 function card(label,value,cls=""){return '<div class="card"><div class="label">'+label+'</div><div class="value '+cls+'">'+value+'</div></div>'}
 function home(){
   return '<section class="home-executive-hero panel">'+
