@@ -2060,6 +2060,7 @@ function people(){return '<div class="cards">'+card("Absenteísmo","3,2%","warn"
 function quality(){
  return '<div class="gv-quality-live">'+
  '<div class="gv-quality-toolbar"><div><b>Qualidade da Fundição • L2L</b><small id="qualityWindow">Consultando janela operacional...</small></div><span id="qualityDataStatus">Aguardando dados</span></div>'+
+ '<form class="gv-quality-filter" id="qualityDateFilter"><label>Data inicial<input type="date" id="qualityStartDate" required></label><label>Hora inicial<input type="time" id="qualityStartTime" required></label><label>Data final<input type="date" id="qualityEndDate" required></label><label>Hora final<input type="time" id="qualityEndTime" required></label><button type="submit" id="qualityApply">Consultar L2L</button><button type="button" id="qualityReset">Dia operacional</button></form>'+
  '<div id="qualityLiveKpis" class="gv-quality-kpis"><div class="empty-state">Consultando indicadores do L2L...</div></div>'+
  '<div class="gv-quality-grid">'+
  '<section class="panel"><div class="gv-quality-title"><h2>Pareto de defeitos</h2><small>Quantidades registradas no L2L</small></div><div id="qualityPareto"><div class="empty-state">Carregando...</div></div></section>'+
@@ -2067,21 +2068,72 @@ function quality(){
  '</div><p class="gv-quality-disclaimer">PPM = peças rejeitadas ÷ peças produzidas × 1.000.000. Custos e retrabalho dependem de registros específicos no L2L e não são estimados.</p>'+
  '</div>';
 }
+let qualityRange=null,qualityRows=[],qualityScrapRows=[],qualityContext={pitches:[]},qualityLoading=false,qualityError="";
+function qualityDefaultRange(){
+ const range=homeOperationalWindow(previousDayISO());
+ return {start:range.start,end:range.end};
+}
+function qualitySetForm(){
+ const range=qualityRange||qualityDefaultRange();
+ const values=[["qualityStartDate",range.start.slice(0,10)],["qualityStartTime",range.start.slice(11,16)],["qualityEndDate",range.end.slice(0,10)],["qualityEndTime",range.end.slice(11,16)]];
+ values.forEach(([id,value])=>{const el=document.getElementById(id);if(el)el.value=value;});
+}
+function initQuality(){
+ qualitySetForm();
+ const form=document.getElementById("qualityDateFilter");
+ if(form)form.addEventListener("submit",async e=>{
+  e.preventDefault();
+  const start=document.getElementById("qualityStartDate").value+" "+document.getElementById("qualityStartTime").value;
+  const end=document.getElementById("qualityEndDate").value+" "+document.getElementById("qualityEndTime").value;
+  const first=new Date(start.replace(" ","T")),last=new Date(end.replace(" ","T"));
+  if(!Number.isFinite(first.getTime())||!Number.isFinite(last.getTime())||first>=last){
+   qualityError="Escolha um período com data e hora final posteriores ao início.";renderQualityL2L();return;
+  }
+  if(last-first>31*24*60*60*1000){qualityError="Consulte no máximo 31 dias de cada vez.";renderQualityL2L();return;}
+  qualityRange={start,end};
+  await refreshQualityWindow();
+ });
+ const reset=document.getElementById("qualityReset");
+ if(reset)reset.addEventListener("click",async()=>{qualityRange=qualityDefaultRange();qualitySetForm();await refreshQualityWindow();});
+ refreshQualityWindow();
+}
+async function refreshQualityWindow(){
+ if(qualityLoading)return;
+ qualityLoading=true;qualityError="";
+ const range=qualityRange||qualityDefaultRange();
+ renderQualityL2L();
+ try{
+  const [prod,scrap,context]=await Promise.allSettled([
+   window.L2L.getOeeSummaryWindow(range.start,range.end),
+   window.L2L.getScrapDetailsWindow(range.start,range.end),
+   window.L2L.getHomeContextWindow(range.start,range.end)
+  ]);
+  if(prod.status!=="fulfilled")throw prod.reason||new Error("Erro ao consultar produção.");
+  qualityRows=Array.isArray(prod.value)?prod.value:[];
+  qualityScrapRows=scrap.status==="fulfilled"&&Array.isArray(scrap.value)?scrap.value:[];
+  qualityContext=context.status==="fulfilled"&&context.value?context.value:{pitches:[]};
+  if(scrap.status!=="fulfilled")qualityError="Detalhes de defeitos indisponíveis neste período.";
+  l2lLastUpdate=new Date();
+ }catch(err){
+  qualityRows=[];qualityScrapRows=[];qualityContext={pitches:[]};
+  qualityError="Consulta L2L indisponível: "+(err?.message||"Falha desconhecida");
+ }finally{qualityLoading=false;renderQualityL2L();}
+}
 function renderQualityL2L(){
  if(currentPage!=="quality")return;
  const kpis=document.getElementById("qualityLiveKpis");
  if(!kpis)return;
- const rows=homeFndRows(homeYesterdayRows);
- const defects=homeDefectSummary(homeYesterdayScrapRows,homeYesterdayContext?.pitches||[]);
+ const rows=homeFndRows(qualityRows);
+ const defects=homeDefectSummary(qualityScrapRows,qualityContext?.pitches||[]);
  const actual=total(rows,"actual"),scrap=total(rows,"scrap");
  const scrapPct=actual>0?scrap/actual*100:null;
  const qualityPct=actual>0?(actual-scrap)/actual*100:null;
  const ppm=actual>0?scrap/actual*1000000:null;
- const range=homeOperationalWindow();
+ const range=qualityRange||qualityDefaultRange();
  const windowLabel=document.getElementById("qualityWindow");
- if(windowLabel)windowLabel.textContent=range.startDate+" 07:00 → "+range.endDate+" 07:00";
+ if(windowLabel)windowLabel.textContent=range.start+" → "+range.end;
  const status=document.getElementById("qualityDataStatus");
- if(status)status.textContent=homeYesterdayLoading?"Atualizando L2L...":(rows.length?"Dados da janela operacional":"Sem produção identificada");
+ if(status)status.textContent=qualityLoading?"Consultando L2L...":(qualityError|| (rows.length?"Consulta concluída":"Sem produção identificada"));
  const card=(label,value,detail,cls="")=>'<article class="gv-quality-kpi '+cls+'"><span>'+label+'</span><strong>'+value+'</strong><small>'+detail+'</small></article>';
  kpis.innerHTML=[
    card("Qualidade",qualityPct===null?"—":fmtPct(qualityPct),"Peças boas / produção","good"),
@@ -3542,10 +3594,11 @@ async function refreshL2L(){
     l2lLastUpdate=new Date();
     l2lError="";
     applyLiveData(currentPage);
-    if(currentPage==="home"||currentPage==="quality"){
+    if(currentPage==="home"){
       await refreshHomeYesterday();
       refreshHseBulletin();
     }
+    if(currentPage==="quality")await refreshQualityWindow();
     if(currentPage==="oee"){
       await refreshOeeRange();
       await refreshOeeHeatmap(true);
@@ -3741,7 +3794,7 @@ function render(page){
   currentPage=page;
   document.getElementById("content").innerHTML=shell(pages[page]);
   if(page==="home")initHome();
-  if(page==="quality")refreshHomeYesterday();
+  if(page==="quality")initQuality();
   if(page==="stock")initStock();
   if(page==="oee")initOee();
   if(page==="heatmap")initHeatmap();
