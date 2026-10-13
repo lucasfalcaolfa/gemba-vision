@@ -1824,7 +1824,7 @@ function stockEsc(value){
 
 function stockModelDescription(code){
   const key=String(code||"").trim().toUpperCase();
-  return PRODUCT_DESCRIPTION_OVERRIDES.get(key)||productDescriptions.get(key)||"Descrição não cadastrada";
+  return productDescriptions.get(key)||PRODUCT_DESCRIPTION_OVERRIDES.get(key)||"Descrição não cadastrada";
 }
 function populateStockModels(position){
   const select=document.getElementById("stockModel");
@@ -3616,7 +3616,7 @@ const productDescriptions = new Map();
 const productCodePattern = /\b(?:(?:31GQ|41NN)-[A-Z0-9]+(?:-[A-Z0-9]+)+|17111[A-Z0-9]+|11(?:PD|VE)-[A-Z0-9-]+|1050-[A-Z0-9-]+)\b/gi;
 function describeProductText(value) {
   return String(value).replace(productCodePattern, code => {
-    const desc = PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase()) || productDescriptions.get(code.toUpperCase());
+    const desc = productDescriptions.get(code.toUpperCase()) || PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase());
     return desc ? desc : code;
   });
 }
@@ -3627,7 +3627,7 @@ function decorateProductNode(node) {
     if(!old || !productCodePattern.test(old)) { productCodePattern.lastIndex=0; return; }
     productCodePattern.lastIndex=0;
     const result=old.replace(productCodePattern,(code,offset,whole)=>{
-      const desc=PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase()) || productDescriptions.get(code.toUpperCase());
+      const desc=productDescriptions.get(code.toUpperCase()) || PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase());
       if(!desc) return code;
       const label=desc;
       // Avoid formatting labels already expanded by a previous render.
@@ -3651,20 +3651,41 @@ const productDescriptionObserver=new MutationObserver(records=>{
   }
 });
 productDescriptionObserver.observe(document.getElementById("content"),{subtree:true,childList:true,characterData:true});
+let productCatalogRefreshing=false;
 async function loadProductDescriptions(){
+  if(productCatalogRefreshing)return;
+  productCatalogRefreshing=true;
   try {
     const response=await fetch("/api/l2l?report=productcatalog",{cache:"no-store"});
     if(!response.ok)throw new Error("Catálogo indisponível");
     const payload=await response.json();
     if(payload.success===false||!Array.isArray(payload.data))throw new Error("Catálogo inválido");
+    const updated=new Map();
     payload.data.forEach(p=>{
       const code=String(p.code||"").trim().toUpperCase();
       const desc=String(p.description||"").trim();
-      if(code&&desc&&code!==desc.toUpperCase())productDescriptions.set(code,desc);
+      if(code&&desc&&code!==desc.toUpperCase())updated.set(code,desc);
     });
-    if(currentPage==="stock")populateStockModels(calculateL2LStock(stockRows));
-    decorateProductNode(document.getElementById("content"));
-  }catch(error){console.warn("Descrições L2L indisponíveis; mantendo códigos originais.",error);}
+    let changed=updated.size!==productDescriptions.size;
+    if(!changed)for(const [code,desc] of updated){
+      if(productDescriptions.get(code)!==desc){changed=true;break;}
+    }
+    if(changed){
+      productDescriptions.clear();
+      updated.forEach((description,code)=>productDescriptions.set(code,description));
+      // Redraw from original codes: replacing already-rendered text cannot
+      // update a description when someone renames that product in L2L.
+      if(currentPage==="stock")updateStock();
+      else if(currentPage&&pages[currentPage])render(currentPage);
+      decorateProductNode(document.getElementById("content"));
+    }
+  }catch(error){
+    console.warn("Catálogo L2L indisponível; mantendo últimas descrições e cadastro manual.",error);
+  }finally{
+    productCatalogRefreshing=false;
+  }
 }
 loadProductDescriptions();
+setInterval(()=>{if(!document.hidden)loadProductDescriptions();},60000);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)loadProductDescriptions();});
 render("home");tick();setInterval(tick,1000);refreshL2L();setInterval(refreshL2L,60000);
