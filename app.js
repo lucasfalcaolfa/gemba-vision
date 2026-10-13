@@ -3151,15 +3151,50 @@ function renderHomeYesterday(){
   renderHomePowerBiSummary();
 }
 
+
+let gvHomeSelectedShift=0;
+function gvHomeSwitchShift(index){
+ gvHomeSelectedShift=Math.max(0,Math.min(2,Number(index)||0));
+ const mount=document.getElementById("homeYesterdayModels");
+ if(!mount)return;
+ mount.querySelectorAll("[data-gv-shift]").forEach(btn=>{
+   const selected=Number(btn.dataset.gvShift)===gvHomeSelectedShift;
+   btn.classList.toggle("active",selected);
+   btn.setAttribute("aria-selected",String(selected));
+ });
+ mount.querySelectorAll("[data-gv-shift-panel]").forEach(panel=>{
+   panel.hidden=Number(panel.dataset.gvShiftPanel)!==gvHomeSelectedShift;
+ });
+}
+function renderHomeShiftTabs(shifts){
+ const mount=document.getElementById("homeYesterdayModels");
+ if(!mount)return;
+ const esc=stockEsc;
+ const safe=(Array.isArray(shifts)?shifts:[]).slice(0,3);
+ mount.innerHTML='<div class="gv-turno-tabs" role="tablist" aria-label="Selecione o turno">'+
+ safe.map((g,i)=>'<button type="button" role="tab" data-gv-shift="'+i+'" onclick="gvHomeSwitchShift('+i+')">'+esc(g.label||((i+1)+"º Turno"))+'</button>').join("")+'</div>'+
+ '<div class="gv-turno-panels">'+safe.map((g,i)=>{
+   const products=(Array.isArray(g.products)?g.products:[]).slice().sort((a,b)=>n(b.actual)-n(a.actual));
+   const sum=products.reduce((a,p)=>a+n(p.actual),0);
+   return '<section class="gv-turno-panel" data-gv-shift-panel="'+i+'" role="tabpanel">'+
+    '<header><span>Total do turno</span><strong>'+fmt(sum)+' peças</strong><small>'+products.length+' modelos</small></header>'+
+    '<div class="gv-turno-models">'+(products.length?products.map(p=>{
+      const code=String(p.product||"");
+      const display=stockModelDescription(code)||code||"Modelo não identificado";
+      return '<div class="gv-turno-model"><div><b title="'+esc(display)+'">'+esc(display)+'</b><small>'+esc(String(p.line||((p.lines||[]).join(", "))||""))+'</small></div><strong>'+fmt(p.actual)+'</strong></div>';
+    }).join(""):'<p class="gv-turno-empty">Nenhuma produção registrada neste turno.</p>')+'</div></section>';
+ }).join("")+'</div>';
+ gvHomeSwitchShift(gvHomeSelectedShift);
+}
+
 function renderHomePowerBiSummary(){
  if(currentPage!=="home")return;
  const process=homeProcessFilter,m=homeProcessMetrics(homeFndRows(homeYesterdayRows),process,homeYesterdayScrapRows),gs=m.groups,esc=stockEsc;
  const mx=Math.max(1,...gs.map(g=>g.demand));
  const prod=document.getElementById("homeYesterdayProduction");
  if(prod)prod.innerHTML='<div class="gv-legend">■ Real &nbsp; <span>■ Plano</span></div><div class="gv-pbi-bars">'+gs.map(g=>'<div class="gv-pbi-bar"><b>'+esc(g.line)+'</b><div><i style="width:'+Math.min(100,g.actual/mx*100)+'%"></i><em style="width:'+Math.min(100,g.demand/mx*100)+'%"></em></div><span>'+fmt(g.actual)+' / '+fmt(g.demand)+'</span></div>').join("")+'</div><div class="gv-pbi-footer">Atendimento: <b>'+fmtPct(m.attainment)+'</b> · Desvio: '+fmt(m.actual-m.demand)+' peças</div>';
- const shifts=homeShiftProductGroups(homeYesterdayContext?.pitches||[],process),sums=shifts.map(g=>g.products.reduce((a,p)=>a+n(p.actual),0)),overall=sums.reduce((a,b)=>a+b,0);
- const models=document.getElementById("homeYesterdayModels");
- if(models)models.innerHTML='<div class="gv-pbi-total"><b>'+fmt(overall)+'</b> peças por turno</div><div class="gv-pbi-shifts">'+shifts.map((g,i)=>'<section><header>'+esc(g.label)+' <b>'+fmt(sums[i])+'</b></header><div class="gv-pbi-track"><i style="width:'+(overall?sums[i]/overall*100:0)+'%"></i></div>'+g.products.slice(0,3).map(p=>'<div class="gv-pbi-model"><span title="'+esc(p.product)+'">'+esc(stockModelDescription(p.product)||p.product)+'</span><b>'+fmt(p.actual)+'</b></div>').join("")+'</section>').join("")+'</div>';
+ const shifts=homeShiftProductGroups(homeYesterdayContext?.pitches||[],process);
+ renderHomeShiftTabs(shifts);
  const oee=document.getElementById("homeYesterdayOee");
  if(oee)oee.innerHTML='<div class="gv-pbi-machines">'+gs.map(g=>'<article class="'+(g.oee>=85?'good':g.oee>=70?'warn':'bad')+'"><header><b>'+esc(g.line)+'</b><strong>'+fmtPct(g.oee)+'</strong></header><div class="gv-pbi-track"><i style="width:'+Math.max(0,Math.min(100,g.oee))+'%"></i></div><div class="gv-pbi-metrics"><span>OA <b>'+fmtPct(g.availability)+'</b></span><span>PPP <b>'+fmtPct(g.performance)+'</b></span><span>Yield <b>'+fmtPct(g.quality)+'</b></span></div><small>'+fmt(g.actual)+' / '+fmt(g.demand)+' peças</small></article>').join("")+'</div>';
  const defects=document.getElementById("homeYesterdayDefects"),maxDef=Math.max(1,...m.defects.slice(0,5).map(d=>d.qty));
