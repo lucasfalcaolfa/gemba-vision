@@ -11635,3 +11635,70 @@ body.home-nav-in-topbar .home-executive-hero{
 #content .gv-executive-dashboard .gv-dashboard-stock-note .gv-stock-partial small{color:#986710!important;font-weight:700;}
 #content .gv-executive-dashboard .gv-dashboard-stock-note .gv-stock-calculated{border-top:3px solid #198d73!important;}
 #content .gv-executive-dashboard .gv-dashboard-stock-note .gv-stock-pending small{color:#73889a!important;}
+
+
+/* v42 · Astemo management display — consistent single viewport, 1920×1080.
+   Scope is limited to Visão Geral; keep other application pages intact. */
+@media(min-width:1600px) and (min-height:850px){
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard{
+  grid-template-columns:minmax(0,1.08fr) minmax(0,1fr)!important;
+  grid-template-areas:"hero hero" "summary summary" "production products" "oee oee" "quality events"!important;
+  grid-template-rows:56px 111px minmax(0,2.05fr) minmax(0,1.48fr) minmax(0,1.47fr)!important;
+  gap:9px!important;
+  background:#f1f5f9!important;
+ }
+ body:has(.gv-executive-dashboard) #content>.page{background:#f1f5f9!important;padding:9px 12px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-executive-hero{
+  border:1px solid #dbe5ef!important;border-radius:11px!important;
+  background:#fff!important;box-shadow:0 2px 9px rgba(16,44,76,.035)!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-executive-main{
+  padding:6px 10px!important;background:#fff!important;border:0!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-executive-copy h1{font-size:14px!important;line-height:1.15!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-executive-copy p{font-size:10px!important;line-height:1.2!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-executive-controls{padding:5px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block-title{
+  height:24px!important;min-height:24px!important;flex-basis:24px!important;padding:0 3px!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block-title h2{
+  font-size:15px!important;line-height:21px!important;font-weight:800!important;letter-spacing:-.2px!important;color:#123856!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block-title span{font-size:9px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block>.panel{
+  border:1px solid #dce7ef!important;border-radius:12px!important;
+  background:#fff!important;box-shadow:0 2px 8px rgba(21,49,77,.035)!important;
+  padding:10px 12px!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis{
+  display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:8px!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis .home-process-kpi-head{display:none!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis .home-process-kpi-group,
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis .home-process-kpi-grid,
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis .gv-dashboard-stock-note{display:contents!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis .home-exec-kpi,
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis .gv-dashboard-stock-note>div{
+  box-sizing:border-box!important;height:100%!important;min-height:0!important;max-height:111px!important;
+  border-radius:10px!important;padding:11px 12px!important;
+  background:#fff!important;box-shadow:none!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis strong{font-size:clamp(19px,1.45vw,27px)!important;line-height:1.2!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis small{font-size:10px!important;line-height:1.3!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-bar{font-size:12px!important;grid-template-columns:105px minmax(0,1fr) 115px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-bars{gap:10px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-bar>span{font-size:11px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-tabs button{font-size:12px!important;min-height:32px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-panel>header{min-height:39px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-model{min-height:43px!important;padding:6px 8px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-model b{font-size:12px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-model>strong{font-size:15px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-machines{height:100%!important;gap:9px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-machines article{padding:11px 12px!important;background:#fcfdff!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-machines header strong{font-size:23px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-metrics b{font-size:12px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-defect{grid-template-columns:130px minmax(0,1fr) 40px!important;font-size:11px!important;margin:9px 0!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-events header{font-size:13px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-events section>div{grid-template-columns:90px minmax(0,1fr) 44px!important;padding:6px 0!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-events section>div span{font-size:11px!important}
+}
