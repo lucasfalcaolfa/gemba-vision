@@ -2057,7 +2057,51 @@ function initStock(){
   else updateStock();
 }
 function people(){return '<div class="cards">'+card("Absenteísmo","3,2%","warn")+card("Presentes","94,8%","good")+card("Faltas","11","bad")+card("Afastamentos","4","warn")+card("Efetivo","342")+'</div><div class="panel"><h2>Absenteísmo por área</h2><table><tr><th>Área</th><th>Efetivo</th><th>Ausentes</th><th>%</th><th>Indicador</th></tr><tr><td>Fundição</td><td>120</td><td>4</td><td>3,3%</td><td><div class="bar"><i style="width:33%"></i></div></td></tr><tr><td>Injeção</td><td>85</td><td>2</td><td>2,4%</td><td><div class="bar"><i style="width:24%"></i></div></td></tr><tr><td>Usinagem</td><td>110</td><td>5</td><td>4,5%</td><td><div class="bar"><i style="width:45%"></i></div></td></tr></table></div>'}
-function quality(){return '<div class="cards">'+card("Qualidade","98,5%","good")+card("Scrap","1,5%","good")+card("Retrabalho","2,1%","warn")+card("PPM","185","warn")+card("NQ","R$ 12,4 mil","bad")+'</div><div class="section-grid"><div class="panel"><h2>Pareto de defeitos</h2><table><tr><th>Defeito</th><th>%</th><th>Representação</th></tr><tr><td>Porosidade</td><td>38%</td><td><div class="bar"><i style="width:38%"></i></div></td></tr><tr><td>Rebarba</td><td>21%</td><td><div class="bar"><i style="width:21%"></i></div></td></tr><tr><td>Trinca</td><td>15%</td><td><div class="bar"><i style="width:15%"></i></div></td></tr><tr><td>Dimensional</td><td>12%</td><td><div class="bar"><i style="width:12%"></i></div></td></tr></table></div><div class="panel"><h2>Não qualidade por processo</h2><div class="kpis"><div class="mini"><div class="label">Injeção</div><strong>42%</strong></div><div class="mini"><div class="label">Acabamento</div><strong>31%</strong></div><div class="mini"><div class="label">Usinagem</div><strong>18%</strong></div></div></div></div>'}
+function quality(){
+ return '<div class="gv-quality-live">'+
+ '<div class="gv-quality-toolbar"><div><b>Qualidade da Fundição • L2L</b><small id="qualityWindow">Consultando janela operacional...</small></div><span id="qualityDataStatus">Aguardando dados</span></div>'+
+ '<div id="qualityLiveKpis" class="gv-quality-kpis"><div class="empty-state">Consultando indicadores do L2L...</div></div>'+
+ '<div class="gv-quality-grid">'+
+ '<section class="panel"><div class="gv-quality-title"><h2>Pareto de defeitos</h2><small>Quantidades registradas no L2L</small></div><div id="qualityPareto"><div class="empty-state">Carregando...</div></div></section>'+
+ '<section class="panel"><div class="gv-quality-title"><h2>Não qualidade por linha</h2><small>Scrap / produção real</small></div><div id="qualityByLine"><div class="empty-state">Carregando...</div></div></section>'+
+ '</div><p class="gv-quality-disclaimer">PPM = peças rejeitadas ÷ peças produzidas × 1.000.000. Custos e retrabalho dependem de registros específicos no L2L e não são estimados.</p>'+
+ '</div>';
+}
+function renderQualityL2L(){
+ if(currentPage!=="quality")return;
+ const kpis=document.getElementById("qualityLiveKpis");
+ if(!kpis)return;
+ const rows=homeFndRows(homeYesterdayRows);
+ const defects=homeDefectSummary(homeYesterdayScrapRows,homeYesterdayContext?.pitches||[]);
+ const actual=total(rows,"actual"),scrap=total(rows,"scrap");
+ const scrapPct=actual>0?scrap/actual*100:null;
+ const qualityPct=actual>0?(actual-scrap)/actual*100:null;
+ const ppm=actual>0?scrap/actual*1000000:null;
+ const range=homeOperationalWindow();
+ const windowLabel=document.getElementById("qualityWindow");
+ if(windowLabel)windowLabel.textContent=range.startDate+" 07:00 → "+range.endDate+" 07:00";
+ const status=document.getElementById("qualityDataStatus");
+ if(status)status.textContent=homeYesterdayLoading?"Atualizando L2L...":(rows.length?"Dados da janela operacional":"Sem produção identificada");
+ const card=(label,value,detail,cls="")=>'<article class="gv-quality-kpi '+cls+'"><span>'+label+'</span><strong>'+value+'</strong><small>'+detail+'</small></article>';
+ kpis.innerHTML=[
+   card("Qualidade",qualityPct===null?"—":fmtPct(qualityPct),"Peças boas / produção","good"),
+   card("Scrap",scrapPct===null?"—":fmtPct(scrapPct),fmt(scrap)+" peças rejeitadas","bad"),
+   card("Peças produzidas",rows.length?fmt(actual):"—","Produção real L2L"),
+   card("PPM",ppm===null?"—":fmt(ppm),"Rejeitos por milhão","warn"),
+   card("Retrabalho","—","Sem registro específico"),
+   card("Custo NQ","—","Sem custo unitário validado")
+ ].join("");
+ const pareto=document.getElementById("qualityPareto");
+ const sumDefects=defects.reduce((a,d)=>a+n(d.qty),0),max=Math.max(1,...defects.map(d=>n(d.qty)));
+ if(pareto)pareto.innerHTML=defects.length?'<div class="gv-quality-pareto">'+defects.slice(0,7).map((d,i)=>'<div class="gv-quality-row"><span title="'+stockEsc(d.defect)+'">'+(i+1)+'. '+stockEsc(d.defect)+'</span><div class="gv-quality-track"><i style="width:'+(100*n(d.qty)/max).toFixed(2)+'%"></i></div><b>'+fmt(d.qty)+'</b><small>'+fmt(sumDefects?n(d.qty)/sumDefects*100:0,1)+'%</small></div>').join("")+'</div><small class="gv-quality-note">Total detalhado: '+fmt(sumDefects)+' rejeitos'+(scrap!==sumDefects?' · Divergente do resumo ('+fmt(scrap)+')':'')+'</small>':'<div class="empty-state">Sem defeitos detalhados retornados para o período.</div>';
+ const byLine=document.getElementById("qualityByLine");
+ const groups=groupedByLine(rows).sort((a,b)=>n(b.scrap)-n(a.scrap));
+ if(byLine)byLine.innerHTML=groups.length?'<div class="gv-quality-lines">'+groups.map(g=>{
+  const rate=n(g.actual)>0?n(g.scrap)/n(g.actual)*100:0;
+  return '<div class="gv-quality-line"><div><b>'+stockEsc(g.line)+'</b><strong>'+fmt(g.scrap)+' rejeitos</strong></div><div class="gv-quality-track"><i style="width:'+Math.max(0,Math.min(100,rate*10))+'%"></i></div><small>'+fmtPct(rate)+' scrap · '+fmt(g.actual)+' produzidas</small></div>';
+ }).join("")+'</div>':'<div class="empty-state">Sem linhas da Fundição na consulta.</div>';
+}
+
 
 const SAFETY_PDF_URL="SafetyMomentWeek_Current.pdf";
 let safetyPdfDoc=null;
@@ -3274,6 +3318,7 @@ async function refreshHomeYesterday(){
 
     l2lLastUpdate=new Date();
     if(currentPage==="home")renderHomeYesterday();
+    if(currentPage==="quality")renderQualityL2L();
   }catch(err){
     if(status)status.textContent="🔴 Não foi possível localizar o último dia com produção no L2L: "+(err.message||"falha no L2L");
     if(currentPage==="home")renderHomeYesterday();
@@ -3497,7 +3542,7 @@ async function refreshL2L(){
     l2lLastUpdate=new Date();
     l2lError="";
     applyLiveData(currentPage);
-    if(currentPage==="home"){
+    if(currentPage==="home"||currentPage==="quality"){
       await refreshHomeYesterday();
       refreshHseBulletin();
     }
@@ -3681,14 +3726,7 @@ function applyLiveData(page){
 
   if(page==="stock")updateStock();
 
-  if(page==="quality"){
-    const cards=document.querySelectorAll(".cards .card .value");
-    const quality=avg(l2lRows,"yield"),scrapPct=avg(l2lRows,"scrap_percent"),reject=avg(l2lRows,"reject_percent"),scrap=total(l2lRows,"scrap");
-    if(cards[0])cards[0].textContent=fmtPct(quality);
-    if(cards[1])cards[1].textContent=fmtPct(scrapPct);
-    if(cards[2])cards[2].textContent=fmt(scrap);
-    if(cards[3])cards[3].textContent=fmtPct(reject);
-  }
+  if(page==="quality")renderQualityL2L();
 }
 
 function render(page){
@@ -3703,6 +3741,7 @@ function render(page){
   currentPage=page;
   document.getElementById("content").innerHTML=shell(pages[page]);
   if(page==="home")initHome();
+  if(page==="quality")refreshHomeYesterday();
   if(page==="stock")initStock();
   if(page==="oee")initOee();
   if(page==="heatmap")initHeatmap();
