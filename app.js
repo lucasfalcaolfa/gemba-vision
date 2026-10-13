@@ -1826,7 +1826,7 @@ function populateStockModels(position){
   const select=document.getElementById("stockModel");
   if(!select)return;
   const models=position.map(x=>x.model).filter(Boolean);
-  select.innerHTML='<option value="Todos">Todos os modelos</option>'+models.map(m=>'<option value="'+stockEsc(m)+'">'+stockEsc(m)+'</option>').join("");
+  select.innerHTML='<option value="Todos">Todos os modelos</option>'+models.map(m=>'<option value="'+stockEsc(m)+'">'+stockEsc(productDescriptions.get(m.toUpperCase())||m)+'</option>').join("");
   if(models.includes(stockFilterState.model))select.value=stockFilterState.model;
   else{
     stockFilterState.model="Todos";
@@ -3608,7 +3608,7 @@ document.querySelectorAll(".nav").forEach(b=>b.addEventListener("click",()=>{doc
 function tick(){const d=new Date();document.getElementById("date").textContent=d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});document.getElementById("time").textContent=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
 // Visual labels only: never replace product codes used by stock calculations or filters.
 const productDescriptions = new Map();
-const productCodePattern = /\\b(?:31GQ|41NN|17111|17100)-[A-Z0-9]+(?:-[A-Z0-9]+)+\\b/gi;
+const productCodePattern = /\b(?:31GQ|41NN|17111|17100)-[A-Z0-9]+(?:-[A-Z0-9]+)+\b/gi;
 function describeProductText(value) {
   return String(value).replace(productCodePattern, code => {
     const desc = productDescriptions.get(code.toUpperCase());
@@ -3657,6 +3657,7 @@ async function loadProductDescriptions(){
       const desc=String(p.description||"").trim();
       if(code&&desc&&code!==desc.toUpperCase())productDescriptions.set(code,desc);
     });
+    if(currentPage==="stock")populateStockModels(calculateL2LStock(stockRows));
     decorateProductNode(document.getElementById("content"));
   }catch(error){console.warn("Descrições L2L indisponíveis; mantendo códigos originais.",error);}
 }
