@@ -1780,7 +1780,8 @@ const STOCK_FND_FAMILIES={
   K2K0:"31GQ-K2K0-00F2F",KVS0:"31GQ-KVS0-02P0F",
   K1S0:"31GQ-K1S0-01J3F",KPV0:"31GQ-KPV0-00A0F",PV70:"41NN-PV70-00A0F",
   KSS0:"31GQ-KSS0-02V0F",K0R0:"31GQ-K0R0-0000F",
-  K680:"31GQ-K680-00A0F"
+  K680:"31GQ-K680-00A0F",
+  KVSA:"31GQ-KVSA-00K0F"
 };
 function stockCanonicalModel(value,stage){
   const raw=String(value||"").trim().toUpperCase().replace(/[–—]/g,"-");
