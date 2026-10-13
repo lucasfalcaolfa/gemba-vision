@@ -11337,3 +11337,44 @@ body.home-nav-in-topbar .home-executive-hero{
  #content .gv-executive-dashboard>*{width:100%;}
  #content .gv-executive-dashboard #homeYesterdayKpis{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
 }
+
+
+/* Full HD control-room calibration. Only the overview at desktop sizes. */
+@media (min-width:1800px) and (min-height:850px) {
+ #content .page:has(.gv-executive-dashboard){padding:6px 10px!important}
+ #content .gv-executive-dashboard{
+   grid-template-columns:minmax(0,1.05fr) minmax(0,1.38fr) minmax(0,1.38fr);
+   grid-template-rows:64px 112px minmax(0,2fr) minmax(0,1.53fr) minmax(0,1.45fr)!important;
+   gap:7px!important;
+ }
+ #content .gv-executive-dashboard>.home-executive-hero{min-height:0!important;padding:7px 12px!important}
+ #content .gv-executive-dashboard .home-executive-main{display:flex;align-items:center!important;gap:16px}
+ #content .gv-executive-dashboard .home-executive-copy h1{font-size:14px!important}
+ #content .gv-executive-dashboard .home-executive-copy p{font-size:9px!important}
+ #content .gv-executive-dashboard .home-source-badge{display:none!important}
+ #content .gv-executive-dashboard .home-block-title{min-height:21px!important;flex:0 0 21px}
+ #content .gv-executive-dashboard .home-block-title h2{font-size:13px!important}
+ #content .gv-executive-dashboard .home-block-title span{font-size:8px!important}
+ #content .gv-executive-dashboard .home-block>.panel{padding:8px 10px!important;}
+ #content .gv-executive-dashboard .home-exec-kpi,
+ #content .gv-executive-dashboard .gv-dashboard-stock-note>div{min-height:0!important;height:86px;padding:9px!important;}
+ #content .gv-executive-dashboard .home-exec-kpi strong,
+ #content .gv-executive-dashboard .gv-dashboard-stock-note strong{font-size:clamp(17px,1.4vw,25px)!important}
+ #content .gv-executive-dashboard #homeYesterdayKpis{height:86px!important;align-items:stretch;}
+ #content .gv-executive-dashboard #homeYesterdayOee{height:100%!important;overflow:hidden!important}
+ #content .gv-executive-dashboard #homeYesterdayOee .home-machine-grid{height:100%;gap:6px!important}
+ #content .gv-executive-dashboard .home-machine-card{padding:6px 8px!important;height:100%!important;overflow:hidden!important}
+ #content .gv-executive-dashboard .home-machine-head{margin:0!important}
+ #content .gv-executive-dashboard .home-machine-oee-main{margin:2px 0!important}
+ #content .gv-executive-dashboard .home-machine-oee-main strong{font-size:17px!important}
+ #content .gv-executive-dashboard .home-machine-oee-main small{display:none!important}
+ #content .gv-executive-dashboard .home-machine-bar{margin:3px 0!important}
+ #content .gv-executive-dashboard .home-machine-metrics{gap:3px!important}
+ #content .gv-executive-dashboard .home-machine-metrics>div{padding:3px!important}
+ #content .gv-executive-dashboard #homeYesterdayProduction .home-prod-main strong{font-size:24px!important}
+ #content .gv-executive-dashboard .home-defect-summary{margin-bottom:4px!important}
+ #content .gv-executive-dashboard .home-defect-top5{gap:4px!important}
+ #content .gv-executive-dashboard .home-block table{font-size:9px!important}
+ #content .gv-executive-dashboard .home-block td,
+ #content .gv-executive-dashboard .home-block th{padding:3px 5px!important}
+}
