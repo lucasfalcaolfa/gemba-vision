@@ -3012,23 +3012,33 @@ function closeHomeDefectDetail(){
 function homeStockSummaryHtml(){
   let valueI="—",valueA="—",valueT="—";
   let note=stockLoading?"Consultando L2L...":"Aguardando consulta";
+  let state="pending";
   if(stockLoaded){
     const position=calculateL2LStock(stockRows);
-    const identified=position.length>0;
-    const missing=(calculateL2LStock.unidentified||[]).length>0 || (calculateL2LStock.unmatched||[]).length>0 || position.some(row=>row.wipDifference<0||row.finishedDifference<0);
-    if(identified && !missing){
+    const unidentified=calculateL2LStock.unidentified||[];
+    const unmatched=calculateL2LStock.unmatched||[];
+    const negatives=position.filter(row=>row.wipDifference<0||row.finishedDifference<0);
+    if(position.length){
       const i=position.reduce((sum,row)=>sum+n(row.inacabado),0);
       const a=position.reduce((sum,row)=>sum+n(row.acabado),0);
       valueI=fmt(i);valueA=fmt(a);valueT=fmt(i+a);
-      note="Calculado desde 1º do mês";
-    } else {
-      note=missing?"Pendência de conciliação":"Sem modelos identificados";
+      const issues=unidentified.length+unmatched.length+negatives.length;
+      if(issues){
+        state="partial";
+        note="Parcial · "+fmt(issues)+" pendência(s)";
+      }else{
+        state="calculated";
+        note="Calculado desde 1º do mês";
+      }
+    }else{
+      note="Sem modelos identificados";
     }
-  } else if(stockFetchError){note="Consulta de estoque indisponível";}
+  }else if(stockFetchError){
+    note="Consulta indisponível";
+  }
+  const make=(label,value)=>'<div class="gv-stock-'+state+'" title="'+stockEsc(note)+'"><span>'+label+'</span><strong>'+value+'</strong><small>'+stockEsc(note)+'</small></div>';
   return '<div class="gv-dashboard-stock-note">'+
-    '<div><span>Inacabado</span><strong>'+valueI+'</strong><small>'+note+'</small></div>'+
-    '<div><span>Acabado</span><strong>'+valueA+'</strong><small>'+note+'</small></div>'+
-    '<div><span>Total do estoque</span><strong>'+valueT+'</strong><small>'+note+'</small></div>'+
+    make("Inacabado",valueI)+make("Acabado",valueA)+make("Total do estoque",valueT)+
   '</div>';
 }
 function updateHomeStockCards(){
