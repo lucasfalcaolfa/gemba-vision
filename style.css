@@ -11531,3 +11531,35 @@ body.home-nav-in-topbar .home-executive-hero{
  #content .gv-executive-dashboard #home-flow .panel>div{flex:1;min-height:0}
  #content .gv-executive-dashboard .gv-turno-models{overflow-y:auto!important}
 }
+
+
+/* v37 — eliminate vertical document scrolling at native Full HD.
+   Detailed model list keeps contained scrolling when necessary. */
+@media (min-width:1800px) and (min-height:850px) {
+ html:has(.gv-executive-dashboard),body:has(.gv-executive-dashboard){
+  height:100dvh!important;max-height:100dvh!important;overflow:hidden!important;
+ }
+ body:has(.gv-executive-dashboard) .app{
+  height:calc(100dvh - 72px)!important;min-height:0!important;max-height:calc(100dvh - 72px)!important;overflow:hidden!important;
+ }
+ body:has(.gv-executive-dashboard) #content{
+  height:100%!important;min-height:0!important;overflow:hidden!important;
+ }
+ body:has(.gv-executive-dashboard) #content .page{
+  height:100%!important;max-height:100%!important;min-height:0!important;
+  padding:7px 10px!important;overflow:hidden!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard{
+  height:100%!important;max-height:100%!important;min-height:0!important;
+  overflow:hidden!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>.home-block{
+  min-height:0!important;overflow:hidden!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block>.panel{
+  min-height:0!important;max-height:100%!important;overflow:hidden!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-turno-models{
+  overflow-y:auto!important;overflow-x:hidden!important;min-height:0!important;max-height:100%!important;
+ }
+}
