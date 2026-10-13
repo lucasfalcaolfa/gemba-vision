@@ -1822,11 +1822,15 @@ function stockEsc(value){
   return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 }
 
+function stockModelDescription(code){
+  const key=String(code||"").trim().toUpperCase();
+  return PRODUCT_DESCRIPTION_OVERRIDES.get(key)||productDescriptions.get(key)||"Descrição não cadastrada";
+}
 function populateStockModels(position){
   const select=document.getElementById("stockModel");
   if(!select)return;
   const models=position.map(x=>x.model).filter(Boolean);
-  select.innerHTML='<option value="Todos">Todos os modelos</option>'+models.map(m=>'<option value="'+stockEsc(m)+'">'+stockEsc(PRODUCT_DESCRIPTION_OVERRIDES.get(m.toUpperCase())||productDescriptions.get(m.toUpperCase())||m)+'</option>').join("");
+  select.innerHTML='<option value="Todos">Todos os modelos</option>'+models.map(m=>'<option value="'+stockEsc(m)+'">'+stockEsc(stockModelDescription(m))+'</option>').join("");
   if(models.includes(stockFilterState.model))select.value=stockFilterState.model;
   else{
     stockFilterState.model="Todos";
@@ -1852,7 +1856,7 @@ function renderStockTable(rows,type){
   return '<div class="table-scroll"><table class="stock-live-table"><thead><tr><th>Modelo</th>'+
     (isWip?'<th>Produção Fundição</th><th>Consumido no Acabamento</th>':'<th>Produção Acabamento</th><th>Saída processo seguinte</th>')+
     '<th>Quantidade</th><th>Status</th></tr></thead><tbody>'+
-    rows.map(x=>'<tr><td><b>'+stockEsc(x.model)+'</b></td>'+
+    rows.map(x=>'<tr><td><b>'+stockEsc(stockModelDescription(x.model))+'</b></td>'+
       (isWip?'<td>'+fmt(x.foundry)+'</td><td>'+fmt(x.finishing)+'</td>':'<td>'+fmt(x.finishing)+'</td><td>'+fmt(x.downstream)+'</td>')+
       '<td class="stock-exact-number">'+fmt(x[qtyKey])+'</td><td>'+stockQtyStatus(x[qtyKey])+'</td></tr>').join("")+
     '</tbody></table></div>';
@@ -1912,7 +1916,7 @@ function renderStockByModel(rows){
   }
   const ordered=[...rows].sort((a,b)=>(b.inacabado+b.acabado)-(a.inacabado+a.acabado));
   el.innerHTML='<div class="table-scroll"><table class="stock-by-model-table"><thead><tr><th>Modelo</th><th>Inacabado</th><th>Acabado</th><th>Total</th><th>Fundição</th><th>Acabamento</th><th>Saída</th></tr></thead><tbody>'+
-    ordered.map(x=>'<tr><td><b>'+stockEsc(x.model)+'</b></td><td><span class="stock-pill stock-pill-wip">'+fmt(x.inacabado)+'</span></td><td><span class="stock-pill stock-pill-fg">'+fmt(x.acabado)+'</span></td><td><b class="stock-total-model">'+fmt(x.inacabado+x.acabado)+'</b></td><td>'+fmt(x.foundry)+'</td><td>'+fmt(x.finishing)+'</td><td>'+fmt(x.downstream)+'</td></tr>').join("")+
+    ordered.map(x=>'<tr><td><b>'+stockEsc(stockModelDescription(x.model))+'</b></td><td><span class="stock-pill stock-pill-wip">'+fmt(x.inacabado)+'</span></td><td><span class="stock-pill stock-pill-fg">'+fmt(x.acabado)+'</span></td><td><b class="stock-total-model">'+fmt(x.inacabado+x.acabado)+'</b></td><td>'+fmt(x.foundry)+'</td><td>'+fmt(x.finishing)+'</td><td>'+fmt(x.downstream)+'</td></tr>').join("")+
     '</tbody></table></div>';
 }
 
@@ -1961,7 +1965,7 @@ function updateStock(){
   if(context){
     const startLabel=(stockFilterState.startDate||stockMonthStart()).split("-").reverse().join("/");
     const endLabel=(stockFilterState.endDate||todayISO()).split("-").reverse().join("/");
-    const modelLabel=stockFilterState.model==="Todos"?"Todos os modelos":stockFilterState.model;
+    const modelLabel=stockFilterState.model==="Todos"?"Todos os modelos":stockModelDescription(stockFilterState.model);
     context.textContent=(stockFetchError?"🔴 Erro na coleta do estoque: "+stockFetchError:stockDataWarning?"🟠 "+stockDataWarning:stockLoaded?liveStamp():"🟡 Sem dados de estoque confirmados")+" • Acumulado "+startLabel+" → "+endLabel+" • "+modelLabel+" • cálculo por produção (não substitui inventário físico) • "+(calculateL2LStock.unmatched?.length||0)+" registros de Usinagem não conciliados • atualização a cada 1 minuto";
   }
 
@@ -1978,7 +1982,7 @@ function updateStock(){
     if(stockFilterState.model!=="Todos"&&visible.length){
       const x=visible[0];
       selected.innerHTML=
-        '<article class="stock-model-focus"><div class="stock-model-focus-head"><div><span>MODELO SELECIONADO</span><h2>'+stockEsc(x.model)+'</h2></div><span class="stock-live-status ok">L2L</span></div>'+
+        '<article class="stock-model-focus"><div class="stock-model-focus-head"><div><span>MODELO SELECIONADO</span><h2>'+stockEsc(stockModelDescription(x.model))+'</h2></div><span class="stock-live-status ok">L2L</span></div>'+
         '<div class="stock-model-values"><div><span>Inacabados</span><strong>'+fmt(x.inacabado)+'</strong><small>Fundição − Acabamento</small></div><div><span>Acabados</span><strong>'+fmt(x.acabado)+'</strong><small>Acabamento − saída</small></div><div><span>Total</span><strong>'+fmt(x.inacabado+x.acabado)+'</strong><small>Posição calculada</small></div></div></article>';
     }else selected.innerHTML="";
   }
@@ -1995,8 +1999,8 @@ function updateStock(){
   if(resumo){
     resumo.innerHTML=
       '<div class="stock-summary-grid">'+
-        '<div><span>Inacabados</span><strong>'+fmt(totalI)+'</strong><small>'+ (stockFilterState.model==="Todos"?"Todos os modelos":stockEsc(stockFilterState.model)) +'</small></div>'+
-        '<div><span>Acabados</span><strong>'+fmt(totalA)+'</strong><small>'+ (stockFilterState.model==="Todos"?"Todos os modelos":stockEsc(stockFilterState.model)) +'</small></div>'+
+        '<div><span>Inacabados</span><strong>'+fmt(totalI)+'</strong><small>'+ (stockFilterState.model==="Todos"?"Todos os modelos":stockEsc(stockModelDescription(stockFilterState.model))) +'</small></div>'+
+        '<div><span>Acabados</span><strong>'+fmt(totalA)+'</strong><small>'+ (stockFilterState.model==="Todos"?"Todos os modelos":stockEsc(stockModelDescription(stockFilterState.model))) +'</small></div>'+
         '<div><span>Total</span><strong>'+fmt(totalI+totalA)+'</strong><small>Período acumulado</small></div>'+
         '<div><span>Modelos na visão</span><strong>'+fmt(visible.length)+'</strong><small>'+(position.some(x=>x.model!=="GERAL")?"Detalhe de produto disponível":"L2L sem detalhe de produto")+'</small></div>'+
       '</div>'+
