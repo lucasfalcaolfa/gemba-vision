@@ -11503,3 +11503,31 @@ body.home-nav-in-topbar .home-executive-hero{
 @media(min-width:851px) and (max-width:1499px){
  #content .gv-executive-dashboard{grid-template-areas:"hero hero" "summary summary" "production products" "oee oee" "quality events"!important;}
 }
+
+
+/* Final Full HD model tabs v36 — only Visão Geral */
+#content .gv-executive-dashboard #homeYesterdayModels{display:flex;flex-direction:column;height:100%!important;min-height:0!important;overflow:hidden!important}
+#content .gv-executive-dashboard .gv-turno-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;flex:0 0 auto;margin-bottom:9px}
+#content .gv-executive-dashboard .gv-turno-tabs button{border:1px solid #cbdcea;background:#f3f7fb;color:#285276;border-radius:9px;padding:10px 7px;font-weight:800;font-size:12px;line-height:1.2;cursor:pointer;transition:background .15s,color .15s}
+#content .gv-executive-dashboard .gv-turno-tabs button.active{background:#124f80;color:#fff;border-color:#124f80;box-shadow:0 2px 7px #124f8025}
+#content .gv-executive-dashboard .gv-turno-panels{flex:1;min-height:0;overflow:hidden}
+#content .gv-executive-dashboard .gv-turno-panel{display:flex;flex-direction:column;height:100%;min-height:0}
+#content .gv-executive-dashboard .gv-turno-panel[hidden]{display:none!important}
+#content .gv-executive-dashboard .gv-turno-panel>header{flex:0 0 auto;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 11px;background:#eef5fb;border:1px solid #e0eaf2;border-radius:9px;margin-bottom:5px}
+#content .gv-executive-dashboard .gv-turno-panel>header span{font-size:11px;color:#6c8297}
+#content .gv-executive-dashboard .gv-turno-panel>header strong{font-size:18px;color:#123b62;white-space:nowrap}
+#content .gv-executive-dashboard .gv-turno-panel>header small{font-size:10px;color:#748ba0;white-space:nowrap}
+#content .gv-executive-dashboard .gv-turno-models{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin}
+#content .gv-executive-dashboard .gv-turno-model{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;min-height:46px;padding:7px 10px;border-bottom:1px solid #e9eff5}
+#content .gv-executive-dashboard .gv-turno-model:nth-child(even){background:#f8fbfe}
+#content .gv-executive-dashboard .gv-turno-model>div{min-width:0}
+#content .gv-executive-dashboard .gv-turno-model b{display:block;color:#12395d;font-size:12px;line-height:1.3;font-weight:750;overflow-wrap:anywhere}
+#content .gv-executive-dashboard .gv-turno-model small{display:block;color:#71879a;font-size:10px;margin-top:2px}
+#content .gv-executive-dashboard .gv-turno-model>strong{color:#0b548a;font-size:15px;white-space:nowrap}
+#content .gv-executive-dashboard .gv-turno-empty{color:#70869a;font-size:12px;padding:14px}
+@media(min-width:1800px) and (min-height:850px){
+ #content .gv-executive-dashboard{grid-template-rows:58px 107px minmax(0,2.4fr) minmax(0,1.35fr) minmax(0,1.3fr)!important;}
+ #content .gv-executive-dashboard #home-flow .panel{display:flex;flex-direction:column;height:100%!important;min-height:0!important}
+ #content .gv-executive-dashboard #home-flow .panel>div{flex:1;min-height:0}
+ #content .gv-executive-dashboard .gv-turno-models{overflow-y:auto!important}
+}
