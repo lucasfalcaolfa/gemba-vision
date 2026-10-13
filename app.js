@@ -13,7 +13,8 @@ function actionsTaken(){return '<section class="panel"><div class="stock-section
 function shell(p){return '<div class="page"><div class="page-head"><div><h1>'+p.title+'</h1><p>'+p.sub+'</p></div><div class="refresh">● Atualização: automática</div></div>'+p.html+'</div>'}
 function card(label,value,cls=""){return '<div class="card"><div class="label">'+label+'</div><div class="value '+cls+'">'+value+'</div></div>'}
 function home(){
-  return '<section class="home-executive-hero panel">'+
+  return '<div class="gv-executive-dashboard">'+
+  '<section class="home-executive-hero panel">'+
     '<div class="home-executive-main">'+
       '<div class="home-executive-copy">'+
         '<span class="home-executive-kicker">GESTÃO À VISTA • FND</span>'+
@@ -61,7 +62,7 @@ function home(){
     '<div class="home-block-title"><div><span>06 • OCORRÊNCIAS</span><h2>Dispatches e contramedidas</h2></div><p>Eventos de manutenção e registros de produção do período.</p></div>'+
     '<div class="panel home-wide-panel"><div id="homeYesterdayEvents"></div></div>'+
   '</section>'+
-  '' ;
+  '</div>' ;
 }
 function safety(){return '<div class="panel safety-live-panel"><div class="safety-live-head"><div><span>MOMENTO DE SEGURANÇA</span><h2 id="safetyWeekTitle">Safety Moments — Semana atual</h2><p id="safetyWeekMeta">Conteúdo organizado automaticamente a partir do PDF semanal.</p></div><div class="safety-mode-switch"><button id="safetyModeDynamic" class="active">▥ Visualização dinâmica</button><button id="safetyModeWeekly">▣ Semanal</button><a class="safety-open-pdf" href="SafetyMomentWeek_Current.pdf" target="_blank" rel="noopener">▤ Abrir PDF ↗</a></div></div><div class="safety-status" id="safetyStatus">Carregando Momento de Segurança...</div><section id="safetyDynamic" class="safety-dynamic"><div id="safetyDayCards" class="safety-day-cards"></div><div id="safetyDayDetail" class="safety-day-detail"></div></section><section id="safetyWeekly" class="safety-weekly" hidden><div class="safety-viewer"><canvas id="safetyCanvas"></canvas></div></section><div class="safety-help">O modo <b>Dinâmico</b> organiza a leitura do dia. O modo <b>Semanal</b> mantém o PDF oficial completo.</div></div>'}
 const oeeData=[
