@@ -3015,7 +3015,7 @@ function homeStockSummaryHtml(){
   if(stockLoaded){
     const position=calculateL2LStock(stockRows);
     const identified=position.length>0;
-    const missing=(calculateL2LStock.unidentified||[]).length>0 || (calculateL2LStock.unmatched||[]).length>0;
+    const missing=(calculateL2LStock.unidentified||[]).length>0 || (calculateL2LStock.unmatched||[]).length>0 || position.some(row=>row.wipDifference<0||row.finishedDifference<0);
     if(identified && !missing){
       const i=position.reduce((sum,row)=>sum+n(row.inacabado),0);
       const a=position.reduce((sum,row)=>sum+n(row.acabado),0);
