@@ -11629,3 +11629,9 @@ body.home-nav-in-topbar .home-executive-hero{
  body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-events section>div{padding:4px 0!important}
  body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-defect{margin:6px 0!important}
 }
+
+/* v41 stock KPI validation labels: partial values are not physical balances */
+#content .gv-executive-dashboard .gv-dashboard-stock-note .gv-stock-partial{border-top:3px solid #d69a1b!important;}
+#content .gv-executive-dashboard .gv-dashboard-stock-note .gv-stock-partial small{color:#986710!important;font-weight:700;}
+#content .gv-executive-dashboard .gv-dashboard-stock-note .gv-stock-calculated{border-top:3px solid #198d73!important;}
+#content .gv-executive-dashboard .gv-dashboard-stock-note .gv-stock-pending small{color:#73889a!important;}
