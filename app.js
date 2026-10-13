@@ -34,10 +34,6 @@ function home(){
       '</div>'+
     '</div>'+
   '</section>'+
-  '<section class="home-block home-hse-top-block" id="home-hse">'+
-    '<div class="home-block-title home-hse-top-title"><div><span>HSE • CONTEÚDO DO DIA</span><h2>Momento de Segurança</h2></div><p id="homeHseDateLabel">Conteúdo de segurança do dia.</p></div>'+
-    '<div class="panel home-hse-daily-showcase"><div id="homeHseToday"></div></div>'+
-  '</section>'+
   '<section class="home-block" id="home-result">'+
     '<div class="home-block-title"><div><span>01 • RESULTADO DO DIA</span><h2>Resumo executivo</h2></div><p>Principais indicadores da FND para leitura rápida.</p></div>'+
     '<div class="home-yesterday-kpis" id="homeYesterdayKpis"></div>'+
