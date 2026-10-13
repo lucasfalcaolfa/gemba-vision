@@ -3154,7 +3154,8 @@ function renderHomeYesterday(){
 
 let gvHomeSelectedShift=0;
 function gvHomeSwitchShift(index){
- gvHomeSelectedShift=Math.max(0,Math.min(2,Number(index)||0));
+ const parsed=Number(index);
+ gvHomeSelectedShift=Number.isFinite(parsed)?Math.max(0,Math.min(2,Math.trunc(parsed))):0;
  const mount=document.getElementById("homeYesterdayModels");
  if(!mount)return;
  mount.querySelectorAll("[data-gv-shift]").forEach(btn=>{
@@ -3171,6 +3172,8 @@ function renderHomeShiftTabs(shifts){
  if(!mount)return;
  const esc=stockEsc;
  const safe=(Array.isArray(shifts)?shifts:[]).slice(0,3);
+ const selectedBefore=document.querySelector("#homeYesterdayModels .gv-turno-models");
+ const priorScroll=selectedBefore?selectedBefore.scrollTop:0;
  mount.innerHTML='<div class="gv-turno-tabs" role="tablist" aria-label="Selecione o turno">'+
  safe.map((g,i)=>'<button type="button" role="tab" data-gv-shift="'+i+'" onclick="gvHomeSwitchShift('+i+')">'+esc(g.label||((i+1)+"º Turno"))+'</button>').join("")+'</div>'+
  '<div class="gv-turno-panels">'+safe.map((g,i)=>{
@@ -3180,11 +3183,14 @@ function renderHomeShiftTabs(shifts){
     '<header><span>Total do turno</span><strong>'+fmt(sum)+' peças</strong><small>'+products.length+' modelos</small></header>'+
     '<div class="gv-turno-models">'+(products.length?products.map(p=>{
       const code=String(p.product||"");
-      const display=stockModelDescription(code)||code||"Modelo não identificado";
-      return '<div class="gv-turno-model"><div><b title="'+esc(display)+'">'+esc(display)+'</b><small>'+esc(String(p.line||((p.lines||[]).join(", "))||""))+'</small></div><strong>'+fmt(p.actual)+'</strong></div>';
+      const description=stockModelDescription(code);
+      const display=description&&description!=="Descrição não cadastrada"?description:(code||"Modelo não identificado");
+      return '<div class="gv-turno-model"><div><b title="'+esc(display)+'">'+esc(display)+'</b><small>'+esc(String(p.line||((p.lines||[]).join(", "))||"Linha não identificada"))+'</small></div><strong>'+fmt(p.actual)+'</strong></div>';
     }).join(""):'<p class="gv-turno-empty">Nenhuma produção registrada neste turno.</p>')+'</div></section>';
  }).join("")+'</div>';
  gvHomeSwitchShift(gvHomeSelectedShift);
+ const selectedAfter=mount.querySelector('.gv-turno-panel:not([hidden]) .gv-turno-models');
+ if(selectedAfter)selectedAfter.scrollTop=priorScroll;
 }
 
 function renderHomePowerBiSummary(){
