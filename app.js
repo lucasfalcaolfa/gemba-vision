@@ -1681,17 +1681,17 @@ let stockRows=[];
 let stockLoading=false;
 let stockLoaded=false;
 let stockFetchError="";
-function stockMonthStart(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-01";}
+function stockMonthStart(){return "2026-10-01";} // Saldo de abertura assumido como ZERO; marco fixo para continuidade entre meses.
 const stockFilterState={startDate:"",endDate:"",model:"Todos"};
 
 function stock(){
   return '<div class="panel stock-filter-panel">'+
-    '<div class="stock-filter-head"><div><span>CONTROLE EM TEMPO REAL</span><h2>Estoque da Fundição</h2><p>Selecione a data e o modelo para consultar a posição calculada com os dados do L2L.</p></div><div class="stock-live-badge" id="stockLiveStatus">🟡 L2L: carregando...</div></div>'+
+    '<div class="stock-filter-head"><div><span>CONTROLE EM TEMPO REAL</span><h2>Estoque da Fundição</h2><p>Saldo contínuo estimado desde 01/10/2026 (abertura assumida: zero). Consulte a posição calculada até a data escolhida, separada em Inacabado e Acabado.</p></div><div class="stock-live-badge" id="stockLiveStatus">🟡 L2L: carregando...</div></div>'+
     '<div class="stock-filter-grid stock-filter-grid-range">'+
-      '<label>Data inicial<input id="stockStartDate" type="date"></label>'+
-      '<label>Data final<input id="stockEndDate" type="date"></label>'+
+      '<label>Início do histórico (fixo)<input id="stockStartDate" type="date" disabled></label>'+
+      '<label>Saldo calculado até<input id="stockEndDate" type="date"></label>'+
       '<label>Modelo<select id="stockModel"><option value="Todos">Todos os modelos</option></select></label>'+
-      '<button type="button" id="stockReset" class="stock-filter-reset">↺ 1º do mês até hoje</button>'+
+      '<button type="button" id="stockReset" class="stock-filter-reset">↺ Saldo atual (desde 01/10/2026)</button>'+
     '</div>'+
     '<div class="filter-context" id="stockContext">Atualização automática a cada 1 minuto.</div>'+
   '</div>'+
@@ -1699,10 +1699,10 @@ function stock(){
   '<div class="stock-selected-grid" id="stockSelected"></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>WIP / INACABADO</span><h2>Estoque Inacabado</h2><p>Produção da Fundição − consumo registrado no Acabamento.</p></div></div><div id="stockInacabado"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>PRODUTO ACABADO</span><h2>Estoque Acabado</h2><p>Produção do Acabamento − saída identificada no processo seguinte.</p></div></div><div id="stockAcabado"></div></div>'+
-  '<div class="panel"><div class="stock-section-head"><div><span>DETALHAMENTO POR MODELO</span><h2>Quantidade de cada modelo</h2><p>Visão consolidada de Inacabado, Acabado e Total por modelo no período selecionado.</p></div></div><div id="stockByModel"></div></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>DETALHAMENTO POR MODELO</span><h2>Quantidade de cada modelo</h2><p>Saldo acumulado desde 01/10/2026 até a data selecionada, por modelo e etapa.</p></div></div><div id="stockByModel"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>CONCILIAÇÃO</span><h2>Códigos de Usinagem sem correspondência</h2><p>Registros não descontados para evitar baixa no modelo errado.</p></div></div><div id="stockUnmatched"></div></div>'+
-  '<div class="panel"><div class="stock-section-head"><div><span>CONSOLIDADO</span><h2>Resumo do Estoque</h2><p>Resumo calculado para a data e o modelo selecionados.</p></div></div><div id="stockResumo"></div></div>'+
-  '<div class="stock-calculation-note"><strong>Atualização:</strong> o painel consulta novamente o L2L a cada <b>1 minuto</b>. Saldos estimados por produção: Inacabado = Injetora − Acabamento; Acabado = Acabamento − Usinagem conciliada. Não são estoque físico confirmado. Códigos sem correspondência não são descontados.</div>';
+  '<div class="panel"><div class="stock-section-head"><div><span>CONSOLIDADO</span><h2>Resumo do Estoque</h2><p>Posição estimada acumulada desde 01/10/2026 até a data escolhida.</p></div></div><div id="stockResumo"></div></div>'+
+  '<div class="stock-calculation-note"><strong>Atualização:</strong> o painel consulta novamente o L2L a cada <b>1 minuto</b>. Saldos estimados por produção: Inacabado = Injetora − Acabamento; Acabado = Acabamento − Usinagem conciliada. Saldo de abertura em 01/10/2026 assumido como ZERO (não inventariado); os resultados são estimativas acumuladas, não estoque físico confirmado. Códigos sem correspondência não são descontados e diferenças negativas por etapa são exibidas como zero.</div>';
 }
 
 function stockStage(area){
@@ -1966,14 +1966,14 @@ function updateStock(){
     const startLabel=(stockFilterState.startDate||stockMonthStart()).split("-").reverse().join("/");
     const endLabel=(stockFilterState.endDate||todayISO()).split("-").reverse().join("/");
     const modelLabel=stockFilterState.model==="Todos"?"Todos os modelos":stockModelDescription(stockFilterState.model);
-    context.textContent=(stockFetchError?"🔴 Erro na coleta do estoque: "+stockFetchError:stockDataWarning?"🟠 "+stockDataWarning:stockLoaded?liveStamp():"🟡 Sem dados de estoque confirmados")+" • Acumulado "+startLabel+" → "+endLabel+" • "+modelLabel+" • cálculo por produção (não substitui inventário físico) • "+(calculateL2LStock.unmatched?.length||0)+" registros de Usinagem não conciliados • atualização a cada 1 minuto";
+    context.textContent=(stockFetchError?"🔴 Erro na coleta do estoque: "+stockFetchError:stockDataWarning?"🟠 "+stockDataWarning:stockLoaded?liveStamp():"🟡 Sem dados de estoque confirmados")+" • Saldo contínuo estimado (abertura zero) "+startLabel+" → "+endLabel+" • "+modelLabel+" • cálculo por produção (não substitui inventário físico) • "+(calculateL2LStock.unmatched?.length||0)+" registros de Usinagem não conciliados • atualização a cada 1 minuto";
   }
 
   const cards=document.getElementById("stockCards");
   if(cards&&!stockLoaded){cards.innerHTML='<div class="empty-state">' +(stockFetchError?"Falha ao buscar estoque do L2L. Nenhum saldo anterior será usado como atual.":"Aguardando dados do L2L...") +'</div>';}else if(cards)cards.innerHTML=
-    card("Inacabados",fmt(totalI),totalI>0?"warn":"")+
-    card("Acabados",fmt(totalA),totalA>0?"good":"")+
-    card("Total",fmt(totalI+totalA))+
+    card("Inacabado atual (estimado)",fmt(totalI),totalI>0?"warn":"")+
+    card("Acabado atual (estimado)",fmt(totalA),totalA>0?"good":"")+
+    card("Saldo atual estimado",fmt(totalI+totalA))+
     card("Produção Fundição",fmt(foundry))+
     card("Produção Acabamento",fmt(finishing));
 
@@ -2001,7 +2001,7 @@ function updateStock(){
       '<div class="stock-summary-grid">'+
         '<div><span>Inacabados</span><strong>'+fmt(totalI)+'</strong><small>'+ (stockFilterState.model==="Todos"?"Todos os modelos":stockEsc(stockModelDescription(stockFilterState.model))) +'</small></div>'+
         '<div><span>Acabados</span><strong>'+fmt(totalA)+'</strong><small>'+ (stockFilterState.model==="Todos"?"Todos os modelos":stockEsc(stockModelDescription(stockFilterState.model))) +'</small></div>'+
-        '<div><span>Total</span><strong>'+fmt(totalI+totalA)+'</strong><small>Período acumulado</small></div>'+
+        '<div><span>Total</span><strong>'+fmt(totalI+totalA)+'</strong><small>Desde 01/10/2026 • abertura zero</small></div>'+
         '<div><span>Modelos na visão</span><strong>'+fmt(visible.length)+'</strong><small>'+(position.some(x=>x.model!=="GERAL")?"Detalhe de produto disponível":"L2L sem detalhe de produto")+'</small></div>'+
       '</div>'+
       (downstream===0&&totalA>0?'<div class="stock-warning">⚠️ Não foi identificada saída do processo seguinte para esta seleção. O valor de Acabados está baseado no fluxo disponível no L2L.</div>':'');
@@ -2015,26 +2015,17 @@ function initStock(){
   const reset=document.getElementById("stockReset");
   if(!startDate||!endDate||!model||!reset)return;
 
-  if(!stockFilterState.startDate)stockFilterState.startDate=stockMonthStart();
+  stockFilterState.startDate=stockMonthStart();
   if(!stockFilterState.endDate)stockFilterState.endDate=todayISO();
   startDate.value=stockFilterState.startDate;
   endDate.value=stockFilterState.endDate;
 
-  startDate.addEventListener("change",async()=>{
-    stockFilterState.startDate=startDate.value||stockMonthStart();
-    if(stockFilterState.endDate<stockFilterState.startDate){
-      stockFilterState.endDate=stockFilterState.startDate;
-      endDate.value=stockFilterState.endDate;
-    }
-    stockFilterState.model="Todos";
-    await refreshStockRange();
-  });
-
   endDate.addEventListener("change",async()=>{
     stockFilterState.endDate=endDate.value||todayISO();
+    if(stockFilterState.endDate>todayISO()){stockFilterState.endDate=todayISO();endDate.value=stockFilterState.endDate;}
     if(stockFilterState.endDate<stockFilterState.startDate){
-      stockFilterState.startDate=stockFilterState.endDate;
-      startDate.value=stockFilterState.startDate;
+      stockFilterState.endDate=stockMonthStart();
+      endDate.value=stockFilterState.endDate;
     }
     stockFilterState.model="Todos";
     await refreshStockRange();
