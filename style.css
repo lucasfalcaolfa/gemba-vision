@@ -11746,3 +11746,18 @@ body.home-nav-in-topbar .home-executive-hero{
 .gv-quality-filter button:hover{filter:brightness(.95)}
 @media(max-width:1400px){.gv-quality-filter{grid-template-columns:repeat(4,minmax(0,1fr))}.gv-quality-filter button{min-width:0}}
 @media(max-width:760px){.gv-quality-filter{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Production defects by product — L2L details */
+.gv-prod-defects-panel{margin-top:14px}
+.gv-prod-defects-title{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:13px}
+.gv-prod-defects-title h2{margin:0 0 4px;color:#123b60;font-size:17px}
+.gv-prod-defects-title p{margin:0;color:#71879a;font-size:12px}
+.gv-prod-defects-title>span{font-size:11px;font-weight:700;color:#315c7a;white-space:nowrap}
+.gv-prod-defects-list{min-width:0;max-width:100%}
+.gv-prod-defects-table{border-collapse:collapse;width:100%;font-size:12px}
+.gv-prod-defects-table th{text-align:left;background:#edf4f8;padding:10px;color:#486a82;font-size:10px;letter-spacing:.4px;text-transform:uppercase}
+.gv-prod-defects-table td{padding:10px;border-bottom:1px solid #e6edf3;color:#193e5a}
+.gv-prod-defects-table tr:nth-child(even) td{background:#f8fbfd}
+.gv-prod-defects-table td:last-child,.gv-prod-defects-table th:last-child{text-align:right;font-variant-numeric:tabular-nums}
+@media(max-width:850px){.gv-prod-defects-title{align-items:flex-start;flex-direction:column}.gv-prod-defects-table{min-width:640px}}
