@@ -11421,3 +11421,56 @@ body.home-nav-in-topbar .home-executive-hero{
  #content .gv-executive-dashboard #homeHseToday{overflow:auto!important;overscroll-behavior:contain;max-height:100%!important;scrollbar-width:thin;}
  #content .gv-executive-dashboard .home-defect-modal{overflow:visible!important;}
 }
+
+
+/* PowerBI summary primitives — isolated to executive overview */
+#content .gv-executive-dashboard .gv-legend{font-size:10px;color:#175181;font-weight:700;text-align:right;margin-bottom:9px}
+#content .gv-executive-dashboard .gv-legend span{color:#9bbad4}
+#content .gv-executive-dashboard .gv-pbi-bars{display:flex;flex-direction:column;gap:12px;margin:9px 0 12px}
+#content .gv-executive-dashboard .gv-pbi-bar{display:grid;grid-template-columns:95px minmax(0,1fr) 100px;align-items:center;gap:8px;font-size:11px;}
+#content .gv-executive-dashboard .gv-pbi-bar>div{height:24px;position:relative;display:flex;flex-direction:column;justify-content:center;gap:2px}
+#content .gv-executive-dashboard .gv-pbi-bar i,#content .gv-executive-dashboard .gv-pbi-bar em{display:block;height:10px;border-radius:2px;background:#14578e}
+#content .gv-executive-dashboard .gv-pbi-bar em{background:#b8d1e7}
+#content .gv-executive-dashboard .gv-pbi-bar>span{text-align:right;font-weight:700;font-size:10px}
+#content .gv-executive-dashboard .gv-pbi-footer{font-size:11px;color:#506e85;border-top:1px solid #edf1f5;padding-top:8px}
+#content .gv-executive-dashboard .gv-pbi-total{font-size:11px;color:#6d8196;margin-bottom:9px}
+#content .gv-executive-dashboard .gv-pbi-total b{font-size:20px;color:#10426e}
+#content .gv-executive-dashboard .gv-pbi-shifts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+#content .gv-executive-dashboard .gv-pbi-shifts section{min-width:0;border:1px solid #dfeaf3;border-radius:9px;padding:8px}
+#content .gv-executive-dashboard .gv-pbi-shifts header{display:flex;justify-content:space-between;gap:3px;font-size:10px;font-weight:700}
+#content .gv-executive-dashboard .gv-pbi-track{height:5px;border-radius:10px;background:#e7eef4;overflow:hidden;margin:9px 0}
+#content .gv-executive-dashboard .gv-pbi-track i{display:block;height:100%;background:#1678cb;border-radius:10px}
+#content .gv-executive-dashboard .gv-pbi-model{display:flex;justify-content:space-between;gap:4px;border-top:1px solid #edf1f4;padding:7px 0;font-size:9px;min-width:0}
+#content .gv-executive-dashboard .gv-pbi-model span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#content .gv-executive-dashboard .gv-pbi-machines{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+#content .gv-executive-dashboard .gv-pbi-machines article{border:1px solid #e1e9f1;border-radius:11px;padding:10px;min-width:0}
+#content .gv-executive-dashboard .gv-pbi-machines header{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+#content .gv-executive-dashboard .gv-pbi-machines header strong{font-size:21px;color:#16996c}
+#content .gv-executive-dashboard .gv-pbi-machines .warn header strong{color:#bd8b04}
+#content .gv-executive-dashboard .gv-pbi-machines .bad header strong{color:#e34a48}
+#content .gv-executive-dashboard .gv-pbi-machines .warn .gv-pbi-track i{background:#e6a21a}
+#content .gv-executive-dashboard .gv-pbi-machines .bad .gv-pbi-track i{background:#e34a48}
+#content .gv-executive-dashboard .gv-pbi-machines .good .gv-pbi-track i{background:#20ae77}
+#content .gv-executive-dashboard .gv-pbi-metrics{display:flex;justify-content:space-between;gap:4px;font-size:10px;padding:4px 0}
+#content .gv-executive-dashboard .gv-pbi-metrics span{display:flex;flex-direction:column;gap:2px;color:#758a9e}
+#content .gv-executive-dashboard .gv-pbi-metrics b{color:#102d4d;font-size:12px}
+#content .gv-executive-dashboard .gv-pbi-machines small{font-size:9px;color:#73889b}
+#content .gv-executive-dashboard .gv-pbi-defect{display:grid;grid-template-columns:105px minmax(0,1fr) 44px;align-items:center;gap:7px;margin:11px 0;font-size:10px}
+#content .gv-executive-dashboard .gv-pbi-defect>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#content .gv-executive-dashboard .gv-pbi-defect>div{height:11px;background:#ecf2f7;border-radius:3px;overflow:hidden}
+#content .gv-executive-dashboard .gv-pbi-defect i{display:block;height:100%;background:#3186d1}
+#content .gv-executive-dashboard .gv-pbi-defect b{text-align:right}
+#content .gv-executive-dashboard .gv-pbi-events{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+#content .gv-executive-dashboard .gv-pbi-events section{min-width:0;}
+#content .gv-executive-dashboard .gv-pbi-events header{display:flex;align-items:center;justify-content:space-between;font-size:12px;font-weight:800;margin-bottom:4px;}
+#content .gv-executive-dashboard .gv-pbi-events header strong{color:#135683;font-size:18px}
+#content .gv-executive-dashboard .gv-pbi-events section>div{display:grid;grid-template-columns:95px minmax(0,1fr) 42px;gap:7px;align-items:center;padding:8px 0;border-top:1px solid #edf1f4;}
+#content .gv-executive-dashboard .gv-pbi-events section>div span{overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:10px;color:#274c68}
+#content .gv-executive-dashboard .gv-pbi-events section>div small{font-size:9px;white-space:nowrap;color:#738799}
+@media(min-width:1800px) and (min-height:850px){
+ #content .gv-executive-dashboard{grid-template-rows:58px 103px minmax(0,1.8fr) minmax(0,1.25fr) minmax(0,1.45fr)!important;}
+ #content .gv-executive-dashboard .home-hse-showcase-grid{display:none!important}
+ #content .gv-executive-dashboard #homeHseToday:before{content:"Segurança em primeiro lugar";display:block;font-size:20px;font-weight:800;color:#147b61;padding:25px 14px 8px;text-align:center}
+ #content .gv-executive-dashboard #homeHseToday:after{content:"Consulte o Momento de Segurança para ler o comunicado completo do dia.";display:block;text-align:center;padding:7px 16px;font-size:12px;color:#58788b}
+ #content .gv-executive-dashboard #homeYesterdayProduction,#content .gv-executive-dashboard #homeYesterdayModels,#content .gv-executive-dashboard #homeYesterdayDefects,#content .gv-executive-dashboard #homeYesterdayEvents{overflow:hidden!important;max-height:100%!important}
+}
