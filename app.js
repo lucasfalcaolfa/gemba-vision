@@ -3626,7 +3626,7 @@ function decorateProductNode(node) {
       if(!desc) return code;
       const label=desc+" ("+code+")";
       // Avoid formatting labels already expanded by a previous render.
-      if(whole.slice(Math.max(0,offset-desc.length-3),offset)===desc+" (") return code;
+      if(whole.slice(0,offset).endsWith(desc+" (")) return code;
       return label;
     });
     if(result!==old) node.nodeValue=result;
