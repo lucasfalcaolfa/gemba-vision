@@ -2144,8 +2144,31 @@ function renderQualityL2L(){
    card("Custo NQ","—","Sem custo unitário validado")
  ].join("");
  const pareto=document.getElementById("qualityPareto");
- const sumDefects=defects.reduce((a,d)=>a+n(d.qty),0),max=Math.max(1,...defects.map(d=>n(d.qty)));
- if(pareto)pareto.innerHTML=defects.length?'<div class="gv-quality-pareto">'+defects.slice(0,7).map((d,i)=>'<div class="gv-quality-row"><span title="'+stockEsc(d.defect)+'">'+(i+1)+'. '+stockEsc(d.defect)+'</span><div class="gv-quality-track"><i style="width:'+(100*n(d.qty)/max).toFixed(2)+'%"></i></div><b>'+fmt(d.qty)+'</b><small>'+fmt(sumDefects?n(d.qty)/sumDefects*100:0,1)+'%</small></div>').join("")+'</div><small class="gv-quality-note">Total detalhado: '+fmt(sumDefects)+' rejeitos'+(scrap!==sumDefects?' · Divergente do resumo ('+fmt(scrap)+')':'')+'</small>':'<div class="empty-state">Sem defeitos detalhados retornados para o período.</div>';
+ // Summary production rows are authoritative for the day's scrap quantity,
+ // even when no product or defect was entered in L2L.
+ // Only add the positive difference as an unattributed group; never double count.
+ const sumDefects=defects.reduce((a,d)=>a+n(d.qty),0);
+ const unclassified=Math.max(0,scrap-sumDefects);
+ const overDetailed=sumDefects>scrap;
+ const groupsForPareto=defects.map(d=>({defect:d.defect,qty:n(d.qty)}));
+ if(unclassified>0)groupsForPareto.push({defect:"Sem detalhamento no L2L",qty:unclassified});
+ groupsForPareto.sort((a,b)=>b.qty-a.qty);
+ const chartTotal=groupsForPareto.reduce((a,d)=>a+d.qty,0);
+ const max=Math.max(1,...groupsForPareto.map(d=>d.qty));
+ const noModel=homeDefectRows(qualityScrapRows).filter(r=>
+   !String(r.product||"").trim() || String(r.product).trim().toLowerCase()==="sem modelo"
+ ).reduce((a,r)=>a+n(r.scrap),0);
+ if(pareto){
+  pareto.innerHTML=groupsForPareto.length?
+   '<div class="gv-quality-pareto">'+groupsForPareto.slice(0,7).map((d,i)=>
+    '<div class="gv-quality-row"><span title="'+stockEsc(d.defect)+'">'+(i+1)+'. '+stockEsc(d.defect)+'</span><div class="gv-quality-track"><i style="width:'+(100*d.qty/max).toFixed(2)+'%"></i></div><b>'+fmt(d.qty)+'</b><small>'+fmt(chartTotal?d.qty/chartTotal*100:0,1)+'%</small></div>'
+   ).join("")+'</div>':'<div class="empty-state">Nenhum rejeito registrado no período.</div>';
+  pareto.innerHTML+='<small class="gv-quality-note">Scrap total do período: '+fmt(scrap)+' peças'+
+    (unclassified>0?' · '+fmt(unclassified)+' sem detalhamento':'')+
+    (noModel>0?' · '+fmt(noModel)+' rejeitos detalhados sem modelo informado':'')+
+    (overDetailed?' · Atenção: detalhes ('+fmt(sumDefects)+') excedem o resumo; verificar duplicidade.':'')+
+    '</small>';
+ }
  const byLine=document.getElementById("qualityByLine");
  const groups=groupedByLine(rows).sort((a,b)=>n(b.scrap)-n(a.scrap));
  if(byLine)byLine.innerHTML=groups.length?'<div class="gv-quality-lines">'+groups.map(g=>{
