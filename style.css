@@ -11563,3 +11563,69 @@ body.home-nav-in-topbar .home-executive-hero{
   overflow-y:auto!important;overflow-x:hidden!important;min-height:0!important;max-height:100%!important;
  }
 }
+
+
+/* v39 - one viewport dashboard; scoped so other pages retain normal scrolling */
+@media (min-width:1600px) and (min-height:850px){
+ :root:has(.gv-executive-dashboard){overflow:hidden!important}
+ body:has(.gv-executive-dashboard){height:100dvh!important;max-height:100dvh!important;overflow:hidden!important}
+ body:has(.gv-executive-dashboard)>.topbar{height:72px!important;min-height:72px!important}
+ body:has(.gv-executive-dashboard)>.app{
+  display:flex!important;height:calc(100dvh - 72px)!important;max-height:calc(100dvh - 72px)!important;
+  min-height:0!important;overflow:hidden!important;
+ }
+ body:has(.gv-executive-dashboard)>.app>.sidebar{
+  height:100%!important;max-height:100%!important;min-height:0!important;top:0!important;overflow:auto!important;
+ }
+ body:has(.gv-executive-dashboard) #content{
+  flex:1 1 0!important;min-height:0!important;min-width:0!important;
+  height:100%!important;max-height:100%!important;width:auto!important;overflow:hidden!important;
+ }
+ body:has(.gv-executive-dashboard) #content>.page{
+  box-sizing:border-box!important;height:100%!important;max-height:100%!important;
+  width:100%!important;min-width:0!important;min-height:0!important;
+  padding:8px 12px!important;margin:0!important;overflow:hidden!important;
+ }
+ body:has(.gv-executive-dashboard) #content>.page>.page-head{display:none!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard{
+  display:grid!important;box-sizing:border-box!important;width:100%!important;height:100%!important;
+  max-height:100%!important;min-height:0!important;max-width:100%!important;
+  grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  grid-template-areas:"hero hero" "summary summary" "production products" "oee oee" "quality events"!important;
+  grid-template-rows:58px 106px minmax(0,2fr) minmax(0,1.36fr) minmax(0,1.42fr)!important;
+  gap:8px!important;overflow:hidden!important;align-content:stretch!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>.home-executive-hero{grid-area:hero!important;min-height:0!important;margin:0!important;overflow:hidden!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-result{grid-area:summary!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-production{grid-area:production!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-flow{grid-area:products!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-efficiency{grid-area:oee!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-quality{grid-area:quality!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-events{grid-area:events!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>.home-block{
+  display:flex!important;flex-direction:column!important;
+  min-width:0!important;min-height:0!important;height:100%!important;
+  overflow:hidden!important;margin:0!important;gap:3px!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block-title{
+  min-height:22px!important;height:22px!important;flex:0 0 22px!important;margin:0!important;padding:0 2px!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block-title h2{
+  font-size:13px!important;line-height:20px!important;margin:0!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block-title p{display:none!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block>.panel{
+  box-sizing:border-box!important;flex:1 1 0!important;min-height:0!important;max-height:none!important;
+  height:auto!important;overflow:hidden!important;padding:8px 10px!important;margin:0!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block>.panel>div{
+  min-width:0!important;min-height:0!important;max-height:100%!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis{height:100%!important;max-height:100%!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-tabs button{padding:7px 4px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-panel>header{padding:5px 8px!important;margin-bottom:3px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-model{min-height:39px!important;padding:4px 7px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-models{overflow-y:auto!important;overflow-x:hidden!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-events section>div{padding:4px 0!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-defect{margin:6px 0!important}
+}
