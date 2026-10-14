@@ -1753,7 +1753,7 @@ function stockStage(area){
 }
 
 function stockProductRows(row){
-  const codePattern=/(?:31GQ|41NN|17111|17100)[-A-Z0-9]{6,}/i;
+  const codePattern=/\b(?:31GQ|41NN|17111|17100|11PD|11VE|1050)[-A-Z0-9]{6,}\b/i;
   const clean=v=>String(v??"").trim().toUpperCase();
   const codeOf=v=>{
     if(v&&typeof v==="object")return codeOf(v.product_code??v.code??v.product_name??v.name??v.part_number??v.description??v.model??"");
