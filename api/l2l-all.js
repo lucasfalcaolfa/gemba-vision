@@ -75,7 +75,7 @@ module.exports=async function handler(req,res){
    if(row)numericSite=String(row.site);
   }catch(err){failures.site_resolution=String(err.message||err)}
  }
- if(!/^\\d+$/.test(numericSite) && names.some(name=>!["sites","production","oee_sites"].includes(name))){
+ if(!/^\d+$/.test(numericSite) && names.some(name=>!["sites","production","oee_sites"].includes(name))){
   return res.status(502).json({success:false,error:"Numeric L2L site ID could not be resolved. Set L2L_SITE_ID in Vercel.",errors:failures});
  }
  const timeStart=start.replace(" ","T")+":00",timeEnd=end.replace(" ","T")+":00";
