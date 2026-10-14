@@ -11761,3 +11761,61 @@ body.home-nav-in-topbar .home-executive-hero{
 .gv-prod-defects-table tr:nth-child(even) td{background:#f8fbfd}
 .gv-prod-defects-table td:last-child,.gv-prod-defects-table th:last-child{text-align:right;font-variant-numeric:tabular-nums}
 @media(max-width:850px){.gv-prod-defects-title{align-items:flex-start;flex-direction:column}.gv-prod-defects-table{min-width:640px}}
+
+
+/* v47 final full-HD executive visual pass — scoped to home only */
+@media (min-width:1600px) and (min-height:850px){
+ body:has(.gv-executive-dashboard)>.app{height:calc(100dvh - 72px)!important;min-height:0!important;overflow:hidden!important}
+ body:has(.gv-executive-dashboard) #content{height:100%!important;min-height:0!important;overflow:hidden!important}
+ body:has(.gv-executive-dashboard) #content>.page{box-sizing:border-box!important;height:100%!important;max-height:100%!important;padding:8px 12px!important;overflow:hidden!important;background:#f1f5f9!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard{
+  display:grid!important;grid-template-columns:minmax(0,1.08fr) minmax(0,1fr)!important;
+  grid-template-areas:"hero hero" "summary summary" "production products" "oee oee" "quality events"!important;
+  grid-template-rows:62px 119px minmax(0,2fr) minmax(0,1.42fr) minmax(0,1.43fr)!important;
+  gap:9px!important;width:100%!important;height:100%!important;min-height:0!important;max-height:100%!important;overflow:hidden!important
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>.home-executive-hero{grid-area:hero!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-result{grid-area:summary!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-production{grid-area:production!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-flow{grid-area:products!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-efficiency{grid-area:oee!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-quality{grid-area:quality!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-events{grid-area:events!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>.home-block{display:flex!important;flex-direction:column!important;gap:4px!important;height:100%!important;min-height:0!important;min-width:0!important;margin:0!important;overflow:hidden!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block-title{display:flex!important;align-items:center!important;justify-content:space-between!important;height:25px!important;min-height:25px!important;flex:0 0 25px!important;margin:0!important;padding:0 3px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block-title h2{font-size:15px!important;line-height:20px!important;font-weight:800!important;color:#123856!important;margin:0!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block-title p{display:none!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-block>.panel{box-sizing:border-box!important;flex:1 1 0!important;min-height:0!important;min-width:0!important;height:auto!important;max-height:none!important;margin:0!important;padding:10px 13px!important;border:1px solid #dce6ef!important;border-radius:12px!important;background:#fff!important;box-shadow:0 2px 9px rgba(20,50,80,.04)!important;overflow:hidden!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-executive-hero{height:100%!important;min-height:0!important;display:flex!important;align-items:center!important;border-radius:12px!important;padding:5px 12px!important;background:#fff!important;overflow:hidden!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-executive-main{padding:0!important;gap:14px!important;background:transparent!important;border:0!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-executive-copy h1{font-size:15px!important;line-height:1.2!important;margin:2px 0!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .home-executive-copy p{font-size:10px!important;margin:0!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr))!important;gap:9px!important;width:100%!important;height:100%!important;margin:0!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis .home-process-kpi-group,
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis .home-process-kpi-grid,
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis .gv-dashboard-stock-note{display:contents!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis .home-process-kpi-head{display:none!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis .home-exec-kpi,
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis .gv-dashboard-stock-note>div{box-sizing:border-box!important;height:100%!important;min-height:0!important;min-width:0!important;padding:11px 12px!important;margin:0!important;border-radius:10px!important;background:#fff!important;box-shadow:none!important;overflow:hidden!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis strong{font-size:25px!important;line-height:1.2!important;font-weight:800!important;font-variant-numeric:tabular-nums}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayKpis small{font-size:10px!important;line-height:1.3!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-bars{gap:13px!important;margin:10px 0 12px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-bar{grid-template-columns:115px minmax(0,1fr) 120px!important;gap:12px!important;font-size:12px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-bar>span{font-size:11px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard #homeYesterdayModels{display:flex!important;flex-direction:column!important;height:100%!important;min-height:0!important;overflow:hidden!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-tabs button{font-size:12px!important;min-height:35px!important;padding:7px 10px!important;border-radius:8px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-panels{flex:1!important;min-height:0!important;overflow:hidden!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-panel{height:100%!important;min-height:0!important;display:flex!important;flex-direction:column!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-panel[hidden]{display:none!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-models{flex:1!important;min-height:0!important;overflow-y:auto!important;overflow-x:hidden!important;scrollbar-width:thin}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-model{min-height:43px!important;padding:6px 10px!important;gap:10px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-model b{font-size:12px!important;line-height:1.3!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-turno-model>strong{font-size:16px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-machines{grid-template-columns:repeat(4,minmax(0,1fr))!important;height:100%!important;gap:10px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-machines article{min-width:0!important;min-height:0!important;padding:10px 12px!important;background:#fbfdff!important;border-radius:10px!important;overflow:hidden!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-machines header strong{font-size:23px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-metrics b{font-size:12px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-defect{grid-template-columns:130px minmax(0,1fr) 40px!important;gap:8px!important;margin:8px 0!important;font-size:11px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-events{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important}
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-events section>div{grid-template-columns:90px minmax(0,1fr) 43px!important;gap:8px!important;padding:6px 0!important}
+}
