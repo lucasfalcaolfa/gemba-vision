@@ -1916,7 +1916,14 @@ function stockProductRows(row){
     }
     if(found.size)break;
   }
-  if(!found.size)add(row.product_code??row.product_name??row.product??row.model??row.part_number,row);
+  if(!found.size){
+    const stage=stockStage(row.area);
+    const identity=row.product_code??row.product_name??row.product??row.model??row.part_number;
+    // Only for a confirmed approved equivalence, fall back to the L2L description
+    // when its primary code is absent or cannot be reconciled.
+    const namedOrigin=stage==="downstream"?stockMachiningOrigin(row.product_description):null;
+    add(namedOrigin||identity,row);
+  }
   return found.size?[...found].map(([model,qty])=>({model,qty})):[{model:"GERAL",qty:n(row.actual)}];
 }
 function stockProductShape(rows){
@@ -2103,9 +2110,11 @@ async function refreshStockRange(){
       if(stop<=start)break;
       const chunk=await window.L2L.getStockPitches(time(start),time(stop));
       for(const item of chunk){
-        const key=String(item.id??item.line+"|"+item.start+"|"+item.product);
-        if(ids.has(key))continue;
-        ids.add(key);
+        // Never deduplicate records without a stable L2L pitch identifier:
+        // their line/time/product fields can coincide legitimately.
+        const key=item.id!==null&&item.id!==undefined&&String(item.id).trim()!==""?String(item.id):null;
+        if(key!==null&&ids.has(key))continue;
+        if(key!==null)ids.add(key);
         collected.push(item);
       }
       cursor.setDate(cursor.getDate()+1);
@@ -2164,7 +2173,7 @@ function updateStock(){
 
   const pending=document.getElementById("stockUnmatched");
   // Visible build marker and mapping audit help distinguish stale bundles from L2L data issues.
-  const reconcileBuild="2026-10-15 v61";
+  const reconcileBuild="2026-10-15 v62";
   if(pending){
     const items=calculateL2LStock.unmatched||[];
     const merged=new Map();
