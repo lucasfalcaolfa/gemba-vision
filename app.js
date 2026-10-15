@@ -1273,7 +1273,7 @@ function renderOeeLive(){
   const sourceForShift=productionRows.length?productionRows:l2lRows;
   const shiftDataMissing=shiftChosen&&!sourceForShift.some(r=>rowShift(r)===productionFilterState.shift);
   const shiftWarning=shiftDataMissing?" • ⚠ Sem registros identificados para este turno no L2L; nenhuma produção de outros turnos foi incluída.":"";
-  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(oeeFilterState.startDate||"")+(oeeFilterState.endDate&&oeeFilterState.endDate!==oeeFilterState.startDate?" → "+oeeFilterState.endDate:"")+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s) • "+(oeePitchAudit.size?"OEE ponderado por pitches concluídos": "OEE resumo L2L")+(oeeAuditWarning?" • ⚠ "+oeeAuditWarning:"");
+  if(ctx)ctx.textContent=liveStamp()+" • "+(productionFilterState.shift==="Todos"?"Resumo diário L2L":"Pitches L2L por turno, janela operacional 07:00–07:00")+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(oeeFilterState.startDate||"")+(oeeFilterState.endDate&&oeeFilterState.endDate!==oeeFilterState.startDate?" → "+oeeFilterState.endDate:"")+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s) • "+(oeePitchAudit.size?"OEE ponderado por pitches concluídos": "OEE resumo L2L")+(oeeAuditWarning?" • ⚠ "+oeeAuditWarning:"");
 
   const table=document.getElementById("oeeTable");
   if(table){
@@ -1408,24 +1408,23 @@ function renderProductionDefects(){
   '</tbody></table></div>':
   '<div class="empty-state">'+(productionDefectError?stockEsc(productionDefectError):"Nenhum defeito detalhado encontrado para os filtros selecionados.")+'</div>';
 }
-async function getProductionRowsForSelectedShift(){
+async function fetchProductionShiftPitches(){
  const shift=productionFilterState.shift;
- if(shift==="Todos")return window.L2L.getRange(productionFilterState.startDate||todayISO(),productionFilterState.endDate||productionFilterState.startDate||todayISO(),productionFilterState.start,productionFilterState.end);
- const nextDay=day=>{const d=new Date(day+"T12:00:00");d.setDate(d.getDate()+1);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");};
- const first=productionFilterState.startDate||todayISO();
- const last=productionFilterState.endDate||first;
- const operational=productionFilterState.start==="07:00"&&productionFilterState.end==="07:00";
- const days=[];for(let day=first;day<=(operational&&last===nextDay(first)?first:last)&&days.length<32;day=nextDay(day))days.push(day);
- if(days.length>=32)throw new Error("Reduza o período da consulta por turno para até 31 dias.");
- const results=[];
+ const startDay=productionFilterState.startDate||todayISO();
+ const endDay=productionFilterState.endDate||startDay;
+ const windowIsOperational=productionFilterState.start==="07:00"&&productionFilterState.end==="07:00";
+ const last=windowIsOperational?startDay:endDay;
+ const nextDay=d=>{const x=new Date(d+"T12:00:00");x.setDate(x.getDate()+1);return [x.getFullYear(),String(x.getMonth()+1).padStart(2,"0"),String(x.getDate()).padStart(2,"0")].join("-");};
+ const days=[];for(let d=startDay;d<=last&&days.length<32;d=nextDay(d))days.push(d);
+ if(days.length===32&&last>days[31])throw new Error("Selecione até 32 dias para consultar pitches por turno.");
+ const result=[];
  for(const day of days){
-  const tomorrow=nextDay(day);
-  const times=shift==="1"?[day+" 07:00",day+" 17:00"]:shift==="2"?[day+" 17:00",tomorrow+" 02:00"]:[tomorrow+" 02:00",tomorrow+" 07:00"];
-  const rows=await window.L2L.getDailyWindow(times[0],times[1]);
-  // Each server query is bounded to one operational shift. The summary may omit shift metadata.
-  results.push(...rows.map(row=>({...row,shift_number:shift})));
+  const tomorrow=nextDay(day),after=nextDay(tomorrow);
+  const bounds=shift==="1"?[day+" 07:00",day+" 17:00"]:shift==="2"?[day+" 17:00",tomorrow+" 02:00"]:[tomorrow+" 02:00",tomorrow+" 07:00"];
+  const records=await window.L2L.getStockPitches(bounds[0],bounds[1]);
+  result.push(...records.map(p=>({...p,shift,production_source:"pitch",products:[{product_code:p.product,description:p.product_description,actual:p.actual,demand:p.demand}]})));
  }
- return results;
+ return result;
 }
 async function refreshProductionRange(){
   if(productionLoading)return;
@@ -1436,13 +1435,13 @@ async function refreshProductionRange(){
     const start=(productionFilterState.startDate||todayISO())+" "+(productionFilterState.start||"00:00");
     const end=(productionFilterState.endDate||productionFilterState.startDate||todayISO())+" "+(productionFilterState.end||"23:59");
     const [prodResponse,defectResponse]=await Promise.allSettled([
-      getProductionRowsForSelectedShift(),
-      productionFilterState.shift==="Todos"?window.L2L.getScrapDetailsWindow(start,end):Promise.resolve([])
+      productionFilterState.shift==="Todos"?window.L2L.getRange(productionFilterState.startDate||todayISO(),productionFilterState.endDate||productionFilterState.startDate||todayISO(),productionFilterState.start,productionFilterState.end):fetchProductionShiftPitches(),
+      window.L2L.getScrapDetailsWindow(start,end)
     ]);
     if(prodResponse.status!=="fulfilled")throw prodResponse.reason;
     productionRows=prodResponse.value;
     productionDefectRows=defectResponse.status==="fulfilled"&&Array.isArray(defectResponse.value)?defectResponse.value:[];
-    productionDefectError=productionFilterState.shift!=="Todos"?"Defeitos detalhados por turno indisponíveis nesta consulta; o total de NG vem do resumo do L2L.":defectResponse.status==="rejected"?"Detalhamento de scrap indisponível no L2L.":"";
+    productionDefectError=defectResponse.status==="rejected"?"Detalhamento de scrap indisponível no L2L.":"";
     l2lLastUpdate=new Date();
     l2lError="";
     if(currentPage==="production"){
@@ -1927,7 +1926,7 @@ function renderProductionLive(){
   const cards=document.getElementById("prodCards");
   if(cards){
     cards.innerHTML=
-      card("Plano PMP diário • "+sectorName,fmt(productionPmpPlanRows().reduce((sum,r)=>sum+r.qty,0)))+
+      card("Plano PMP • "+sectorName,productionFilterState.line==="Todas"?fmt(productionPmpPlanRows().reduce((sum,r)=>sum+r.qty,0)):"—")+
       card("Demanda L2L • "+sectorName,fmt(demand))+
       card("Produção atual",fmt(actual),actual>=demand&&demand>0?"good":"")+card("Atingimento",fmtPct(attainment),attainment>=100?"good":attainment>=95?"warn":"bad")+
       productionScrapCard(scrap);
