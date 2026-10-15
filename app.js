@@ -1367,6 +1367,7 @@ function production(){
     '<div class="panel"><h2>Atingimento por linha</h2><div class="chart-wrap"><canvas id="prodLineChart"></canvas></div></div>'+
     '<div class="panel"><h2>Visão executiva</h2><div id="prodExecutive"></div></div>'+
   '</div>'+
+  '<div class="panel"><h2>Metas por produto e modelo — PMP x L2L</h2><p>Demanda do Plano e demanda do L2L identificadas separadamente. O percentual só é calculado para o mesmo período e modelo.</p><div id="prodModelsDemand"></div></div>'+
   '<div class="panel gv-prod-defects-panel"><div class="gv-prod-defects-title"><div><h2>Defeitos por produto</h2><p>Modelo • defeito registrado • linha • turno • quantidade</p></div><span id="prodDefectsStatus">Consultando L2L...</span></div><div id="prodDefectsByModel" class="gv-prod-defects-list"></div></div>'+
   '<div class="panel"><h2>Todas as linhas — produção em tempo real</h2><div id="prodTable"></div><div class="footer-note">Fonte: L2L • Demanda = demand • Produção atual = actual • atualização automática a cada 15 segundos.</div></div>'+
   '<div class="scrap-modal" id="scrapModal" aria-hidden="true"><div class="scrap-modal-backdrop" onclick="closeScrapDetails()"></div><section class="scrap-modal-panel" role="dialog" aria-modal="true" aria-labelledby="scrapModalTitle"><div class="scrap-modal-head"><div><span>DETALHAMENTO L2L</span><h2 id="scrapModalTitle">Scrap / Defeitos</h2></div><button type="button" class="scrap-close" onclick="closeScrapDetails()" aria-label="Fechar">×</button></div><div class="scrap-modal-context" id="scrapModalContext"></div><div id="scrapModalBody"><div class="empty-state">Carregando detalhes...</div></div></section></div>';
@@ -1832,6 +1833,51 @@ function lineScrapButton(g){
   return '<button type="button" class="line-scrap-btn '+(qty>0?'has-scrap':'zero')+'" onclick="openScrapDetails(\''+line+'\',\''+area+'\')" title="Consultar os defeitos detalhados desta linha diretamente no L2L"><span>'+fmt(qty)+'</span><small>Ver defeitos ↗</small></button>';
 }
 
+let productionPlanReady=null;
+function ensureProductionPlan(){
+ if(pmpPlanning.length)return Promise.resolve();
+ if(!productionPlanReady)productionPlanReady=fetch("/data/fnd-pmp-2026-10.csv").then(r=>{if(!r.ok)throw Error("Plano indisponível");return r.text();}).then(text=>{
+  const lines=text.trim().split(/\r?\n/),fields=lines.shift().split(",");
+  const ix=x=>fields.indexOf(x);
+  pmpPlanning=lines.map(line=>{const v=line.split(",");return {day:v[ix("Data")],process:v[ix("Processo")],model:v[ix("Modelo")],machine:v[ix("Injetora_origem")],qty:Number(v[ix("Quantidade_planejada")])||0};}).filter(x=>x.day&&x.model&&x.model!=="TOTAL");
+ }).catch(()=>{});
+ return productionPlanReady;
+}
+function renderProductionModelDemand(rows){
+ const element=document.getElementById("prodModelsDemand");if(!element)return;
+ const from=productionFilterState.startDate,to=productionFilterState.endDate;
+ const start=productionFilterState.start,end=productionFilterState.end;
+ const exactDaily=start==="00:00"&&end==="23:59"&&productionFilterState.shift==="Todos"&&productionFilterState.line==="Todas";
+ const map=new Map(),missing=[];
+ for(const row of rows){
+  const process=pmpProcessOfArea(row.area);
+  const candidates=Array.isArray(row.products)?row.products:Array.isArray(row.product_data)?row.product_data:Array.isArray(row.product_details)?row.product_details:null;
+  if(!process||!candidates||!candidates.length){if(process)missing.push(row);continue;}
+  for(const item of candidates){
+   const product=String(item.product_code??item.code??item.product_name??item.product??item.name??"").trim();
+   const model=pmpModelOfL2L(product,item.description??item.product_description??"");
+   if(!model){missing.push(item);continue;}
+   const key=process+"|"+model;
+   if(!map.has(key))map.set(key,{process,model,demand:0,actual:0});
+   const target=map.get(key);
+   target.demand+=n(item.demand);target.actual+=n(item.actual);
+  }
+ }
+ const planned=new Map();
+ if(exactDaily)for(const r of pmpPlanning){
+  if(r.day<from||r.day>to||r.model==="TOTAL")continue;
+  if(productionFilterState.area!=="Todas"&&pmpProcessOfArea(productionFilterState.area)!==r.process)continue;
+  const key=r.process+"|"+r.model;planned.set(key,(planned.get(key)||0)+r.qty);
+ }
+ const keys=new Set([...map.keys(),...planned.keys()]);
+ if(!keys.size){element.innerHTML='<p>Sem detalhamento de modelos disponível nesta consulta. Os totais gerais do L2L não foram distribuídos artificialmente.</p>';return;}
+ const list=[...keys].sort().map(key=>{
+  const [process,model]=key.split("|"),item=map.get(key),plan=planned.get(key),actual=item?.actual;
+  const pct=plan>0&&actual!==undefined?actual/plan*100:null;
+  return '<tr><td>'+stockEsc(process)+'</td><td>'+stockEsc(model.startsWith("NB - ")?"INLET PIPE "+model.slice(5):model.startsWith("GQ - ")?"THB "+model.slice(5):model)+'</td><td>'+(plan===undefined?"—":fmt(plan))+'</td><td>'+(item?fmt(item.demand):"—")+'</td><td>'+(item?fmt(actual):"—")+'</td><td>'+(pct===null?"—":fmtPct(pct))+'</td></tr>';
+ }).join("");
+ element.innerHTML='<p style="font-size:12px"><b>Plano:</b> '+(exactDaily?"soma dos dias selecionados; todos os turnos e linhas":"indisponível para filtro parcial por turno, hora ou linha")+' • <b>Fonte L2L:</b> detalhamento de produto. '+missing.length+' registro(s) sem identificação confiável.</p><div class="table-scroll"><table><thead><tr><th>Processo</th><th>Produto / modelo</th><th>Demanda Plano (PMP)</th><th>Demanda L2L</th><th>Real L2L</th><th>Atingimento PMP</th></tr></thead><tbody>'+list+'</tbody></table></div>';
+}
 function renderProductionLive(){
   if(currentPage!=="production")return;
 
@@ -1865,6 +1911,7 @@ function renderProductionLive(){
   renderProdLineChart(groups);
   renderProdExecutive(areaGroups,groups);
   renderProductionDefects();
+  renderProductionModelDemand(rows);
 
   const selectedArea=productionFilterState.area==="Todas"?"Toda a fábrica":productionFilterState.area;
   const selectedLine=productionFilterState.line==="Todas"?"Todas as linhas":productionFilterState.line;
@@ -1967,6 +2014,7 @@ function initProduction(){
   });
 
   startProductionAutoRefresh();
+  ensureProductionPlan().then(()=>{if(currentPage==="production")renderProductionLive();});
   refreshProductionRange();
 }
 
