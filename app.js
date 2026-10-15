@@ -3870,12 +3870,12 @@ function render(page){
 document.querySelectorAll(".nav").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".nav").forEach(x=>x.classList.remove("active"));b.classList.add("active");render(b.dataset.page)}));
 function tick(){const d=new Date();document.getElementById("date").textContent=d.toLocaleDateString("pt-BR",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});document.getElementById("time").textContent=d.toLocaleTimeString("pt-BR",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}
 // Visual labels only: never replace product codes used by stock calculations or filters.
-const PRODUCT_DESCRIPTION_OVERRIDES = new Map([["31GQ-K620-01H0F","FUNDIDO THB 7.0 - K62H"],["31GQ-KVS0-02P0F","FUNDIDO THB 5.0 - KVSP"],["31GQ-KSS0-02V0F","FUNDIDO THB 5.0 - KSSV"],["31GQ-K0R0-0000F","FUNDIDO THB 5.0 - K1ZH"],["31GQ-K1S0-01J3F","FUNDIDO THB 5.0 - K1SJ"],["31GQ-K680-03N2F","FUNDIDO THB 5 - K68N"],["31GQ-KVK0-00B3F","FUNDIDO THB 3.5 - KVKB"],["31GQ-KVS0-00K0F","FUNDIDO THB 3 - KVSA/KWFF"],["31GQ-KVSA-00K0F","FUNDIDO THB 3 - KVSA/KWFF"],["31GQ-K680-01L0F","FUNDIDO THB 3 - K68L-BR"],["31GQ-K680-00A0F","FUNDIDO THB 3 - K68A"],["31GQ-K310-00A2F","FUNDIDO THB 3 - K31A"],["31GQ-K2K0-00F2F","FUNDIDO THB 3 - K2KF"],["31GQ-K1S0-00G0F","FUNDIDO THB 3 - K1SG"],["17111K68NB505F","FUNDIDO INP - K68N"],["17111K1SJA005F","FUNDIDO INP - K1SJ"],["17111K3HAB002F","FUNDIDO - INP K3HA"],["17111KVSPJ001F","FUNDIDO - INP K2GF"],["11PD-HM80-0200F","FUNDIDO - CARB.PD - HM8N"],["1050-HP00-A000F","ECB HP0"],["31GQ-KWG0-00M0F","CORPO FUNDIDO - THB 5.0"],["31GQ-K620-00A0F","CORPO FUNDIDO - THB 5.0"],["17111KVSJ001F","CORPO FUNDIDO - INP"],["11VE-HN50-6700F","CORPO FUNDIDO - CARB.VE"],["11VE-HN50-M400F","CORPO FUNDIDO - CARB.VE"],["11VE-KPE0-73J0F","CORPO FUNDIDO - CARB.VE"]]);
+const PRODUCT_DESCRIPTION_OVERRIDES = new Map([["31GQ-K620-01H0F","FUNDIDO THB 7.0 - K62H"],["31GQ-KVS0-02P0F","FUNDIDO THB 5.0 - KVSP"],["31GQ-KSS0-02V0F","FUNDIDO THB 5.0 - KSSV"],["31GQ-K0R0-0000F","FUNDIDO THB 5.0 - K1ZH"],["31GQ-K1S0-01J3F","FUNDIDO THB 5.0 - K1SJ"],["31GQ-K680-03N2F","FUNDIDO THB 5 - K68N"],["31GQ-KVK0-00B3F","FUNDIDO THB 3.5 - KVKB"],["31GQ-KVS0-00K0F","FUNDIDO THB 3 - KVSA/KWFF"],["31GQ-KVSA-00K0F","FUNDIDO THB 3 - KVSA/KWFF"],["31GQ-K680-01L0F","FUNDIDO THB 3 - K68L-BR"],["31GQ-K680-00A0F","FUNDIDO THB 3 - K68A"],["31GQ-K310-00A2F","FUNDIDO THB 3 - K31A"],["31GQ-K2K0-00F2F","FUNDIDO THB 3 - K2KF"],["31GQ-K1S0-00G0F","FUNDIDO THB 3 - K1SG"],["17111K68NB505F","FUNDIDO INP - K68N"],["17111K1SJA005F","FUNDIDO INP - K1SJ"],["17110K3HAB002F","FUNDIDO - INP K3HA"],["17111K3HAB002F","FUNDIDO - INP K3HA"],["17111KVSPJ001F","FUNDIDO - INP K2GF"],["11PD-HM80-0200F","FUNDIDO - CARB.PD - HM8N"],["1050-HP00-A000F","ECB HP0"],["31GQ-KWG0-00M0F","CORPO FUNDIDO - THB 5.0"],["31GQ-K620-00A0F","CORPO FUNDIDO - THB 5.0"],["17111KVSJ001F","CORPO FUNDIDO - INP"],["11VE-HN50-6700F","CORPO FUNDIDO - CARB.VE"],["11VE-HN50-M400F","CORPO FUNDIDO - CARB.VE"],["11VE-KPE0-73J0F","CORPO FUNDIDO - CARB.VE"]]);
 const productDescriptions = new Map();
 const productCodePattern = /\b(?:(?:31GQ|41NN)-[A-Z0-9]+(?:-[A-Z0-9]+)+|17111[A-Z0-9]+|11(?:PD|VE)-[A-Z0-9-]+|1050-[A-Z0-9-]+)\b/gi;
 function describeProductText(value) {
   return String(value).replace(productCodePattern, code => {
-    const desc = productDescriptions.get(code.toUpperCase()) || PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase());
+    const desc = PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase()) || productDescriptions.get(code.toUpperCase());
     return desc ? desc : code;
   });
 }
@@ -3886,7 +3886,7 @@ function decorateProductNode(node) {
     if(!old || !productCodePattern.test(old)) { productCodePattern.lastIndex=0; return; }
     productCodePattern.lastIndex=0;
     const result=old.replace(productCodePattern,(code,offset,whole)=>{
-      const desc=productDescriptions.get(code.toUpperCase()) || PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase());
+      const desc=PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase()) || productDescriptions.get(code.toUpperCase());
       if(!desc) return code;
       const label=desc;
       // Avoid formatting labels already expanded by a previous render.
