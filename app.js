@@ -1973,11 +1973,24 @@ const STOCK_MACHINING_LABELS=[
  [/^KWFF\s+THB\s+3[.,]5\s+USINAGEM$/i,"31GQ-KVSA-00K0F"]
 ];
 function stockMachiningOrigin(value){
- const key=String(value||"").normalize("NFKC").trim().toUpperCase().replace(/[–—−]/g,"-").replace(/\s+/g," ");
+ const key=String(value??"").normalize("NFKC").toUpperCase()
+   .replace(/[\u200B-\u200D\u2060\uFEFF]/g,"")
+   .replace(/[–—−]/g,"-").replace(/\s+/g," ").trim();
  if(STOCK_MACHINING_EQUIVALENCES.has(key))return STOCK_MACHINING_EQUIVALENCES.get(key);
  if([...STOCK_MACHINING_EQUIVALENCES.values()].includes(key))return key;
  const found=STOCK_MACHINING_LABELS.find(([pattern])=>pattern.test(key));
- return found?found[1]:null;
+ if(found)return found[1];
+ // Compact exact labels: L2L sometimes inserts punctuation or invisible spacing.
+ // Only approved full descriptions map; no fuzzy product-family inference.
+ const compact=key.replace(/[^A-Z0-9]/g,"");
+ const known={
+   INPK2GFUSI:"17111KVSPJ001F",
+   KWFFTHB35USINAGEM:"31GQ-KVSA-00K0F",
+   INLETPIPEK3HABR:"17110K3HAB002F",
+   INLETPIPEK3HALA:"17110K3HAB002F",
+   K1SJINPUSI:"17111K1SJA005F"
+ };
+ return Object.prototype.hasOwnProperty.call(known,compact)?known[compact]:null;
 }
 function stockCanonicalModel(value,stage){
   const raw=String(value||"").trim().toUpperCase().replace(/[–—]/g,"-");
@@ -2151,7 +2164,7 @@ function updateStock(){
 
   const pending=document.getElementById("stockUnmatched");
   // Visible build marker and mapping audit help distinguish stale bundles from L2L data issues.
-  const reconcileBuild="2026-10-15 v58";
+  const reconcileBuild="2026-10-15 v59";
   if(pending){
     const items=calculateL2LStock.unmatched||[];
     const merged=new Map();
@@ -2162,6 +2175,9 @@ function updateStock(){
         '</tbody></table></div>'
       :'<div class="empty-state">Todos os códigos de Usinagem retornados com identificação foram conciliados no período.</div>';
     pending.innerHTML+='<p class="stock-reconcile-audit" style="padding:8px 10px;color:#64748b;font-size:12px">Conciliação '+reconcileBuild+' • '+fmt(calculateL2LStock.approvedMachiningMatched||0)+' registros de Usinagem reconhecidos por equivalência aprovada ('+fmt(calculateL2LStock.approvedMachiningQty||0)+' peças).</p>';
+    // Diagnostic signatures reveal text-format mismatches without changing stock numbers.
+    const signatures=[...merged.keys()].map(raw=>({raw,compact:String(raw).normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g,""),length:String(raw).length}));
+    if(signatures.length)console.info("[stock-conciliation] unmatched signatures",signatures);
     const negative=position.filter(x=>x.wipDifference<0||x.finishedDifference<0);
     if(negative.length)pending.innerHTML+='<p style="padding:10px;color:#b45309">⚠ '+negative.length+' modelo(s) com diferença negativa. Verificar saldo inicial, correspondência e perdas antes de tratar o valor como estoque físico.</p>';
   }
