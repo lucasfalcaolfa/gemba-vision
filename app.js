@@ -1893,7 +1893,7 @@ function stockProductRows(row){
   };
   const found=new Map();
   const add=(code,qty)=>{
-    const model=codeOf(code),amount=valueOf(qty);
+    const model=codeOf(code)||(stockStage(row.area)==="downstream"?stockMachiningOrigin(code):null),amount=valueOf(qty);
     if(model&&amount!==null)found.set(model,(found.get(model)||0)+amount);
   };
   const groups=[row.products,row.product_data,row.product_details,row.product_summaries,row.products_data];
@@ -1955,6 +1955,26 @@ const STOCK_FND_FAMILIES={
   K680:"31GQ-K680-00A0F",
   KVSA:"31GQ-KVSA-00K0F"
 };
+// Equivalências confirmadas pela operação. Usadas somente para conciliar
+// a saída da Usinagem ao código de origem da Fundição.
+const STOCK_MACHINING_EQUIVALENCES=new Map([
+ ["17100-K3H-B000","17110K3HAB002F"],
+ ["17111-K1S-A000U","17111K1SJA005F"],
+ ["17111KVSPJ001F","17111KVSPJ001F"],
+ ["31GQ-KVSA-00K0F","31GQ-KVSA-00K0F"]
+]);
+const STOCK_MACHINING_LABELS=[
+ [/^INLET PIPE\s*-\s*K3HA\s*-?\s*BR$/i,"17110K3HAB002F"],
+ [/^K1SJ\s+INP\s+USI$/i,"17111K1SJA005F"],
+ [/^INP\s*-\s*K2GF\s+USI$/i,"17111KVSPJ001F"],
+ [/^KWFF\s+THB\s+3[.,]5\s+USINAGEM$/i,"31GQ-KVSA-00K0F"]
+];
+function stockMachiningOrigin(value){
+ const key=String(value||"").trim().toUpperCase().replace(/\s+/g," ");
+ if(STOCK_MACHINING_EQUIVALENCES.has(key))return STOCK_MACHINING_EQUIVALENCES.get(key);
+ const found=STOCK_MACHINING_LABELS.find(([pattern])=>pattern.test(key));
+ return found?found[1]:null;
+}
 function stockCanonicalModel(value,stage){
   const raw=String(value||"").trim().toUpperCase().replace(/[–—]/g,"-");
   if(stage!=="downstream")return raw;
