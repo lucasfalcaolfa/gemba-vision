@@ -15,8 +15,41 @@ let gmData={pitches:[],catalog:[]},gmError="",gmBusy=false,gmWindow=null;
 function modelManagement(){
  return '<section class="panel gv-models-head"><div><span>GESTÃO INTEGRADA • L2L</span><h2>Gerenciamento de Modelos</h2><p>Visibilidade de produtos por setor • Fundição, Acabamento, Usinagem e Montagem conforme cadastro e pitches do L2L</p></div><form id="gmForm" class="gv-models-filters"><label>Início<input type="datetime-local" id="gmStart" required></label><label>Fim<input type="datetime-local" id="gmEnd" required></label><button type="submit">Consultar L2L</button></form></section>'+
  '<section class="gv-models-kpis"><article><span>Modelos com movimento</span><strong id="gmCount">—</strong></article><article><span>Setores encontrados</span><strong id="gmAreas">—</strong></article><article><span>Desvios para avaliar</span><strong id="gmAtRisk">—</strong></article><article><span>Modelos sem setor associado</span><strong id="gmUnknown">—</strong></article></section>'+
- '<section class="panel gv-models-main"><div class="gv-models-toolbar"><div><h2>Produtos por setor</h2><small id="gmStatus">Consultando L2L...</small></div><div class="gv-models-actions"><input id="gmSearch" type="search" placeholder="Pesquisar código ou descrição" aria-label="Pesquisar produto"><select id="gmArea" aria-label="Filtrar setor"><option value="Todos">Todos os setores</option></select><select id="gmSignal" aria-label="Filtrar sinal"><option value="Todos">Todos os sinais</option><option value="Abaixo do plano">Abaixo do plano</option><option value="Dentro do plano">Dentro do plano</option><option value="Sem plano">Sem plano</option></select></div></div>'+
+ '<section class="panel" id="pmpPanel" style="margin-top:16px"><div class="gv-models-toolbar"><div><span>PLANO OFICIAL DA PLANILHA • OUTUBRO 2026</span><h2>Plano de Produção — Fundição</h2><small id="pmpStatus">Carregando base de 449 registros...</small></div></div><div class="gv-models-actions" style="display:flex;flex-wrap:wrap;gap:10px;margin:12px 0"><label>De <input id="pmpFrom" type="date" value="2026-10-01"></label><label>Até <input id="pmpTo" type="date" value="2026-10-31"></label><label>Processo <select id="pmpProcess"><option value="Todos">Todos</option><option value="INJ">Fundição / Injeção</option><option value="ACAB">Acabamento</option><option value="USI">Usinagem</option></select></label><label>Modelo <select id="pmpModel"><option value="Todos">Todos</option></select></label></div><div id="pmpSummary"></div><div class="table-scroll" id="pmpRows"></div><p style="font-size:12px;color:#64748b;margin-top:12px"><b>Atenção:</b> fonte FND_PMP_2026_10.xlsx / AL_PLAN. Quantidades programadas, não produção real. Identificações da planilha ainda não são códigos homologados no L2L; dados não alteram estoque ou indicadores de produção realizada.</p></section>'+ 
+'<section class="panel gv-models-main"><div class="gv-models-toolbar"><div><h2>Produtos por setor</h2><small id="gmStatus">Consultando L2L...</small></div><div class="gv-models-actions"><input id="gmSearch" type="search" placeholder="Pesquisar código ou descrição" aria-label="Pesquisar produto"><select id="gmArea" aria-label="Filtrar setor"><option value="Todos">Todos os setores</option></select><select id="gmSignal" aria-label="Filtrar sinal"><option value="Todos">Todos os sinais</option><option value="Abaixo do plano">Abaixo do plano</option><option value="Dentro do plano">Dentro do plano</option><option value="Sem plano">Sem plano</option></select></div></div>'+
  '<div class="gv-models-priority"><div class="gv-models-priority-heading"><div><span>01 • ONDE AGIR PRIMEIRO</span><h2>Prioridades de abastecimento</h2><p>Itens que exigem confirmação com o setor consumidor antes de mudar a programação.</p></div></div><div id="gmPriorities"></div></div><div class="gv-models-notice"><b>Criticidade:</b> O quadro de prioridades usa a diferença Plano − Real do próprio setor no período consultado; “Abaixo do plano” indica desvio, não falta de material nem parada iminente. Para risco real precisamos de estoque validado, demanda da próxima etapa e tempo de reposição. Produtos apenas no catálogo aparecem em “Sem setor associado”.</div><div id="gmResults" class="gv-models-results"><div class="empty-state">Carregando modelos...</div></div><details class="gv-models-unassigned" id="gmUnassigned"><summary>Sem setor associado <span id="gmUnassignedCount">0 modelos</span></summary><p>Produtos cadastrados no L2L sem movimentação vinculada a um setor no período consultado.</p><div id="gmUnassignedResults"></div></details></section>';
+}
+let pmpPlanning=[];
+async function initPmpPlanning(){
+ const panel=document.getElementById("pmpPanel");if(!panel)return;
+ const status=document.getElementById("pmpStatus");
+ try{
+  const response=await fetch("/data/fnd-pmp-2026-10.csv",{cache:"no-store"});
+  if(!response.ok)throw new Error("Arquivo do plano indisponível");
+  const rows=(await response.text()).trim().replace(/^\\uFEFF/,"").split(/\\r?\\n/);
+  const fields=rows.shift().split(",");
+  const index=name=>fields.indexOf(name);
+  pmpPlanning=rows.map(line=>{
+   const values=line.split(",");
+   return {day:values[index("Data")],process:values[index("Processo")],model:values[index("Modelo")],machine:values[index("Injetora_origem")],qty:Number(values[index("Quantidade_planejada")])||0};
+  }).filter(x=>x.day&&x.model);
+  const modelSelect=document.getElementById("pmpModel");
+  [...new Set(pmpPlanning.map(r=>r.model))].sort().forEach(model=>{const option=document.createElement("option");option.value=model;option.textContent=model;modelSelect.appendChild(option);});
+  for(const id of ["pmpFrom","pmpTo","pmpProcess","pmpModel"])document.getElementById(id).addEventListener("change",renderPmpPlanning);
+  renderPmpPlanning();
+ }catch(e){status.textContent="Não foi possível abrir a base: "+e.message;}
+}
+function renderPmpPlanning(){
+ const el=document.getElementById("pmpPanel");if(!el)return;
+ const from=document.getElementById("pmpFrom").value,to=document.getElementById("pmpTo").value;
+ const process=document.getElementById("pmpProcess").value,model=document.getElementById("pmpModel").value;
+ const filtered=pmpPlanning.filter(r=>r.day>=from&&r.day<=to&&(process==="Todos"||r.process===process)&&(model==="Todos"||r.model===model));
+ const groups=new Map();
+ filtered.forEach(r=>{const key=r.process+"|"+r.model+"|"+r.machine;groups.set(key,(groups.get(key)||0)+r.qty);});
+ const sum=filtered.reduce((s,r)=>s+r.qty,0);
+ document.getElementById("pmpStatus").textContent=filtered.length+" programação(ões) • "+fmt(sum)+" peças planejadas • Fonte: AL_PLAN";
+ document.getElementById("pmpSummary").innerHTML='<p><b>Total programado na seleção: '+fmt(sum)+' peças</b> • '+groups.size+' combinação(ões) de processo/modelo/máquina</p>';
+ document.getElementById("pmpRows").innerHTML='<table><thead><tr><th>Processo</th><th>Modelo na planilha</th><th>Máquina</th><th>Plano (peças)</th></tr></thead><tbody>'+[...groups].sort((a,b)=>a[0].localeCompare(b[0])).map(([key,qty])=>{const [p,m,mac]=key.split("|");return '<tr><td>'+stockEsc(p)+'</td><td>'+stockEsc(m)+'</td><td>'+stockEsc(mac)+'</td><td>'+fmt(qty)+'</td></tr>';}).join("")+'</tbody></table>';
 }
 function gmDate(value){return value.replace("T"," ")}
 function initModelManagement(){
@@ -29,6 +62,7 @@ function initModelManagement(){
  document.getElementById("gmForm").addEventListener("submit",e=>{e.preventDefault();refreshModelManagement();});
  for(const id of ["gmSearch","gmArea","gmSignal"])document.getElementById(id).addEventListener(id==="gmSearch"?"input":"change",renderModelManagement);
  refreshModelManagement();
+ initPmpPlanning();
 }
 async function refreshModelManagement(){
  if(gmBusy)return;gmBusy=true;gmError="";
