@@ -1893,7 +1893,9 @@ function stockProductRows(row){
   };
   const found=new Map();
   const add=(code,qty)=>{
-    const model=codeOf(code)||(stockStage(row.area)==="downstream"?stockMachiningOrigin(code):null),amount=valueOf(qty);
+    const stage=stockStage(row.area);
+    const model=stage==="downstream"?(stockMachiningOrigin(code)||codeOf(code)):codeOf(code);
+    const amount=valueOf(qty);
     if(model&&amount!==null)found.set(model,(found.get(model)||0)+amount);
   };
   const groups=[row.products,row.product_data,row.product_details,row.product_summaries,row.products_data];
@@ -1941,7 +1943,7 @@ const STOCK_USI_CONFIRMED=new Map([
 ]);
 function stockMachiningCode(value){
  const raw=String(value??"").trim().toUpperCase().replace(/[–—]/g,"-").replace(/\s+/g," ");
- if(STOCK_USI_CONFIRMED.has(raw))return raw;
+ if(STOCK_USI_CONFIRMED.has(raw)||stockMachiningOrigin(raw))return raw;
  const m=raw.match(/\b(?:31GQ|41NN|17111|17100|17110|11PD|11VE|1050)[-A-Z0-9]{6,}\b/);
  return m?m[0]:"";
 }
@@ -1971,7 +1973,7 @@ const STOCK_MACHINING_LABELS=[
  [/^KWFF\s+THB\s+3[.,]5\s+USINAGEM$/i,"31GQ-KVSA-00K0F"]
 ];
 function stockMachiningOrigin(value){
- const key=String(value||"").trim().toUpperCase().replace(/\s+/g," ");
+ const key=String(value||"").normalize("NFKC").trim().toUpperCase().replace(/[–—−]/g,"-").replace(/\s+/g," ");
  if(STOCK_MACHINING_EQUIVALENCES.has(key))return STOCK_MACHINING_EQUIVALENCES.get(key);
  if([...STOCK_MACHINING_EQUIVALENCES.values()].includes(key))return key;
  const found=STOCK_MACHINING_LABELS.find(([pattern])=>pattern.test(key));
