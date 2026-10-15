@@ -1403,7 +1403,7 @@ function renderProductionDefects(){
  const items=[...groups.values()].sort((a,b)=>b.qty-a.qty);
  if(status)status.textContent=productionDefectError||fmt(items.reduce((sum,r)=>sum+r.qty,0))+" peças • "+items.length+" combinações";
  mount.innerHTML=items.length?
-  '<div class="table-scroll"><table class="gv-prod-defects-table"><thead><tr><th>Modelo</th><th>Defeito registrado</th><th>Linha</th><th>Turno</th><th>Quantidade</th></tr></thead><tbody>'+
+  '<div class="table-scroll"><table class="gv-prod-defects-table"><thead><tr><th>Modelo</th><th>Defeito registrado</th><th>Injetora / Linha</th><th>Turno</th><th>Quantidade</th></tr></thead><tbody>'+
   items.map(r=>'<tr><td><b>'+stockEsc(r.product)+'</b></td><td>'+stockEsc(r.defect)+'</td><td>'+stockEsc(r.line)+'</td><td>'+(r.shift?r.shift+"º Turno":"Não informado")+'</td><td><b>'+fmt(r.qty)+'</b></td></tr>').join("")+
   '</tbody></table></div>':
   '<div class="empty-state">'+(productionDefectError?stockEsc(productionDefectError):"Nenhum defeito detalhado encontrado para os filtros selecionados.")+'</div>';
@@ -1426,6 +1426,19 @@ async function fetchProductionShiftPitches(){
  fetchProductionShiftPitches.audit={missingDemand,missingProduct,count:results.length};
  return results;
 }
+async function fetchProductionShiftDefects(){
+ const shift=productionFilterState.shift,first=productionFilterState.startDate||todayISO(),last=productionFilterState.endDate||first;
+ const next=d=>{const x=new Date(d+"T12:00:00");x.setDate(x.getDate()+1);return [x.getFullYear(),String(x.getMonth()+1).padStart(2,"0"),String(x.getDate()).padStart(2,"0")].join("-");};
+ const operating=productionFilterState.start==="07:00"&&productionFilterState.end==="07:00"&&last===next(first),final=operating?first:last;
+ const output=[];let count=0;
+ for(let date=first;date<=final;date=next(date)){
+  if(++count>31)throw Error("Reduza o período para até 31 dias.");
+  const tomorrow=next(date),bounds=shift==="1"?[date+" 07:00",date+" 17:00"]:shift==="2"?[date+" 17:00",tomorrow+" 02:00"]:[tomorrow+" 02:00",tomorrow+" 07:00"];
+  const records=await window.L2L.getScrapDetailsWindow(bounds[0],bounds[1]);
+  output.push(...records.map(r=>({...r,shift_number:shift,operational_day:date})));
+ }
+ return output;
+}
 async function refreshProductionRange(){
   if(productionLoading)return;
   productionLoading=true;
@@ -1436,7 +1449,7 @@ async function refreshProductionRange(){
     const end=(productionFilterState.endDate||productionFilterState.startDate||todayISO())+" "+(productionFilterState.end||"23:59");
     const [prodResponse,defectResponse]=await Promise.allSettled([
       productionFilterState.shift==="Todos"?window.L2L.getRange(productionFilterState.startDate||todayISO(),productionFilterState.endDate||productionFilterState.startDate||todayISO(),productionFilterState.start,productionFilterState.end):fetchProductionShiftPitches(),
-      window.L2L.getScrapDetailsWindow(start,end)
+      productionFilterState.shift==="Todos"?window.L2L.getScrapDetailsWindow(start,end):fetchProductionShiftDefects()
     ]);
     if(prodResponse.status!=="fulfilled")throw prodResponse.reason;
     productionRows=prodResponse.value;
