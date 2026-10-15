@@ -1269,6 +1269,10 @@ function renderOeeLive(){
   }
 
   const ctx=document.getElementById("oeeContext");
+  const shiftChosen=productionFilterState.shift!=="Todos";
+  const sourceForShift=productionRows.length?productionRows:l2lRows;
+  const shiftDataMissing=shiftChosen&&!sourceForShift.some(r=>rowShift(r)===productionFilterState.shift);
+  const shiftWarning=shiftDataMissing?" • ⚠ Sem registros identificados para este turno no L2L; nenhuma produção de outros turnos foi incluída.":"";
   if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(oeeFilterState.startDate||"")+(oeeFilterState.endDate&&oeeFilterState.endDate!==oeeFilterState.startDate?" → "+oeeFilterState.endDate:"")+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s) • "+(oeePitchAudit.size?"OEE ponderado por pitches concluídos": "OEE resumo L2L")+(oeeAuditWarning?" • ⚠ "+oeeAuditWarning:"");
 
   const table=document.getElementById("oeeTable");
@@ -1384,7 +1388,7 @@ function renderProductionDefects(){
   const matchArea=area==="Todas"||r.area===area||(!r.area&&lineName.toUpperCase().includes(String(area).toUpperCase()));
   const matchLine=line==="Todas"||lineName===line;
   const rs=rowShift(r);
-  return matchArea&&matchLine&&(shift==="Todos"||rs===shift||!rs);
+  return matchArea&&matchLine&&(shift==="Todos"||rs===shift);
  });
  const groups=new Map();
  filtered.forEach(r=>{
@@ -1453,11 +1457,10 @@ function populateProductionFilters(){
 
 function getFilteredProductionRows(){
   const source=productionRows.length?productionRows:l2lRows;
-  const shiftAvailable=hasShiftDetail(source);
   return source.filter(r=>
     (productionFilterState.area==="Todas"||r.area===productionFilterState.area) &&
     (productionFilterState.line==="Todas"||r.line===productionFilterState.line) &&
-    (productionFilterState.shift==="Todos"||!shiftAvailable||rowShift(r)===productionFilterState.shift)
+    (productionFilterState.shift==="Todos"||rowShift(r)===productionFilterState.shift)
   );
 }
 
@@ -1926,7 +1929,7 @@ function renderProductionLive(){
   const selectedLine=productionFilterState.line==="Todas"?"Todas as linhas":productionFilterState.line;
   const selectedShift=productionFilterState.shift==="Todos"?"Todos os turnos":shiftDisplay(productionFilterState.shift);
   const ctx=document.getElementById("prodContext");
-  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(productionFilterState.startDate||"")+(productionFilterState.endDate&&productionFilterState.endDate!==productionFilterState.startDate?" → "+productionFilterState.endDate:"")+" • "+productionFilterState.start+"–"+productionFilterState.end+" • "+groups.length+" linha(s)";
+  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(productionFilterState.startDate||"")+(productionFilterState.endDate&&productionFilterState.endDate!==productionFilterState.startDate?" → "+productionFilterState.endDate:"")+" • "+productionFilterState.start+"–"+productionFilterState.end+" • "+groups.length+" linha(s)"+shiftWarning;
 
   const table=document.getElementById("prodTable");
   if(table){
