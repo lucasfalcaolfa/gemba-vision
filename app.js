@@ -1843,40 +1843,44 @@ function ensureProductionPlan(){
  }).catch(()=>{});
  return productionPlanReady;
 }
-function renderProductionModelDemand(rows){
- const element=document.getElementById("prodModelsDemand");if(!element)return;
+function productionPmpPlanRows(){
  const from=productionFilterState.startDate,to=productionFilterState.endDate;
- const start=productionFilterState.start,end=productionFilterState.end;
- const exactDaily=start==="00:00"&&end==="23:59"&&productionFilterState.shift==="Todos"&&productionFilterState.line==="Todas";
- const map=new Map(),missing=[];
+ const selected=productionFilterState.area==="Todas"?null:pmpProcessOfArea(productionFilterState.area);
+ return pmpPlanning.filter(r=>r.model!=="TOTAL"&&r.day>=from&&r.day<=to&&(!selected||r.process===selected));
+}
+function productionPmpComparable(){
+ return productionFilterState.start==="00:00"&&productionFilterState.end==="23:59"&&productionFilterState.shift==="Todos"&&productionFilterState.line==="Todas";
+}
+function renderProductionModelDemand(rows){
+ const mount=document.getElementById("prodModelsDemand");if(!mount)return;
+ const plan=new Map(),real=new Map();
+ for(const r of productionPmpPlanRows()){const k=r.process+"|"+r.model;plan.set(k,(plan.get(k)||0)+r.qty);}
+ let unidentified=0;
  for(const row of rows){
-  const process=pmpProcessOfArea(row.area);
-  const candidates=Array.isArray(row.products)?row.products:Array.isArray(row.product_data)?row.product_data:Array.isArray(row.product_details)?row.product_details:null;
-  if(!process||!candidates||!candidates.length){if(process)missing.push(row);continue;}
-  for(const item of candidates){
-   const product=String(item.product_code??item.code??item.product_name??item.product??item.name??"").trim();
-   const model=pmpModelOfL2L(product,item.description??item.product_description??"");
-   if(!model){missing.push(item);continue;}
-   const key=process+"|"+model;
-   if(!map.has(key))map.set(key,{process,model,demand:0,actual:0});
-   const target=map.get(key);
-   target.demand+=n(item.demand);target.actual+=n(item.actual);
+  const process=pmpProcessOfArea(row.area);if(!process)continue;
+  const candidates=[row.products,row.product_data,row.product_details,row.product_summaries,row.products_data].find(v=>Array.isArray(v)&&v.length);
+  if(!candidates){unidentified++;continue;}
+  for(const part of candidates){
+   const code=String(part.product_code??part.code??part.product_name??part.product??part.name??"").trim();
+   const model=pmpModelOfL2L(code,part.description??part.product_description??"");
+   if(!model){unidentified++;continue;}
+   const k=process+"|"+model;
+   if(!real.has(k))real.set(k,{demand:0,actual:0});
+   real.get(k).demand+=n(part.demand);real.get(k).actual+=n(part.actual);
   }
  }
- const planned=new Map();
- if(exactDaily)for(const r of pmpPlanning){
-  if(r.day<from||r.day>to||r.model==="TOTAL")continue;
-  if(productionFilterState.area!=="Todas"&&pmpProcessOfArea(productionFilterState.area)!==r.process)continue;
-  const key=r.process+"|"+r.model;planned.set(key,(planned.get(key)||0)+r.qty);
- }
- const keys=new Set([...map.keys(),...planned.keys()]);
- if(!keys.size){element.innerHTML='<p>Sem detalhamento de modelos disponível nesta consulta. Os totais gerais do L2L não foram distribuídos artificialmente.</p>';return;}
- const list=[...keys].sort().map(key=>{
-  const [process,model]=key.split("|"),item=map.get(key),plan=planned.get(key),actual=item?.actual;
-  const pct=plan>0&&actual!==undefined?actual/plan*100:null;
-  return '<tr><td>'+stockEsc(process)+'</td><td>'+stockEsc(model.startsWith("NB - ")?"INLET PIPE "+model.slice(5):model.startsWith("GQ - ")?"THB "+model.slice(5):model)+'</td><td>'+(plan===undefined?"—":fmt(plan))+'</td><td>'+(item?fmt(item.demand):"—")+'</td><td>'+(item?fmt(actual):"—")+'</td><td>'+(pct===null?"—":fmtPct(pct))+'</td></tr>';
+ const comparable=productionPmpComparable();
+ const friendly=m=>m.startsWith("NB - ")?"INLET PIPE - "+m.slice(5):m.startsWith("GQ - ")?"THB - "+m.slice(5):m;
+ const keys=[...new Set([...plan.keys(),...real.keys()])].sort();
+ const tbody=keys.map(k=>{
+  const [process,model]=k.split("|"),p=plan.get(k),r=real.get(k);
+  const attainment=comparable&&p>0&&r?fmtPct(100*r.actual/p):"—";
+  const gap=comparable&&p!==undefined&&r?fmt(Math.max(0,p-r.actual)):"—";
+  return '<tr><td>'+stockEsc(process)+'</td><td><b>'+stockEsc(friendly(model))+'</b></td><td>'+(p===undefined?"—":fmt(p))+'</td><td>'+(r?fmt(r.demand):"Não identificado")+'</td><td>'+(r?fmt(r.actual):"Não identificado")+'</td><td>'+attainment+'</td><td>'+gap+'</td></tr>';
  }).join("");
- element.innerHTML='<p style="font-size:12px"><b>Plano:</b> '+(exactDaily?"soma dos dias selecionados; todos os turnos e linhas":"indisponível para filtro parcial por turno, hora ou linha")+' • <b>Fonte L2L:</b> detalhamento de produto. '+missing.length+' registro(s) sem identificação confiável.</p><div class="table-scroll"><table><thead><tr><th>Processo</th><th>Produto / modelo</th><th>Demanda Plano (PMP)</th><th>Demanda L2L</th><th>Real L2L</th><th>Atingimento PMP</th></tr></thead><tbody>'+list+'</tbody></table></div>';
+ const byProcess={};for(const [k,q] of plan){const p=k.split("|")[0];byProcess[p]=(byProcess[p]||0)+q;}
+ const totals=Object.entries(byProcess).map(([p,q])=>'<b>'+p+': '+fmt(q)+'</b>').join(" • ");
+ mount.innerHTML='<p style="font-size:12px"><b>Plano diário agregado:</b> '+(totals||"Sem dados")+" • "+(comparable?"Período integral comparável (00:00–23:59; todos os turnos e linhas).":"Filtro operacional/parcial: plano por dias de calendário; não calcular percentual ou faltante contra produção parcial.")+' • '+unidentified+' registro(s) L2L sem modelo identificável. <b>Faltante ao plano não equivale a falta de estoque.</b></p><div class="table-scroll"><table><thead><tr><th>Processo</th><th>Modelo</th><th>Demanda Plano PMP</th><th>Demanda L2L</th><th>Real L2L</th><th>Atingimento PMP</th><th>Diferença para meta</th></tr></thead><tbody>'+tbody+'</tbody></table></div>';
 }
 function renderProductionLive(){
   if(currentPage!=="production")return;
@@ -1895,7 +1899,8 @@ function renderProductionLive(){
   const cards=document.getElementById("prodCards");
   if(cards){
     cards.innerHTML=
-      card("Demanda",fmt(demand))+
+      card("Demanda Plano PMP (dias)",fmt(productionPmpPlanRows().reduce((sum,r)=>sum+r.qty,0)))+
+      card("Demanda L2L",fmt(demand))+
       card("Produção atual",fmt(actual),actual>=demand&&demand>0?"good":"")+card("Atingimento",fmtPct(attainment),attainment>=100?"good":attainment>=95?"warn":"bad")+
       productionScrapCard(scrap);
   }
