@@ -130,25 +130,31 @@ function pmpProcessOfArea(area){
  return /^FND_ACAB$/.test(a)?"ACAB":/^FND$/.test(a)?"INJ":/^USI$/.test(a)?"USI":null;
 }
 function pmpModelOfL2L(code,description){
- const value=(String(code||"")+" "+String(description||"")).toUpperCase();
- const rules=[
-  [/31GQ-K620-01H0F|\bK62H\b/,"GQ - K62H"],
-  [/31GQ-K1S0-01J3F/,"GQ - K1SJ"],
-  [/31GQ-K1S0-00G0F/,"GQ - K1SJ"],
-  [/31GQ-K310-00A2F|\bK31A\b/,"K31A"],
-  [/31GQ-K2K0-00F2F|\bK2KF\b/,"K2KF"],
-  [/31GQ-K680-00A0F|\bK68A\b/,"K68A"],
-  [/31GQ-K680-01L0F|\bK68L-BR\b/,"K68L-BR"],
-  [/31GQ-K680-03N2F|\bK68N\b/,"GQ - K68N"],
-  [/31GQ-KVK0-00B3F|\bKVKB\b/,"KVKB"],
-  [/31GQ-KVSA-00K0F|\bKVSA\b/,"KVSA"],
-  [/17111KVSPJ001F|\bK2GF\b/,"NB - K2GF"],
-  [/\bK2GH\b/,"NB - K2GH"],
-  [/\bK3HA\b/,"NB - K3HA"],
-  [/\bAP2[- ]?DI\b/,"AP2 DI"]
+ const id=String(code||"").trim().toUpperCase();
+ const desc=String(description||"").toUpperCase();
+ const inlet=/^(?:171|INP|INLET)/.test(id)||/\b(?:INP|INLET PIPE)\b/.test(desc);
+ const thb=/^(?:31GQ|41NN)/.test(id)||/\bTHB\b/.test(desc);
+ // NB = INLET PIPE; GQ = THB. Family and product type must agree.
+ const matching=[
+  ["NB - K2GF",/17111KVSPJ001F|\bK2GF\b/i,inlet],
+  ["NB - K2GH",/\bK2GH\b/i,inlet],
+  ["NB - K3HA",/1711[01]K3HAB002F|\bK3HA\b/i,inlet],
+  ["NB - K1SJ",/17111K1SJA005F|\bK1SJ\b/i,inlet],
+  ["GQ - K62H",/31GQ-K620-01H0F|\bK62H\b/i,thb],
+  ["GQ - K1SJ",/31GQ-K1S0-01J3F|\bK1SJ\b/i,thb],
+  ["GQ - K68N",/31GQ-K680-03N2F|\bK68N\b/i,thb],
+  ["GQ - KSSV",/31GQ-KSS0-02V0F|\bKSSV\b/i,thb],
+  ["GQ - K1ZH",/31GQ-K0R0-0000F|\bK1ZH\b/i,thb],
+  ["K31A",/31GQ-K310-00A2F|\bK31A\b/i,thb],
+  ["K2KF",/31GQ-K2K0-00F2F|\bK2KF\b/i,thb],
+  ["K68A",/31GQ-K680-00A0F|\bK68A\b/i,thb],
+  ["K68L-BR",/31GQ-K680-01L0F|\bK68L-BR\b/i,thb],
+  ["KVKB",/31GQ-KVK0-00B3F|\bKVKB\b/i,thb],
+  ["KVSA",/31GQ-KVSA-00K0F|\bKVSA\b/i,thb],
+  ["AP2 DI",/\bAP2[- ]?DI\b/i,true]
  ];
- const hits=[...new Set(rules.filter(([rx])=>rx.test(value)).map(([,name])=>name))];
- return hits.length===1?hits[0]:null;
+ const matches=matching.filter(([,pattern,category])=>category&&pattern.test(id+" "+desc)).map(([model])=>model);
+ return matches.length===1?matches[0]:null;
 }
 function pmpPlanForL2L(row){
  const process=pmpProcessOfArea(row.area);
