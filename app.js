@@ -2238,9 +2238,12 @@ function updateStock(){
   if(selected){
     if(stockFilterState.model!=="Todos"&&visible.length){
       const x=visible[0];
+      const originRows=source.filter(row=>stockStage(row.area)==="finishing").flatMap(row=>stockProductRows(row).filter(p=>p.model===x.model).map(p=>({row,qty:p.qty})));
+      const originQty=originRows.reduce((sum,v)=>sum+n(v.qty),0);
+      const originHtml='<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Conferir lançamentos de Acabamento: '+fmt(originRows.length)+' registros, '+fmt(originQty)+' peças</summary><div class="table-scroll"><table><thead><tr><th>Pitch ID</th><th>Horário</th><th>Linha</th><th>Código L2L</th><th>Descrição L2L</th><th>Quantidade</th></tr></thead><tbody>'+originRows.slice(0,100).map(v=>'<tr><td>'+stockEsc(v.row.id)+'</td><td>'+stockEsc(v.row.start)+'</td><td>'+stockEsc(v.row.line)+'</td><td>'+stockEsc(v.row.product)+'</td><td>'+stockEsc(v.row.product_description)+'</td><td>'+fmt(v.qty)+'</td></tr>').join("")+'</tbody></table></div></details>';
       selected.innerHTML=
         '<article class="stock-model-focus"><div class="stock-model-focus-head"><div><span>MODELO SELECIONADO</span><h2>'+stockEsc(stockModelDescription(x.model))+'</h2></div><span class="stock-live-status ok">L2L</span></div>'+
-        '<div class="stock-model-values"><div><span>Inacabados</span><strong>'+fmt(x.inacabado)+'</strong><small>Fundição − Acabamento</small></div><div><span>Acabados</span><strong>'+fmt(x.acabado)+'</strong><small>Acabamento − saída</small></div><div><span>Total</span><strong>'+fmt(x.inacabado+x.acabado)+'</strong><small>Posição calculada</small></div></div></article>';
+        '<div class="stock-model-values"><div><span>Inacabados</span><strong>'+fmt(x.inacabado)+'</strong><small>Fundição − Acabamento</small></div><div><span>Acabados</span><strong>'+fmt(x.acabado)+'</strong><small>Acabamento − saída</small></div><div><span>Total</span><strong>'+fmt(x.inacabado+x.acabado)+'</strong><small>Posição calculada</small></div></div>'+originHtml+'</article>';
     }else selected.innerHTML="";
   }
 
