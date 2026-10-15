@@ -14,9 +14,9 @@ stock:{title:"Controle de Estoque",sub:"Estoque da Fundição — Inacabado e Ac
 let gmData={pitches:[],catalog:[]},gmError="",gmBusy=false,gmWindow=null;
 function modelManagement(){
  return '<section class="panel gv-models-head"><div><span>GESTÃO INTEGRADA • L2L</span><h2>Gerenciamento de Modelos</h2><p>Visibilidade de produtos por setor • Fundição, Acabamento, Usinagem e Montagem conforme cadastro e pitches do L2L</p></div><form id="gmForm" class="gv-models-filters"><label>Início<input type="datetime-local" id="gmStart" required></label><label>Fim<input type="datetime-local" id="gmEnd" required></label><button type="submit">Consultar L2L</button></form></section>'+
- '<section class="gv-models-kpis"><article><span>Modelos com movimento</span><strong id="gmCount">—</strong></article><article><span>Setores encontrados</span><strong id="gmAreas">—</strong></article><article><span>Abaixo do plano*</span><strong id="gmAtRisk">—</strong></article><article><span>Modelos sem setor associado</span><strong id="gmUnknown">—</strong></article></section>'+
+ '<section class="gv-models-kpis"><article><span>Modelos com movimento</span><strong id="gmCount">—</strong></article><article><span>Setores encontrados</span><strong id="gmAreas">—</strong></article><article><span>Desvios para avaliar</span><strong id="gmAtRisk">—</strong></article><article><span>Modelos sem setor associado</span><strong id="gmUnknown">—</strong></article></section>'+
  '<section class="panel gv-models-main"><div class="gv-models-toolbar"><div><h2>Produtos por setor</h2><small id="gmStatus">Consultando L2L...</small></div><div class="gv-models-actions"><input id="gmSearch" type="search" placeholder="Pesquisar código ou descrição" aria-label="Pesquisar produto"><select id="gmArea" aria-label="Filtrar setor"><option value="Todos">Todos os setores</option></select><select id="gmSignal" aria-label="Filtrar sinal"><option value="Todos">Todos os sinais</option><option value="Abaixo do plano">Abaixo do plano</option><option value="Dentro do plano">Dentro do plano</option><option value="Sem plano">Sem plano</option></select></div></div>'+
- '<div class="gv-models-notice"><b>Criticidade:</b> “Abaixo do plano” indica apenas desvio no período consultado, não falta de material nem parada iminente. Para risco real precisamos de estoque validado, demanda da próxima etapa e tempo de reposição. Produtos apenas no catálogo aparecem em “Sem setor associado”.</div><div id="gmResults" class="gv-models-results"><div class="empty-state">Carregando modelos...</div></div></section>';
+ '<div class="gv-models-priority"><div class="gv-models-priority-heading"><div><span>01 • ONDE AGIR PRIMEIRO</span><h2>Prioridades de abastecimento</h2><p>Itens que exigem confirmação com o setor consumidor antes de mudar a programação.</p></div></div><div id="gmPriorities"></div></div><div class="gv-models-notice"><b>Criticidade:</b> O quadro de prioridades usa a diferença Plano − Real do próprio setor no período consultado; “Abaixo do plano” indica desvio, não falta de material nem parada iminente. Para risco real precisamos de estoque validado, demanda da próxima etapa e tempo de reposição. Produtos apenas no catálogo aparecem em “Sem setor associado”.</div><div id="gmResults" class="gv-models-results"><div class="empty-state">Carregando modelos...</div></div></section>';
 }
 function gmDate(value){return value.replace("T"," ")}
 function initModelManagement(){
@@ -72,6 +72,26 @@ function renderModelManagement(){
  areaEl.value=areas.includes(prior)?prior:"Todos";
  const query=document.getElementById("gmSearch").value.toLowerCase().trim(),signal=document.getElementById("gmSignal").value;
  const visible=all.filter(r=>(areaEl.value==="Todos"||r.area===areaEl.value)&&(signal==="Todos"||r.signal===signal)&&(!query||[r.code,r.description,...r.lines].join(" ").toLowerCase().includes(query)));
+ const sectorKind=name=>{
+   const v=String(name||"").toUpperCase();
+   if(/MONT|ASSY|ASSEMB/.test(v))return "Montagem";
+   if(/USI|MACHIN/.test(v))return "Usinagem";
+   if(/ACAB|FINISH/.test(v))return "Acabamento";
+   if(/FND|FUND|DIE.CAST/.test(v))return "Fundição";
+   return "";
+ };
+ const upstream={"Montagem":"Usinagem","Usinagem":"Acabamento / Fundição","Acabamento":"Fundição","Fundição":"Planejamento da Fundição"};
+ const pending=visible.filter(r=>r.signal==="Abaixo do plano").map(r=>{
+  const gap=Math.max(0,r.demand-r.actual),sector=sectorKind(r.area);
+  const desc=PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||productDescriptions.get(r.code.toUpperCase())||r.description||r.code;
+  return {...r,gap,sector,desc,upstream:upstream[sector]||"PCP / setor fornecedor"};
+ }).sort((a,b)=>b.gap-a.gap);
+ const priorityBox=document.getElementById("gmPriorities");
+ if(priorityBox)priorityBox.innerHTML=gmError?'<div class="empty-state">Não foi possível avaliar prioridades sem dados do L2L.</div>':pending.length?
+  '<div class="gv-models-priority-list">'+pending.slice(0,15).map((r,i)=>
+  '<article class="gv-models-priority-item"><div class="gv-models-priority-index">'+(i+1)+'</div><div class="gv-models-priority-info"><strong>'+stockEsc(r.desc)+'</strong><span>'+stockEsc(r.code)+' • '+stockEsc(r.area)+' • '+stockEsc([...r.lines].join(", ")||"Linha não identificada")+'</span></div><div class="gv-models-priority-gap"><b>–'+fmt(r.gap)+'</b><small>desvio do plano</small></div><div class="gv-models-priority-next"><b>Verificar abastecimento</b><span>'+stockEsc(r.upstream)+' → '+stockEsc(r.sector||r.area)+'</span><small>Confirmar saldo, necessidade e prazo de entrega</small></div><span class="gv-models-signal attention">Atenção</span></article>').join("")+'</div>'+
+  (pending.length>15?'<p class="gv-models-priority-foot">Mostrando 15 de '+pending.length+' desvios. Consulte a tabela completa abaixo.</p>':'')
+  :'<div class="gv-models-priority-clear">Nenhum desvio de plano nos registros exibidos. Isso não confirma que os estoques sejam suficientes.</div>';
  const groups=new Map();visible.forEach(r=>{if(!groups.has(r.area))groups.set(r.area,[]);groups.get(r.area).push(r);});
  const content=[...groups].sort((a,b)=>a[0].localeCompare(b[0],"pt-BR")).map(([area,items])=>{
   items.sort((a,b)=>(a.signal==="Abaixo do plano"?-1:0)-(b.signal==="Abaixo do plano"?-1:0)||a.code.localeCompare(b.code));
