@@ -148,26 +148,6 @@ function gmPriorityProductLabel(row){
    return "INLET PIPE - K2GF • USINAGEM";
  return productDescriptions.get(String(row.code||"").toUpperCase())||PRODUCT_DESCRIPTION_OVERRIDES.get(String(row.code||"").toUpperCase())||row.description||row.code;
 }
-function renderModelManagement(){
- if(currentPage!=="models")return;
- const raw=Array.isArray(gmData.pitches)?gmData.pitches:[],catalog=Array.isArray(gmData.catalog)?gmData.catalog:[];
- const map=new Map();
- raw.forEach(r=>{
-  const code=String(r.product||"").trim();if(!code)return;
-  const area=String(r.area||"").trim()||"Setor não identificado";
-  const key=JSON.stringify([area,code]);
-  if(!map.has(key))map.set(key,{area,code,description:r.description||"",actual:0,demand:0,scrap:0,lines:new Set(),records:0});
-  const item=map.get(key);
-  item.actual+=n(r.actual);item.demand+=n(r.demand);item.scrap+=n(r.scrap);item.records++;
-  if(r.line)item.lines.add(r.line);
- });
- const knownCodes=new Set(raw.map(r=>String(r.product||"").trim().toUpperCase()));
- catalog.forEach(p=>{
-  const code=String(p.code||"").trim();
-  if(!code||knownCodes.has(code.toUpperCase()))return;
-  const key=JSON.stringify(["Sem setor associado",code]);
-  if(!map.has(key))map.set(key,{area:"Sem setor associado",code,description:p.description||"",actual:0,demand:0,scrap:0,lines:new Set(),records:0});
- });
 function pmpProcessOfArea(area){
  const a=String(area||"").toUpperCase();
  return /^FND_ACAB$/.test(a)?"ACAB":/^FND$/.test(a)?"INJ":/^USI$/.test(a)?"USI":null;
@@ -218,6 +198,26 @@ function approvedPmpMonthlyTarget(row){
  }
  return Object.prototype.hasOwnProperty.call(PMP_MONTHLY_OCT_2026[stage]||{},model)?PMP_MONTHLY_OCT_2026[stage][model]:null;
 }
+function renderModelManagement(){
+ if(currentPage!=="models")return;
+ const raw=Array.isArray(gmData.pitches)?gmData.pitches:[],catalog=Array.isArray(gmData.catalog)?gmData.catalog:[];
+ const map=new Map();
+ raw.forEach(r=>{
+  const code=String(r.product||"").trim();if(!code)return;
+  const area=String(r.area||"").trim()||"Setor não identificado";
+  const key=JSON.stringify([area,code]);
+  if(!map.has(key))map.set(key,{area,code,description:r.description||"",actual:0,demand:0,scrap:0,lines:new Set(),records:0});
+  const item=map.get(key);
+  item.actual+=n(r.actual);item.demand+=n(r.demand);item.scrap+=n(r.scrap);item.records++;
+  if(r.line)item.lines.add(r.line);
+ });
+ const knownCodes=new Set(raw.map(r=>String(r.product||"").trim().toUpperCase()));
+ catalog.forEach(p=>{
+  const code=String(p.code||"").trim();
+  if(!code||knownCodes.has(code.toUpperCase()))return;
+  const key=JSON.stringify(["Sem setor associado",code]);
+  if(!map.has(key))map.set(key,{area:"Sem setor associado",code,description:p.description||"",actual:0,demand:0,scrap:0,lines:new Set(),records:0});
+ });
  const all=[...map.values()].map(r=>{
   const approvedMonthly=approvedPmpMonthlyTarget(r);
   const demandL2L=r.demand;
