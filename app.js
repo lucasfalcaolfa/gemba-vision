@@ -47,6 +47,16 @@ async function refreshModelManagement(){
 }
 // Equivalência de família: variantes usinadas BR/LA usam o K3HA fundido.
 // Não equivale a estoque físico e não soma variantes como peças adicionais.
+const GM_REVIEW_CODES=new Map([
+ ["17111KVSPJ001F","Conferir K2GF x KVSP com Engenharia"],
+ ["31GQ-KVS0-00K0F","Conferir variante KVSA/KWFF"],
+ ["31GQ-KVSA-00K0F","Conferir variante KVSA/KWFF"],
+ ["31GQ-K680-03N2F","Validar equivalência K68N"],
+ ["31GQ-K680-01L0F","Validar equivalência K68L-BR"],
+ ["31GQ-K680-00A0F","Validar equivalência K68A"],
+ ["31GQ-K1S0-01J3F","Não juntar K1SJ/K1SG sem validação"],
+ ["31GQ-K1S0-00G0F","Não juntar K1SJ/K1SG sem validação"]
+]);
 function gmModelFamily(code,description=""){
  const value=(String(code||"")+" "+String(description||"")).toUpperCase();
  if(/(?:^|[^A-Z0-9])K3HA(?:[\s_-]*(?:BR|LA))?(?=$|[^A-Z0-9])/.test(value)||/1711[01]K3HAB002F/.test(value))return "K3HA";
@@ -104,7 +114,7 @@ function renderModelManagement(){
  const groups=new Map();assigned.forEach(r=>{if(!groups.has(r.area))groups.set(r.area,[]);groups.get(r.area).push(r);});
  const content=[...groups].sort((a,b)=>a[0].localeCompare(b[0],"pt-BR")).map(([area,items])=>{
   items.sort((a,b)=>(a.signal==="Abaixo do plano"?-1:0)-(b.signal==="Abaixo do plano"?-1:0)||a.code.localeCompare(b.code));
-  return '<div class="gv-models-sector"><header><h3>'+stockEsc(area)+'</h3><span>'+items.length+' modelo(s)</span></header><div class="table-scroll"><table><thead><tr><th>Modelo</th><th>Descrição</th><th>Linha</th><th>Plano</th><th>Real</th><th>Scrap</th><th>Sinal</th></tr></thead><tbody>'+items.map(r=>'<tr><td><b>'+stockEsc(r.code)+'</b>'+(r.family?'<small class="gv-models-family">↳ Fundição: '+stockEsc(r.family)+'</small>':'')+'</td><td>'+stockEsc(PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||productDescriptions.get(r.code.toUpperCase())||r.description||"Descrição não cadastrada")+'</td><td>'+stockEsc([...r.lines].join(", ")||"—")+'</td><td>'+ (r.records?fmt(r.demand):"—")+'</td><td>'+(r.records?fmt(r.actual):"—")+'</td><td>'+(r.records?fmt(r.scrap):"—")+'</td><td><span class="gv-models-signal '+(r.signal==="Abaixo do plano"?"attention":r.signal==="Dentro do plano"?"ok":"neutral")+'">'+stockEsc(r.signal)+'</span></td></tr>').join("")+'</tbody></table></div></div>';
+  return '<div class="gv-models-sector"><header><h3>'+stockEsc(area)+'</h3><span>'+items.length+' modelo(s)</span></header><div class="table-scroll"><table><thead><tr><th>Modelo</th><th>Descrição</th><th>Linha</th><th>Plano</th><th>Real</th><th>Scrap</th><th>Sinal</th></tr></thead><tbody>'+items.map(r=>'<tr><td><b>'+stockEsc(r.code)+'</b>'+(r.family?'<small class="gv-models-family">↳ Fundição: '+stockEsc(r.family)+'</small>':'')+(GM_REVIEW_CODES.has(r.code.toUpperCase())?'<small class="gv-models-review">⚠ '+stockEsc(GM_REVIEW_CODES.get(r.code.toUpperCase()))+'</small>':'')+'</td><td>'+stockEsc(PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||productDescriptions.get(r.code.toUpperCase())||r.description||"Descrição não cadastrada")+'</td><td>'+stockEsc([...r.lines].join(", ")||"—")+'</td><td>'+ (r.records?fmt(r.demand):"—")+'</td><td>'+(r.records?fmt(r.actual):"—")+'</td><td>'+(r.records?fmt(r.scrap):"—")+'</td><td><span class="gv-models-signal '+(r.signal==="Abaixo do plano"?"attention":r.signal==="Dentro do plano"?"ok":"neutral")+'">'+stockEsc(r.signal)+'</span></td></tr>').join("")+'</tbody></table></div></div>';
  }).join("");
  document.getElementById("gmResults").innerHTML=gmError?'<div class="empty-state">'+stockEsc(gmError)+'</div>':content||'<div class="empty-state">Nenhum modelo corresponde aos filtros. Confira a janela de produção ou os dados do L2L.</div>';
  const unknownContainer=document.getElementById("gmUnassignedResults"),unknownCount=document.getElementById("gmUnassignedCount");
@@ -1971,7 +1981,7 @@ function stockEsc(value){
 
 function stockModelDescription(code){
   const key=String(code||"").trim().toUpperCase();
-  return productDescriptions.get(key)||PRODUCT_DESCRIPTION_OVERRIDES.get(key)||"Descrição não cadastrada";
+  return PRODUCT_DESCRIPTION_OVERRIDES.get(key)||productDescriptions.get(key)||"Descrição não cadastrada";
 }
 function populateStockModels(position){
   const select=document.getElementById("stockModel");
@@ -3981,7 +3991,7 @@ function tick(){const d=new Date();document.getElementById("date").textContent=d
 // Visual labels only: never replace product codes used by stock calculations or filters.
 const PRODUCT_DESCRIPTION_OVERRIDES = new Map([["31GQ-K620-01H0F","FUNDIDO THB 7.0 - K62H"],["31GQ-KVS0-02P0F","FUNDIDO THB 5.0 - KVSP"],["31GQ-KSS0-02V0F","FUNDIDO THB 5.0 - KSSV"],["31GQ-K0R0-0000F","FUNDIDO THB 5.0 - K1ZH"],["31GQ-K1S0-01J3F","FUNDIDO THB 5.0 - K1SJ"],["31GQ-K680-03N2F","FUNDIDO THB 5 - K68N"],["31GQ-KVK0-00B3F","FUNDIDO THB 3.5 - KVKB"],["31GQ-KVS0-00K0F","FUNDIDO THB 3 - KVSA/KWFF"],["31GQ-KVSA-00K0F","FUNDIDO THB 3 - KVSA/KWFF"],["31GQ-K680-01L0F","FUNDIDO THB 3 - K68L-BR"],["31GQ-K680-00A0F","FUNDIDO THB 3 - K68A"],["31GQ-K310-00A2F","FUNDIDO THB 3 - K31A"],["31GQ-K2K0-00F2F","FUNDIDO THB 3 - K2KF"],["31GQ-K1S0-00G0F","FUNDIDO THB 3 - K1SG"],["17111K68NB505F","FUNDIDO INP - K68N"],["17111K1SJA005F","FUNDIDO INP - K1SJ"],["17110K3HAB002F","FUNDIDO - INP K3HA"],["17111K3HAB002F","FUNDIDO - INP K3HA"],["17111KVSPJ001F","FUNDIDO - INP K2GF"],["11PD-HM80-0200F","FUNDIDO - CARB.PD - HM8N"],["1050-HP00-A000F","ECB HP0"],["31GQ-KWG0-00M0F","CORPO FUNDIDO - THB 5.0"],["31GQ-K620-00A0F","CORPO FUNDIDO - THB 5.0"],["17111KVSJ001F","CORPO FUNDIDO - INP"],["11VE-HN50-6700F","CORPO FUNDIDO - CARB.VE"],["11VE-HN50-M400F","CORPO FUNDIDO - CARB.VE"],["11VE-KPE0-73J0F","CORPO FUNDIDO - CARB.VE"]]);
 const productDescriptions = new Map();
-const productCodePattern = /\b(?:(?:31GQ|41NN)-[A-Z0-9]+(?:-[A-Z0-9]+)+|17111[A-Z0-9]+|11(?:PD|VE)-[A-Z0-9-]+|1050-[A-Z0-9-]+)\b/gi;
+const productCodePattern = /\b(?:(?:31GQ|41NN)-[A-Z0-9]+(?:-[A-Z0-9]+)+|1711[01][A-Z0-9]+|11(?:PD|VE)-[A-Z0-9-]+|1050-[A-Z0-9-]+)\b/gi;
 function describeProductText(value) {
   return String(value).replace(productCodePattern, code => {
     const desc = PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase()) || productDescriptions.get(code.toUpperCase());
