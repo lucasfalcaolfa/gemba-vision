@@ -1972,6 +1972,7 @@ const STOCK_MACHINING_LABELS=[
 function stockMachiningOrigin(value){
  const key=String(value||"").trim().toUpperCase().replace(/\s+/g," ");
  if(STOCK_MACHINING_EQUIVALENCES.has(key))return STOCK_MACHINING_EQUIVALENCES.get(key);
+ if([...STOCK_MACHINING_EQUIVALENCES.values()].includes(key))return key;
  const found=STOCK_MACHINING_LABELS.find(([pattern])=>pattern.test(key));
  return found?found[1]:null;
 }
