@@ -1876,7 +1876,7 @@ function stockProductRows(row){
   const codeOf=v=>{
     if(v&&typeof v==="object")return codeOf(v.product_code??v.code??v.product_name??v.name??v.part_number??v.description??v.model??"");
     const raw=clean(v);
-    return raw.match(codePattern)?.[0]||"";
+    return stockMachiningCode(raw)||"";
   };
   const numberOf=v=>{
     if(v===null||v===undefined||v==="")return null;
@@ -1930,6 +1930,21 @@ function stockProductShape(rows){
   return "products ausente nos registros de produção amostrados";
 }
 
+// Explicitly approved machining-to-foundry associations.
+// Exact matching only: BR/LA share the K3HA foundry family, not extra stock.
+const STOCK_USI_CONFIRMED=new Map([
+ ["17100-K3H-B000","17110K3HAB002F"],
+ ["INLET PIPE - K3HA-BR","17110K3HAB002F"],
+ ["INLET PIPE - K3HA-LA","17110K3HAB002F"],
+ ["17111-K1S-A000U","17111K1SJA005F"],
+ ["K1SJ INP USI","17111K1SJA005F"]
+]);
+function stockMachiningCode(value){
+ const raw=String(value??"").trim().toUpperCase().replace(/[–—]/g,"-").replace(/\\s+/g," ");
+ if(STOCK_USI_CONFIRMED.has(raw))return raw;
+ const m=raw.match(/\\b(?:31GQ|41NN|17111|17100|17110|11PD|11VE|1050)[-A-Z0-9]{6,}\\b/);
+ return m?m[0]:"";
+}
 // Product-family reconciliation supplied by production-code list.
 // Only exact 31GQ family tokens are matched; unrelated machining codes stay unmatched.
 const STOCK_FND_FAMILIES={
@@ -1943,6 +1958,7 @@ const STOCK_FND_FAMILIES={
 function stockCanonicalModel(value,stage){
   const raw=String(value||"").trim().toUpperCase().replace(/[–—]/g,"-");
   if(stage!=="downstream")return raw;
+  if(STOCK_USI_CONFIRMED.has(raw))return STOCK_USI_CONFIRMED.get(raw);
   // Never map by approximate text similarity: family must match explicitly.
   const matched=raw.match(/^(?:31GQ|41NN)-([A-Z0-9]{4})-/);
   if(matched&&STOCK_FND_FAMILIES[matched[1]])return STOCK_FND_FAMILIES[matched[1]];
