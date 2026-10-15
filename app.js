@@ -1273,7 +1273,7 @@ function renderOeeLive(){
   const sourceForShift=productionRows.length?productionRows:l2lRows;
   const shiftDataMissing=shiftChosen&&!sourceForShift.some(r=>rowShift(r)===productionFilterState.shift);
   const shiftWarning=shiftDataMissing?" • ⚠ Sem registros identificados para este turno no L2L; nenhuma produção de outros turnos foi incluída.":"";
-  if(ctx)ctx.textContent=liveStamp()+" • "+(productionFilterState.shift==="Todos"?"Resumo diário L2L":"Pitches L2L por turno, janela operacional 07:00–07:00")+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(oeeFilterState.startDate||"")+(oeeFilterState.endDate&&oeeFilterState.endDate!==oeeFilterState.startDate?" → "+oeeFilterState.endDate:"")+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s) • "+(oeePitchAudit.size?"OEE ponderado por pitches concluídos": "OEE resumo L2L")+(oeeAuditWarning?" • ⚠ "+oeeAuditWarning:"");
+  if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(oeeFilterState.startDate||"")+(oeeFilterState.endDate&&oeeFilterState.endDate!==oeeFilterState.startDate?" → "+oeeFilterState.endDate:"")+" • "+oeeFilterState.start+"–"+oeeFilterState.end+" • "+groups.length+" linha(s) • "+(oeePitchAudit.size?"OEE ponderado por pitches concluídos": "OEE resumo L2L")+(oeeAuditWarning?" • ⚠ "+oeeAuditWarning:"");
 
   const table=document.getElementById("oeeTable");
   if(table){
@@ -1408,24 +1408,6 @@ function renderProductionDefects(){
   '</tbody></table></div>':
   '<div class="empty-state">'+(productionDefectError?stockEsc(productionDefectError):"Nenhum defeito detalhado encontrado para os filtros selecionados.")+'</div>';
 }
-async function fetchProductionShiftPitches(){
- const shift=productionFilterState.shift;
- const startDay=productionFilterState.startDate||todayISO();
- const endDay=productionFilterState.endDate||startDay;
- const windowIsOperational=productionFilterState.start==="07:00"&&productionFilterState.end==="07:00";
- const last=windowIsOperational?startDay:endDay;
- const nextDay=d=>{const x=new Date(d+"T12:00:00");x.setDate(x.getDate()+1);return [x.getFullYear(),String(x.getMonth()+1).padStart(2,"0"),String(x.getDate()).padStart(2,"0")].join("-");};
- const days=[];for(let d=startDay;d<=last&&days.length<32;d=nextDay(d))days.push(d);
- if(days.length===32&&last>days[31])throw new Error("Selecione até 32 dias para consultar pitches por turno.");
- const result=[];
- for(const day of days){
-  const tomorrow=nextDay(day),after=nextDay(tomorrow);
-  const bounds=shift==="1"?[day+" 07:00",day+" 17:00"]:shift==="2"?[day+" 17:00",tomorrow+" 02:00"]:[tomorrow+" 02:00",tomorrow+" 07:00"];
-  const records=await window.L2L.getStockPitches(bounds[0],bounds[1]);
-  result.push(...records.map(p=>({...p,shift,production_source:"pitch",products:[{product_code:p.product,description:p.product_description,actual:p.actual,demand:p.demand}]})));
- }
- return result;
-}
 async function refreshProductionRange(){
   if(productionLoading)return;
   productionLoading=true;
@@ -1435,7 +1417,7 @@ async function refreshProductionRange(){
     const start=(productionFilterState.startDate||todayISO())+" "+(productionFilterState.start||"00:00");
     const end=(productionFilterState.endDate||productionFilterState.startDate||todayISO())+" "+(productionFilterState.end||"23:59");
     const [prodResponse,defectResponse]=await Promise.allSettled([
-      productionFilterState.shift==="Todos"?window.L2L.getRange(productionFilterState.startDate||todayISO(),productionFilterState.endDate||productionFilterState.startDate||todayISO(),productionFilterState.start,productionFilterState.end):fetchProductionShiftPitches(),
+      window.L2L.getRange(productionFilterState.startDate||todayISO(),productionFilterState.endDate||productionFilterState.startDate||todayISO(),productionFilterState.start,productionFilterState.end),
       window.L2L.getScrapDetailsWindow(start,end)
     ]);
     if(prodResponse.status!=="fulfilled")throw prodResponse.reason;
@@ -1450,8 +1432,6 @@ async function refreshProductionRange(){
     }
   }catch(err){
     l2lError=err.message||"Falha ao consultar L2L";
-    productionRows=[];
-    productionDefectRows=[];
     if(currentPage==="production")renderProductionLive();
   }finally{
     productionLoading=false;
@@ -1926,7 +1906,7 @@ function renderProductionLive(){
   const cards=document.getElementById("prodCards");
   if(cards){
     cards.innerHTML=
-      card("Plano PMP • "+sectorName,productionFilterState.line==="Todas"?fmt(productionPmpPlanRows().reduce((sum,r)=>sum+r.qty,0)):"—")+
+      card("Plano PMP diário • "+sectorName,fmt(productionPmpPlanRows().reduce((sum,r)=>sum+r.qty,0)))+
       card("Demanda L2L • "+sectorName,fmt(demand))+
       card("Produção atual",fmt(actual),actual>=demand&&demand>0?"good":"")+card("Atingimento",fmtPct(attainment),attainment>=100?"good":attainment>=95?"warn":"bad")+
       productionScrapCard(scrap);
@@ -2003,7 +1983,7 @@ function initProduction(){
 
   shift.addEventListener("change",()=>{
     productionFilterState.shift=shift.value;
-    refreshProductionRange();
+    renderProductionLive();
   });
 
   startDate.addEventListener("change",async()=>{
