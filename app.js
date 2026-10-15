@@ -2091,6 +2091,7 @@ function stock(){
     '<div class="filter-context" id="stockContext">Atualização automática a cada 1 minuto.</div>'+
   '</div>'+
   '<div class="cards stock-live-kpis" id="stockCards"></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>BASE DE ABERTURA 01/10/2026</span><h2>Inacabado inicial por modelo</h2><p>Saldo teórico de fechamento de 30/09, informado pela produção. Mantido separado da movimentação L2L até validação dos códigos.</p></div></div><div id="stockOpening">Consultando base de abertura...</div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>PLANO × EXECUÇÃO</span><h2>PMP x L2L por processo</h2><p>Comparação de produção planejada e registros reais. Não representa estoque físico.</p></div></div><div id="stockPmpCompare"></div></div>'+
   '<div class="stock-selected-grid" id="stockSelected"></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>WIP / INACABADO</span><h2>Variação do Inacabado</h2><p>Fundição − consumo no Acabamento; não é saldo físico sem inventário inicial.</p></div></div><div id="stockInacabado"></div></div>'+
@@ -2333,7 +2334,7 @@ async function refreshStockRange(){
   const status=document.getElementById("stockLiveStatus");
   if(status)status.textContent="🟡 Consultando pitches por produto no L2L...";
   try{
-    await ensureProductionPlan();
+    await Promise.all([ensureProductionPlan(),ensureStockOpening()]);
     const first=stockFilterState.startDate||stockMonthStart();
     const last=stockFilterState.endDate||todayISO();
     const cursor=new Date(first+"T00:00:00"),finish=new Date(last+"T00:00:00");
@@ -2404,7 +2405,29 @@ function renderStockPmpCompare(rows){
    return '<tr><td>'+p.name+'</td><td>'+(hasPlan?fmt(plan):"N/D")+'</td><td>'+fmt(actual)+'</td><td>'+(hasPlan?fmt(actual-plan):"N/D")+'</td></tr>';
   }).join("")+'</tbody></table></div><p style="padding:9px;color:#64748b;font-size:12px">O PMP é plano, não saldo inicial. Registros sem identificação de produto não podem compor a conciliação por modelo. Quantidades de peças disponíveis exigem saldo inicial/inventário e movimentos físicos validados.</p>';
 }
+let stockOpeningRows=[];
+let stockOpeningError="";
+async function ensureStockOpening(){
+ if(stockOpeningRows.length)return;
+ try{
+  const response=await fetch("/data/estoque-inacabado-fechamento-2026-09-30.csv");
+  if(!response.ok)throw Error("Base de fechamento indisponível");
+  const lines=(await response.text()).trim().split(/\r?\n/).slice(1);
+  stockOpeningRows=lines.map(line=>{const values=line.split(";");return {day:values[0],model:values[1],qty:Number(values[2])};}).filter(row=>row.day==="2026-09-30"&&row.model&&Number.isFinite(row.qty));
+  stockOpeningError="";
+ }catch(e){stockOpeningError=e.message||"Erro ao ler abertura";}
+}
+function renderStockOpening(){
+ const el=document.getElementById("stockOpening");if(!el)return;
+ if(stockOpeningError){el.textContent=stockOpeningError;return;}
+ if(!stockOpeningRows.length){el.textContent="Saldo de abertura não carregado.";return;}
+ const sum=stockOpeningRows.reduce((a,r)=>a+r.qty,0),negative=stockOpeningRows.filter(r=>r.qty<0);
+ el.innerHTML='<p style="padding:8px;color:#475569">Referência teórica líquida: <b>'+fmt(sum)+' peças</b> em '+stockOpeningRows.length+' modelos. '+negative.length+' divergência(s) negativa(s). Sem separação do saldo inicial de Acabado. Não representa inventário físico validado.</p>'+
+ '<div class="table-scroll"><table class="stock-live-table"><thead><tr><th>Modelo na planilha</th><th>Inacabado inicial teórico (01/10)</th><th>Situação</th></tr></thead><tbody>'+
+ stockOpeningRows.map(r=>'<tr><td>'+stockEsc(r.model)+'</td><td>'+fmt(r.qty)+'</td><td>'+(r.qty<0?'⚠ Divergência negativa':'Referência teórica')+'</td></tr>').join("")+'</tbody></table></div>';
+}
 function updateStock(){
+  renderStockOpening();
   const source=stockLoaded?stockRows:[];
   const position=calculateL2LStock(source);
   renderStockPmpCompare(source);
