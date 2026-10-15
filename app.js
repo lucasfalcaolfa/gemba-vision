@@ -1965,6 +1965,7 @@ const STOCK_MACHINING_EQUIVALENCES=new Map([
 ]);
 const STOCK_MACHINING_LABELS=[
  [/^INLET PIPE\s*-\s*K3HA\s*-?\s*BR$/i,"17110K3HAB002F"],
+ [/^INLET PIPE\s*-\s*K3HA\s*-?\s*LA$/i,"17110K3HAB002F"],
  [/^K1SJ\s+INP\s+USI$/i,"17111K1SJA005F"],
  [/^INP\s*-\s*K2GF\s+USI$/i,"17111KVSPJ001F"],
  [/^KWFF\s+THB\s+3[.,]5\s+USINAGEM$/i,"31GQ-KVSA-00K0F"]
@@ -1979,6 +1980,8 @@ function stockMachiningOrigin(value){
 function stockCanonicalModel(value,stage){
   const raw=String(value||"").trim().toUpperCase().replace(/[–—]/g,"-");
   if(stage!=="downstream")return raw;
+  const approvedOrigin=stockMachiningOrigin(raw);
+  if(approvedOrigin)return approvedOrigin;
   if(STOCK_USI_CONFIRMED.has(raw))return STOCK_USI_CONFIRMED.get(raw);
   // Never map by approximate text similarity: family must match explicitly.
   const matched=raw.match(/^(?:31GQ|41NN)-([A-Z0-9]{4})-/);
