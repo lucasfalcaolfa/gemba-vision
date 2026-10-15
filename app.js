@@ -1456,7 +1456,7 @@ function populateProductionFilters(){
 }
 
 function getFilteredProductionRows(){
-  const source=productionRows.length?productionRows:l2lRows;
+  const source=productionRows;
   return source.filter(r=>
     (productionFilterState.area==="Todas"||r.area===productionFilterState.area) &&
     (productionFilterState.line==="Todas"||r.line===productionFilterState.line) &&
@@ -1906,7 +1906,7 @@ function renderProductionLive(){
   const cards=document.getElementById("prodCards");
   if(cards){
     cards.innerHTML=
-      card("Plano PMP • "+sectorName,fmt(productionPmpPlanRows().reduce((sum,r)=>sum+r.qty,0)))+
+      card("Plano PMP diário • "+sectorName,fmt(productionPmpPlanRows().reduce((sum,r)=>sum+r.qty,0)))+
       card("Demanda L2L • "+sectorName,fmt(demand))+
       card("Produção atual",fmt(actual),actual>=demand&&demand>0?"good":"")+card("Atingimento",fmtPct(attainment),attainment>=100?"good":attainment>=95?"warn":"bad")+
       productionScrapCard(scrap);
