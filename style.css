@@ -11856,3 +11856,24 @@ body.home-nav-in-topbar .home-executive-hero{
 .gv-models-signal.neutral{background:#edf1f5;color:#677c8e}
 @media(max-width:1100px){.gv-models-head{flex-direction:column;align-items:stretch}.gv-models-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.gv-models-sector table{min-width:720px}}
 @media(max-width:600px){.gv-models-kpis{grid-template-columns:1fr 1fr}.gv-models-actions{width:100%}.gv-models-actions>*{width:100%;min-width:0!important}}
+
+
+/* Modelo -> setor consumidor -> ação: quadro gerencial de prioridades */
+.gv-models-priority{border:1px solid #d7e3ed;border-radius:12px;background:#fff;margin:0 0 15px;padding:17px}
+.gv-models-priority-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px}
+.gv-models-priority-heading span{display:block;color:#31668c;letter-spacing:.9px;font-weight:800;font-size:10px;margin-bottom:5px}
+.gv-models-priority-heading h2{font-size:18px;margin:0 0 4px;color:#123958}
+.gv-models-priority-heading p{font-size:12px;margin:0;color:#6c8395}
+.gv-models-priority-list{display:grid;gap:8px}
+.gv-models-priority-item{display:grid;grid-template-columns:30px minmax(160px,1.3fr) 125px minmax(190px,1fr) 75px;gap:12px;align-items:center;border:1px solid #e3ebf2;border-left:3px solid #f1ae32;border-radius:9px;padding:10px;background:#fcfdff;min-width:0}
+.gv-models-priority-index{display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;background:#eaf2f8;color:#235478;font-weight:800}
+.gv-models-priority-info,.gv-models-priority-gap,.gv-models-priority-next{display:flex;flex-direction:column;gap:4px;min-width:0}
+.gv-models-priority-info strong{font-size:13px;color:#0e3758}
+.gv-models-priority-info span,.gv-models-priority-next span{font-size:11px;color:#617d94;overflow-wrap:anywhere}
+.gv-models-priority-gap b{font-size:20px;color:#b56505;font-variant-numeric:tabular-nums}
+.gv-models-priority-gap small,.gv-models-priority-next small{font-size:10px;color:#73889b}
+.gv-models-priority-next b{font-size:12px;color:#285778}
+.gv-models-priority-foot{font-size:11px;color:#6f8799;margin:10px 0 0}
+.gv-models-priority-clear{padding:16px;border-radius:8px;background:#f0f8f4;color:#32654a;font-size:12px}
+@media(max-width:1200px){.gv-models-priority-item{grid-template-columns:28px 1fr 100px;gap:9px}.gv-models-priority-next{grid-column:2 / 4}.gv-models-priority-item>.gv-models-signal{grid-column:1 / 2;grid-row:2}}
+@media(max-width:600px){.gv-models-priority-item{grid-template-columns:28px 1fr}.gv-models-priority-gap{grid-column:2}.gv-models-priority-next{grid-column:2}.gv-models-priority-item>.gv-models-signal{grid-column:2;grid-row:auto;justify-self:start}}
