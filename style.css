@@ -11819,3 +11819,40 @@ body.home-nav-in-topbar .home-executive-hero{
  body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-events{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:14px!important}
  body:has(.gv-executive-dashboard) #content .gv-executive-dashboard .gv-pbi-events section>div{grid-template-columns:90px minmax(0,1fr) 43px!important;gap:8px!important;padding:6px 0!important}
 }
+
+
+/* Gerenciamento de Modelos — escopo isolado */
+.gv-models-head{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:20px!important;margin-bottom:14px}
+.gv-models-head>div>span{color:#1a639b;font-size:10px;font-weight:800;letter-spacing:1.1px}
+.gv-models-head h2{margin:5px 0;color:#103653;font-size:23px}
+.gv-models-head p{margin:0;color:#678097;font-size:12px;max-width:620px}
+.gv-models-filters{display:flex;align-items:end;gap:9px;flex-wrap:wrap}
+.gv-models-filters label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:#526f86;font-weight:700}
+.gv-models-filters input,.gv-models-actions input,.gv-models-actions select{border:1px solid #d5e1ec;background:#fff;border-radius:8px;padding:10px;color:#123b5a;max-width:100%}
+.gv-models-filters button{background:#125481;color:#fff;border:0;border-radius:8px;padding:11px 15px;font-weight:800;cursor:pointer}
+.gv-models-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:13px}
+.gv-models-kpis article{background:#fff;border:1px solid #dde6ee;border-radius:12px;padding:14px 17px;min-width:0}
+.gv-models-kpis article span{color:#658097;font-size:11px;display:block;margin-bottom:6px}
+.gv-models-kpis article strong{color:#103b5c;font-size:26px;font-variant-numeric:tabular-nums}
+.gv-models-main{padding:18px!important;min-width:0}
+.gv-models-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.gv-models-toolbar h2{margin:0 0 5px;color:#103b5c;font-size:18px}
+.gv-models-toolbar small{color:#718698}
+.gv-models-actions{display:flex;gap:8px;flex-wrap:wrap}
+.gv-models-actions input{min-width:250px}
+.gv-models-notice{border:1px solid #dfeaf2;border-radius:8px;padding:11px 13px;background:#f5f9fc;color:#4c6b81;font-size:12px;line-height:1.5;margin-bottom:13px}
+.gv-models-results{display:grid;gap:16px}
+.gv-models-sector{border:1px solid #dde7ef;border-radius:10px;overflow:hidden}
+.gv-models-sector header{display:flex;justify-content:space-between;align-items:center;background:#ebf3f9;padding:12px 14px}
+.gv-models-sector h3{margin:0;font-size:15px;color:#134467}
+.gv-models-sector header span{font-size:12px;color:#587d95;font-weight:700}
+.gv-models-sector table{width:100%;border-collapse:collapse;font-size:12px}
+.gv-models-sector th{text-align:left;background:#f8fafc;color:#637f96;font-size:10px;text-transform:uppercase;letter-spacing:.4px;padding:11px}
+.gv-models-sector td{color:#23485f;padding:11px;border-top:1px solid #e8eff5}
+.gv-models-sector tr:nth-child(even) td{background:#fafcfe}
+.gv-models-signal{display:inline-block;white-space:nowrap;border-radius:99px;padding:5px 9px;font-size:10px;font-weight:800}
+.gv-models-signal.attention{background:#fff0d9;color:#995e02}
+.gv-models-signal.ok{background:#e2f6eb;color:#157348}
+.gv-models-signal.neutral{background:#edf1f5;color:#677c8e}
+@media(max-width:1100px){.gv-models-head{flex-direction:column;align-items:stretch}.gv-models-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.gv-models-sector table{min-width:720px}}
+@media(max-width:600px){.gv-models-kpis{grid-template-columns:1fr 1fr}.gv-models-actions{width:100%}.gv-models-actions>*{width:100%;min-width:0!important}}
