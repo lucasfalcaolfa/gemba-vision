@@ -20,6 +20,7 @@ function modelManagement(){
  '<div class="gv-models-priority"><div class="gv-models-priority-heading"><div><span>01 • ONDE AGIR PRIMEIRO</span><h2>Prioridades de abastecimento</h2><p>Itens que exigem confirmação com o setor consumidor antes de mudar a programação.</p></div></div><div id="gmPriorities"></div></div><div class="gv-models-notice"><b>Criticidade:</b> O quadro de prioridades usa a diferença Plano − Real do próprio setor no período consultado; “Abaixo do plano” indica desvio, não falta de material nem parada iminente. Para risco real precisamos de estoque validado, demanda da próxima etapa e tempo de reposição. Produtos apenas no catálogo aparecem em “Sem setor associado”. O PMP representa todo outubro; os valores do L2L são da janela consultada (até 24h).</div><div id="gmResults" class="gv-models-results"><div class="empty-state">Carregando modelos...</div></div><details class="gv-models-unassigned" id="gmUnassigned"><summary>Sem setor associado <span id="gmUnassignedCount">0 modelos</span></summary><p>Produtos cadastrados no L2L sem movimentação vinculada a um setor no período consultado.</p><div id="gmUnassignedResults"></div></details></section>';
 }
 let pmpPlanning=[];
+let pmpUploaded=false;
 async function initPmpPlanning(){
  const panel=document.getElementById("pmpPanel");if(!panel)return;
  const status=document.getElementById("pmpStatus");
@@ -74,6 +75,7 @@ async function importPmpFile(){
   const duplicate=new Set();
   for(const r of parsed){const key=[r.day,r.process,r.model,r.machine].join("|");if(duplicate.has(key))throw new Error("Chave repetida (data/processo/modelo/máquina): "+key);duplicate.add(key);}
   pmpPlanning=parsed.filter(r=>r.model!=="TOTAL");
+  pmpUploaded=true;
   const select=document.getElementById("pmpModel");select.innerHTML='<option value="Todos">Todos</option>';
   [...new Set(pmpPlanning.map(r=>r.model))].sort().forEach(m=>{const o=document.createElement("option");o.value=m;o.textContent=m;select.appendChild(o);});
   const dates=pmpPlanning.map(r=>r.day).sort();document.getElementById("pmpFrom").value=dates[0];document.getElementById("pmpTo").value=dates[dates.length-1];
@@ -209,7 +211,12 @@ function pmpPlanForL2L(row){
 const PMP_MONTHLY_OCT_2026={"INJ":{"AP2 DI":11010,"GQ - K1SJ":60040,"GQ - K1ZH":5880,"GQ - K62H":52795,"GQ - K68N":5515,"GQ - KSSV":28830,"K2KF":9285,"K31A":5350,"K68A":19105,"KVSA":19390,"NB - K1SJ":25220,"NB - K2GF":5780,"NB - K2GH":8020,"NB - K3HA":9305},"ACAB":{"AP2 DI":10800,"GQ - K1SJ":52300,"GQ - K1ZH":8600,"GQ - K62H":48300,"GQ - KSSV":16000,"K2KF":10680,"K31A":6010,"K68A":19100,"K68L-BR":3700,"KVSA":15520,"NB - K1SJ":25495,"NB - K2GF":11040,"NB - K2GH":11800,"NB - K3HA":9800}};
 function approvedPmpMonthlyTarget(row){
  const stage=pmpProcessOfArea(row.area),model=pmpModelOfL2L(row.code,row.description);
- return stage&&model&&Object.prototype.hasOwnProperty.call(PMP_MONTHLY_OCT_2026[stage]||{},model)?PMP_MONTHLY_OCT_2026[stage][model]:null;
+ if(!stage||!model)return null;
+ if(pmpUploaded){
+  const entries=pmpPlanning.filter(r=>r.process===stage&&r.model===model);
+  return entries.length?entries.reduce((sum,r)=>sum+r.qty,0):null;
+ }
+ return Object.prototype.hasOwnProperty.call(PMP_MONTHLY_OCT_2026[stage]||{},model)?PMP_MONTHLY_OCT_2026[stage][model]:null;
 }
  const all=[...map.values()].map(r=>{
   const approvedMonthly=approvedPmpMonthlyTarget(r);
