@@ -34,16 +34,17 @@ async function initPmpPlanning(){
    return {day:values[index("Data")],process:values[index("Processo")],model:values[index("Modelo")],machine:values[index("Injetora_origem")],qty:Number(values[index("Quantidade_planejada")])||0};
   }).filter(x=>x.day&&x.model);
   const modelSelect=document.getElementById("pmpModel");
-  [...new Set(pmpPlanning.map(r=>r.model))].sort().forEach(model=>{const option=document.createElement("option");option.value=model;option.textContent=model;modelSelect.appendChild(option);});
+  [...new Set(pmpPlanning.filter(r=>r.model!=="TOTAL").map(r=>r.model))].sort().forEach(model=>{const option=document.createElement("option");option.value=model;option.textContent=model;modelSelect.appendChild(option);});
   for(const id of ["pmpFrom","pmpTo","pmpProcess","pmpModel"])document.getElementById(id).addEventListener("change",renderPmpPlanning);
   renderPmpPlanning();
+  renderModelManagement();
  }catch(e){status.textContent="Não foi possível abrir a base: "+e.message;}
 }
 function renderPmpPlanning(){
  const el=document.getElementById("pmpPanel");if(!el)return;
  const from=document.getElementById("pmpFrom").value,to=document.getElementById("pmpTo").value;
  const process=document.getElementById("pmpProcess").value,model=document.getElementById("pmpModel").value;
- const filtered=pmpPlanning.filter(r=>r.day>=from&&r.day<=to&&(process==="Todos"||r.process===process)&&(model==="Todos"||r.model===model));
+ const filtered=pmpPlanning.filter(r=>r.model!=="TOTAL"&&r.day>=from&&r.day<=to&&(process==="Todos"||r.process===process)&&(model==="Todos"||r.model===model));
  const groups=new Map();
  filtered.forEach(r=>{const key=r.process+"|"+r.model+"|"+r.machine;groups.set(key,(groups.get(key)||0)+r.qty);});
  const sum=filtered.reduce((s,r)=>s+r.qty,0);
@@ -54,7 +55,7 @@ function renderPmpPlanning(){
 function gmDate(value){return value.replace("T"," ")}
 function initModelManagement(){
  const now=new Date(),begin=new Date(now);
- begin.setHours(7,0,0,0);if(now<begin)begin.setDate(begin.getDate()-1);
+ begin.setHours(0,0,0,0);
  const end=new Date(begin);end.setDate(end.getDate()+1);
  const dateText=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")+"T"+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
  const startEl=document.getElementById("gmStart"),endEl=document.getElementById("gmEnd");
@@ -131,20 +132,20 @@ function pmpProcessOfArea(area){
 function pmpModelOfL2L(code,description){
  const value=(String(code||"")+" "+String(description||"")).toUpperCase();
  const rules=[
-  [/31GQ-K620-01H0F|\\bK62H\\b/,"GQ - K62H"],
+  [/31GQ-K620-01H0F|\bK62H\b/,"GQ - K62H"],
   [/31GQ-K1S0-01J3F/,"GQ - K1SJ"],
   [/31GQ-K1S0-00G0F/,"GQ - K1SJ"],
-  [/31GQ-K310-00A2F|\\bK31A\\b/,"K31A"],
-  [/31GQ-K2K0-00F2F|\\bK2KF\\b/,"K2KF"],
-  [/31GQ-K680-00A0F|\\bK68A\\b/,"K68A"],
-  [/31GQ-K680-01L0F|\\bK68L-BR\\b/,"K68L-BR"],
-  [/31GQ-K680-03N2F|\\bK68N\\b/,"GQ - K68N"],
-  [/31GQ-KVK0-00B3F|\\bKVKB\\b/,"KVKB"],
-  [/31GQ-KVSA-00K0F|\\bKVSA\\b/,"KVSA"],
-  [/17111KVSPJ001F|\\bK2GF\\b/,"NB - K2GF"],
-  [/\\bK2GH\\b/,"NB - K2GH"],
-  [/\\bK3HA\\b/,"NB - K3HA"],
-  [/\\bAP2[- ]?DI\\b/,"AP2 DI"]
+  [/31GQ-K310-00A2F|\bK31A\b/,"K31A"],
+  [/31GQ-K2K0-00F2F|\bK2KF\b/,"K2KF"],
+  [/31GQ-K680-00A0F|\bK68A\b/,"K68A"],
+  [/31GQ-K680-01L0F|\bK68L-BR\b/,"K68L-BR"],
+  [/31GQ-K680-03N2F|\bK68N\b/,"GQ - K68N"],
+  [/31GQ-KVK0-00B3F|\bKVKB\b/,"KVKB"],
+  [/31GQ-KVSA-00K0F|\bKVSA\b/,"KVSA"],
+  [/17111KVSPJ001F|\bK2GF\b/,"NB - K2GF"],
+  [/\bK2GH\b/,"NB - K2GH"],
+  [/\bK3HA\b/,"NB - K3HA"],
+  [/\bAP2[- ]?DI\b/,"AP2 DI"]
  ];
  const hits=[...new Set(rules.filter(([rx])=>rx.test(value)).map(([,name])=>name))];
  return hits.length===1?hits[0]:null;
