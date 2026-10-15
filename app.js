@@ -1846,7 +1846,10 @@ function ensureProductionPlan(){
 function productionPmpPlanRows(){
  const from=productionFilterState.startDate,to=productionFilterState.endDate;
  const selected=productionFilterState.area==="Todas"?null:pmpProcessOfArea(productionFilterState.area);
- return pmpPlanning.filter(r=>r.model!=="TOTAL"&&r.day>=from&&r.day<=to&&(!selected||r.process===selected));
+ const operational=productionFilterState.start==="07:00"&&productionFilterState.end==="07:00"&&to&&from&&new Date(to+"T00:00:00").getTime()-new Date(from+"T00:00:00").getTime()===86400000;
+ // The 07:00 -> 07:00 shift is one operational day, not two separate PMP days.
+ const lastDay=operational?from:to;
+ return pmpPlanning.filter(r=>r.model!=="TOTAL"&&r.day>=from&&r.day<=lastDay&&(!selected||r.process===selected));
 }
 function productionPmpComparable(){
  return productionFilterState.start==="00:00"&&productionFilterState.end==="23:59"&&productionFilterState.shift==="Todos"&&productionFilterState.line==="Todas";
