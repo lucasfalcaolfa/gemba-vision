@@ -1450,6 +1450,8 @@ async function refreshProductionRange(){
     }
   }catch(err){
     l2lError=err.message||"Falha ao consultar L2L";
+    productionRows=[];
+    productionDefectRows=[];
     if(currentPage==="production")renderProductionLive();
   }finally{
     productionLoading=false;
@@ -1924,7 +1926,7 @@ function renderProductionLive(){
   const cards=document.getElementById("prodCards");
   if(cards){
     cards.innerHTML=
-      card("Plano PMP diário • "+sectorName,fmt(productionPmpPlanRows().reduce((sum,r)=>sum+r.qty,0)))+
+      card("Plano PMP • "+sectorName,productionFilterState.line==="Todas"?fmt(productionPmpPlanRows().reduce((sum,r)=>sum+r.qty,0)):"—")+
       card("Demanda L2L • "+sectorName,fmt(demand))+
       card("Produção atual",fmt(actual),actual>=demand&&demand>0?"good":"")+card("Atingimento",fmtPct(attainment),attainment>=100?"good":attainment>=95?"warn":"bad")+
       productionScrapCard(scrap);
