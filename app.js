@@ -1408,6 +1408,25 @@ function renderProductionDefects(){
   '</tbody></table></div>':
   '<div class="empty-state">'+(productionDefectError?stockEsc(productionDefectError):"Nenhum defeito detalhado encontrado para os filtros selecionados.")+'</div>';
 }
+async function getProductionRowsForSelectedShift(){
+ const shift=productionFilterState.shift;
+ if(shift==="Todos")return window.L2L.getRange(productionFilterState.startDate||todayISO(),productionFilterState.endDate||productionFilterState.startDate||todayISO(),productionFilterState.start,productionFilterState.end);
+ const nextDay=day=>{const d=new Date(day+"T12:00:00");d.setDate(d.getDate()+1);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-");};
+ const first=productionFilterState.startDate||todayISO();
+ const last=productionFilterState.endDate||first;
+ const operational=productionFilterState.start==="07:00"&&productionFilterState.end==="07:00";
+ const days=[];for(let day=first;day<=(operational&&last===nextDay(first)?first:last)&&days.length<32;day=nextDay(day))days.push(day);
+ if(days.length>=32)throw new Error("Reduza o período da consulta por turno para até 31 dias.");
+ const results=[];
+ for(const day of days){
+  const tomorrow=nextDay(day);
+  const times=shift==="1"?[day+" 07:00",day+" 17:00"]:shift==="2"?[day+" 17:00",tomorrow+" 02:00"]:[tomorrow+" 02:00",tomorrow+" 07:00"];
+  const rows=await window.L2L.getDailyWindow(times[0],times[1]);
+  // Each server query is bounded to one operational shift. The summary may omit shift metadata.
+  results.push(...rows.map(row=>({...row,shift_number:shift})));
+ }
+ return results;
+}
 async function refreshProductionRange(){
   if(productionLoading)return;
   productionLoading=true;
@@ -1417,7 +1436,7 @@ async function refreshProductionRange(){
     const start=(productionFilterState.startDate||todayISO())+" "+(productionFilterState.start||"00:00");
     const end=(productionFilterState.endDate||productionFilterState.startDate||todayISO())+" "+(productionFilterState.end||"23:59");
     const [prodResponse,defectResponse]=await Promise.allSettled([
-      window.L2L.getRange(productionFilterState.startDate||todayISO(),productionFilterState.endDate||productionFilterState.startDate||todayISO(),productionFilterState.start,productionFilterState.end),
+      getProductionRowsForSelectedShift(),
       window.L2L.getScrapDetailsWindow(start,end)
     ]);
     if(prodResponse.status!=="fulfilled")throw prodResponse.reason;
@@ -1432,6 +1451,8 @@ async function refreshProductionRange(){
     }
   }catch(err){
     l2lError=err.message||"Falha ao consultar L2L";
+    productionRows=[];
+    productionDefectRows=[];
     if(currentPage==="production")renderProductionLive();
   }finally{
     productionLoading=false;
@@ -1983,7 +2004,7 @@ function initProduction(){
 
   shift.addEventListener("change",()=>{
     productionFilterState.shift=shift.value;
-    renderProductionLive();
+    refreshProductionRange();
   });
 
   startDate.addEventListener("change",async()=>{
