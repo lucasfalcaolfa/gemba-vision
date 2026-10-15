@@ -62,6 +62,14 @@ function gmModelFamily(code,description=""){
  if(/(?:^|[^A-Z0-9])K3HA(?:[\s_-]*(?:BR|LA))?(?=$|[^A-Z0-9])/.test(value)||/1711[01]K3HAB002F/.test(value)||/17100-K3H-B000/.test(value))return "K3HA";
  return "";
 }
+// UI-only product identification for machining; do not merge with foundry stock.
+function gmPriorityProductLabel(row){
+ const area=String(row.area||"").toUpperCase();
+ const signature=String(row.code||"")+" "+String(row.description||"");
+ if(/USI|USINAG|MACHIN/.test(area)&&/(?:K2GF|17111KVSPJ001F)/i.test(signature)&&/(?:INP|INLET\s*PIPE|K2GF)/i.test(signature))
+   return "INLET PIPE - K2GF • USINAGEM";
+ return productDescriptions.get(String(row.code||"").toUpperCase())||PRODUCT_DESCRIPTION_OVERRIDES.get(String(row.code||"").toUpperCase())||row.description||row.code;
+}
 function renderModelManagement(){
  if(currentPage!=="models")return;
  const raw=Array.isArray(gmData.pitches)?gmData.pitches:[],catalog=Array.isArray(gmData.catalog)?gmData.catalog:[];
@@ -100,7 +108,7 @@ function renderModelManagement(){
  const upstream={"Montagem":"Usinagem","Usinagem":"Acabamento / Fundição","Acabamento":"Fundição","Fundição":"Planejamento da Fundição"};
  const pending=visible.filter(r=>r.signal==="Abaixo do plano").map(r=>{
   const gap=Math.max(0,r.demand-r.actual),sector=sectorKind(r.area);
-  const desc=productDescriptions.get(r.code.toUpperCase())||PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||r.description||r.code;
+  const desc=gmPriorityProductLabel(r);
   return {...r,gap,sector,desc,upstream:upstream[sector]||"PCP / setor fornecedor"};
  }).sort((a,b)=>b.gap-a.gap);
  const priorityBox=document.getElementById("gmPriorities");
@@ -114,7 +122,7 @@ function renderModelManagement(){
  const groups=new Map();assigned.forEach(r=>{if(!groups.has(r.area))groups.set(r.area,[]);groups.get(r.area).push(r);});
  const content=[...groups].sort((a,b)=>a[0].localeCompare(b[0],"pt-BR")).map(([area,items])=>{
   items.sort((a,b)=>(a.signal==="Abaixo do plano"?-1:0)-(b.signal==="Abaixo do plano"?-1:0)||a.code.localeCompare(b.code));
-  return '<div class="gv-models-sector"><header><h3>'+stockEsc(area)+'</h3><span>'+items.length+' modelo(s)</span></header><div class="table-scroll"><table><thead><tr><th>Modelo</th><th>Descrição</th><th>Linha</th><th>Plano</th><th>Real</th><th>Scrap</th><th>Sinal</th></tr></thead><tbody>'+items.map(r=>'<tr><td><b>'+stockEsc(r.code)+'</b>'+(r.family?'<small class="gv-models-family">↳ Fundição: '+stockEsc(r.family)+'</small>':'')+(GM_REVIEW_CODES.has(r.code.toUpperCase())?'<small class="gv-models-review">⚠ '+stockEsc(GM_REVIEW_CODES.get(r.code.toUpperCase()))+'</small>':'')+'</td><td>'+stockEsc(productDescriptions.get(r.code.toUpperCase())||PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||r.description||"Descrição não cadastrada")+'</td><td>'+stockEsc([...r.lines].join(", ")||"—")+'</td><td>'+ (r.records?fmt(r.demand):"—")+'</td><td>'+(r.records?fmt(r.actual):"—")+'</td><td>'+(r.records?fmt(r.scrap):"—")+'</td><td><span class="gv-models-signal '+(r.signal==="Abaixo do plano"?"attention":r.signal==="Dentro do plano"?"ok":"neutral")+'">'+stockEsc(r.signal)+'</span></td></tr>').join("")+'</tbody></table></div></div>';
+  return '<div class="gv-models-sector"><header><h3>'+stockEsc(area)+'</h3><span>'+items.length+' modelo(s)</span></header><div class="table-scroll"><table><thead><tr><th>Modelo</th><th>Descrição</th><th>Linha</th><th>Plano</th><th>Real</th><th>Scrap</th><th>Sinal</th></tr></thead><tbody>'+items.map(r=>'<tr><td><b>'+stockEsc(r.code)+'</b>'+(r.family?'<small class="gv-models-family">↳ Fundição: '+stockEsc(r.family)+'</small>':'')+(GM_REVIEW_CODES.has(r.code.toUpperCase())?'<small class="gv-models-review">⚠ '+stockEsc(GM_REVIEW_CODES.get(r.code.toUpperCase()))+'</small>':'')+'</td><td>'+stockEsc(gmPriorityProductLabel(r))+'</td><td>'+stockEsc([...r.lines].join(", ")||"—")+'</td><td>'+ (r.records?fmt(r.demand):"—")+'</td><td>'+(r.records?fmt(r.actual):"—")+'</td><td>'+(r.records?fmt(r.scrap):"—")+'</td><td><span class="gv-models-signal '+(r.signal==="Abaixo do plano"?"attention":r.signal==="Dentro do plano"?"ok":"neutral")+'">'+stockEsc(r.signal)+'</span></td></tr>').join("")+'</tbody></table></div></div>';
  }).join("");
  document.getElementById("gmResults").innerHTML=gmError?'<div class="empty-state">'+stockEsc(gmError)+'</div>':content||'<div class="empty-state">Nenhum modelo corresponde aos filtros. Confira a janela de produção ou os dados do L2L.</div>';
  const unknownContainer=document.getElementById("gmUnassignedResults"),unknownCount=document.getElementById("gmUnassignedCount");
