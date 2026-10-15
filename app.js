@@ -100,7 +100,7 @@ function renderModelManagement(){
  const upstream={"Montagem":"Usinagem","Usinagem":"Acabamento / Fundição","Acabamento":"Fundição","Fundição":"Planejamento da Fundição"};
  const pending=visible.filter(r=>r.signal==="Abaixo do plano").map(r=>{
   const gap=Math.max(0,r.demand-r.actual),sector=sectorKind(r.area);
-  const desc=PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||productDescriptions.get(r.code.toUpperCase())||r.description||r.code;
+  const desc=productDescriptions.get(r.code.toUpperCase())||PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||r.description||r.code;
   return {...r,gap,sector,desc,upstream:upstream[sector]||"PCP / setor fornecedor"};
  }).sort((a,b)=>b.gap-a.gap);
  const priorityBox=document.getElementById("gmPriorities");
@@ -114,13 +114,13 @@ function renderModelManagement(){
  const groups=new Map();assigned.forEach(r=>{if(!groups.has(r.area))groups.set(r.area,[]);groups.get(r.area).push(r);});
  const content=[...groups].sort((a,b)=>a[0].localeCompare(b[0],"pt-BR")).map(([area,items])=>{
   items.sort((a,b)=>(a.signal==="Abaixo do plano"?-1:0)-(b.signal==="Abaixo do plano"?-1:0)||a.code.localeCompare(b.code));
-  return '<div class="gv-models-sector"><header><h3>'+stockEsc(area)+'</h3><span>'+items.length+' modelo(s)</span></header><div class="table-scroll"><table><thead><tr><th>Modelo</th><th>Descrição</th><th>Linha</th><th>Plano</th><th>Real</th><th>Scrap</th><th>Sinal</th></tr></thead><tbody>'+items.map(r=>'<tr><td><b>'+stockEsc(r.code)+'</b>'+(r.family?'<small class="gv-models-family">↳ Fundição: '+stockEsc(r.family)+'</small>':'')+(GM_REVIEW_CODES.has(r.code.toUpperCase())?'<small class="gv-models-review">⚠ '+stockEsc(GM_REVIEW_CODES.get(r.code.toUpperCase()))+'</small>':'')+'</td><td>'+stockEsc(PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||productDescriptions.get(r.code.toUpperCase())||r.description||"Descrição não cadastrada")+'</td><td>'+stockEsc([...r.lines].join(", ")||"—")+'</td><td>'+ (r.records?fmt(r.demand):"—")+'</td><td>'+(r.records?fmt(r.actual):"—")+'</td><td>'+(r.records?fmt(r.scrap):"—")+'</td><td><span class="gv-models-signal '+(r.signal==="Abaixo do plano"?"attention":r.signal==="Dentro do plano"?"ok":"neutral")+'">'+stockEsc(r.signal)+'</span></td></tr>').join("")+'</tbody></table></div></div>';
+  return '<div class="gv-models-sector"><header><h3>'+stockEsc(area)+'</h3><span>'+items.length+' modelo(s)</span></header><div class="table-scroll"><table><thead><tr><th>Modelo</th><th>Descrição</th><th>Linha</th><th>Plano</th><th>Real</th><th>Scrap</th><th>Sinal</th></tr></thead><tbody>'+items.map(r=>'<tr><td><b>'+stockEsc(r.code)+'</b>'+(r.family?'<small class="gv-models-family">↳ Fundição: '+stockEsc(r.family)+'</small>':'')+(GM_REVIEW_CODES.has(r.code.toUpperCase())?'<small class="gv-models-review">⚠ '+stockEsc(GM_REVIEW_CODES.get(r.code.toUpperCase()))+'</small>':'')+'</td><td>'+stockEsc(productDescriptions.get(r.code.toUpperCase())||PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||r.description||"Descrição não cadastrada")+'</td><td>'+stockEsc([...r.lines].join(", ")||"—")+'</td><td>'+ (r.records?fmt(r.demand):"—")+'</td><td>'+(r.records?fmt(r.actual):"—")+'</td><td>'+(r.records?fmt(r.scrap):"—")+'</td><td><span class="gv-models-signal '+(r.signal==="Abaixo do plano"?"attention":r.signal==="Dentro do plano"?"ok":"neutral")+'">'+stockEsc(r.signal)+'</span></td></tr>').join("")+'</tbody></table></div></div>';
  }).join("");
  document.getElementById("gmResults").innerHTML=gmError?'<div class="empty-state">'+stockEsc(gmError)+'</div>':content||'<div class="empty-state">Nenhum modelo corresponde aos filtros. Confira a janela de produção ou os dados do L2L.</div>';
  const unknownContainer=document.getElementById("gmUnassignedResults"),unknownCount=document.getElementById("gmUnassignedCount");
  if(unknownCount)unknownCount.textContent=unassigned.length+" modelo(s)";
  if(unknownContainer)unknownContainer.innerHTML=gmError?'<div class="empty-state">'+stockEsc(gmError)+'</div>':unassigned.length?
- '<div class="table-scroll"><table class="gv-models-unassigned-table"><thead><tr><th>Código</th><th>Descrição</th><th>Família</th></tr></thead><tbody>'+unassigned.map(r=>'<tr><td><b>'+stockEsc(r.code)+'</b></td><td>'+stockEsc(PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||productDescriptions.get(r.code.toUpperCase())||r.description||"Descrição não cadastrada")+'</td><td>'+stockEsc(r.family||"—")+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty-state">Nenhum produto sem setor associado encontrado.</div>';
+ '<div class="table-scroll"><table class="gv-models-unassigned-table"><thead><tr><th>Código</th><th>Descrição</th><th>Família</th></tr></thead><tbody>'+unassigned.map(r=>'<tr><td><b>'+stockEsc(r.code)+'</b></td><td>'+stockEsc(productDescriptions.get(r.code.toUpperCase())||PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||r.description||"Descrição não cadastrada")+'</td><td>'+stockEsc(r.family||"—")+'</td></tr>').join("")+'</tbody></table></div>':'<div class="empty-state">Nenhum produto sem setor associado encontrado.</div>';
  document.getElementById("gmStatus").textContent=gmError?gmError:all.length+' registros de modelo/setor • '+raw.length+' pitches • '+catalog.length+' produtos no catálogo';
  document.getElementById("gmCount").textContent=fmt(new Set(raw.map(r=>r.product).filter(Boolean)).size);
  document.getElementById("gmAreas").textContent=fmt(new Set(raw.map(r=>r.area).filter(Boolean)).size);
@@ -1981,7 +1981,7 @@ function stockEsc(value){
 
 function stockModelDescription(code){
   const key=String(code||"").trim().toUpperCase();
-  return PRODUCT_DESCRIPTION_OVERRIDES.get(key)||productDescriptions.get(key)||"Descrição não cadastrada";
+  return productDescriptions.get(key)||PRODUCT_DESCRIPTION_OVERRIDES.get(key)||"Descrição não cadastrada";
 }
 function populateStockModels(position){
   const select=document.getElementById("stockModel");
@@ -3994,7 +3994,7 @@ const productDescriptions = new Map();
 const productCodePattern = /\b(?:(?:31GQ|41NN)-[A-Z0-9]+(?:-[A-Z0-9]+)+|1711[01][A-Z0-9]+|11(?:PD|VE)-[A-Z0-9-]+|1050-[A-Z0-9-]+)\b/gi;
 function describeProductText(value) {
   return String(value).replace(productCodePattern, code => {
-    const desc = PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase()) || productDescriptions.get(code.toUpperCase());
+    const desc = productDescriptions.get(code.toUpperCase()) || PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase());
     return desc ? desc : code;
   });
 }
@@ -4005,7 +4005,7 @@ function decorateProductNode(node) {
     if(!old || !productCodePattern.test(old)) { productCodePattern.lastIndex=0; return; }
     productCodePattern.lastIndex=0;
     const result=old.replace(productCodePattern,(code,offset,whole)=>{
-      const desc=PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase()) || productDescriptions.get(code.toUpperCase());
+      const desc=productDescriptions.get(code.toUpperCase()) || PRODUCT_DESCRIPTION_OVERRIDES.get(code.toUpperCase());
       if(!desc) return code;
       const label=desc;
       // Avoid formatting labels already expanded by a previous render.
