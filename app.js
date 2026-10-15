@@ -1440,7 +1440,7 @@ async function refreshProductionRange(){
     ]);
     if(prodResponse.status!=="fulfilled")throw prodResponse.reason;
     productionRows=prodResponse.value;
-    if(productionFilterState.shift!=="Todos"&&fetchProductionShiftPitches.audit?.missingDemand)l2lError="Demanda não informada em "+fetchProductionShiftPitches.audit.missingDemand+" pitch(es).";
+
     productionDefectRows=defectResponse.status==="fulfilled"&&Array.isArray(defectResponse.value)?defectResponse.value:[];
     productionDefectError=defectResponse.status==="rejected"?"Detalhamento de scrap indisponível no L2L.":"";
     l2lLastUpdate=new Date();
@@ -1451,7 +1451,6 @@ async function refreshProductionRange(){
     }
   }catch(err){
     l2lError=err.message||"Falha ao consultar L2L";
-    productionRows=[];
     productionRows=[];
     productionDefectRows=[];
     if(currentPage==="production")renderProductionLive();
@@ -1468,13 +1467,13 @@ function populateProductionFilters(){
   const source=productionRows.length?productionRows:l2lRows;
   const areas=[...new Set(source.map(r=>r.area).filter(Boolean))].sort();
   areaEl.innerHTML='<option value="Todas">Toda a fábrica</option>'+areas.map(a=>'<option value="'+a+'">'+a+'</option>').join("");
-  areaEl.value=areas.includes(productionFilterState.area)?productionFilterState.area:"Todas";
-  productionFilterState.area=areaEl.value;
+  if(areas.includes(productionFilterState.area)||productionFilterState.area==="Todas")areaEl.value=productionFilterState.area;
+  else if(productionFilterState.area!=="Todas"){const option=document.createElement("option");option.value=productionFilterState.area;option.textContent=productionFilterState.area+" (sem registros)";areaEl.appendChild(option);areaEl.value=productionFilterState.area;}
 
   const lines=[...new Set(source.filter(r=>productionFilterState.area==="Todas"||r.area===productionFilterState.area).map(r=>r.line).filter(Boolean))].sort();
   lineEl.innerHTML='<option value="Todas">Todas as linhas</option>'+lines.map(l=>'<option value="'+l+'">'+l+'</option>').join("");
-  lineEl.value=lines.includes(productionFilterState.line)?productionFilterState.line:"Todas";
-  productionFilterState.line=lineEl.value;
+  if(lines.includes(productionFilterState.line)||productionFilterState.line==="Todas")lineEl.value=productionFilterState.line;
+  else if(productionFilterState.line!=="Todas"){const option=document.createElement("option");option.value=productionFilterState.line;option.textContent=productionFilterState.line+" (sem registros)";lineEl.appendChild(option);lineEl.value=productionFilterState.line;}
 }
 
 function getFilteredProductionRows(){
@@ -1951,6 +1950,7 @@ function renderProductionLive(){
   const selectedArea=productionFilterState.area==="Todas"?"Toda a fábrica":productionFilterState.area;
   const selectedLine=productionFilterState.line==="Todas"?"Todas as linhas":productionFilterState.line;
   const selectedShift=productionFilterState.shift==="Todos"?"Todos os turnos":shiftDisplay(productionFilterState.shift);
+  const shiftWarning=productionFilterState.shift!=="Todos"&&fetchProductionShiftPitches.audit?.missingDemand?" • ⚠ Demanda não informada em "+fetchProductionShiftPitches.audit.missingDemand+" pitch(es).":"";
   const ctx=document.getElementById("prodContext");
   if(ctx)ctx.textContent=liveStamp()+" • "+selectedArea+" • "+selectedLine+" • "+selectedShift+" • "+(productionFilterState.startDate||"")+(productionFilterState.endDate&&productionFilterState.endDate!==productionFilterState.startDate?" → "+productionFilterState.endDate:"")+" • "+productionFilterState.start+"–"+productionFilterState.end+" • "+groups.length+" linha(s)"+shiftWarning;
 
