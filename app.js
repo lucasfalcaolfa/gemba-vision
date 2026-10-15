@@ -4,11 +4,86 @@ safety:{title:"Momento de Segurança",sub:"Mensagem e foco de segurança do dia"
 oee:{title:"OEE / Eficiência",sub:"Acompanhamento de desempenho por linha e turno",html:oee()},
 heatmap:{title:"Mapa de Calor OEE",sub:"Eficiência diária por turno, linha e período",html:heatmap()},
 production:{title:"Produção em Tempo Real",sub:"Plano x realizado e ritmo da operação",html:production()},
+models:{title:"Gerenciamento de Modelos",sub:"Modelos por setor, produção e desvios do plano",html:modelManagement()},
 people:{title:"Absenteísmo",sub:"Acompanhamento de presença e disponibilidade de mão de obra",html:people()},
 quality:{title:"Qualidade / Não Qualidade",sub:"Scrap, retrabalho, defeitos e Pareto",html:quality()},
 actions:{title:"Ações tomadas",sub:"Acompanhamento das ações corretivas e melhorias",html:actionsTaken()},
 stock:{title:"Controle de Estoque",sub:"Estoque da Fundição — Inacabado e Acabado",html:stock()}
 };
+
+let gmData={pitches:[],catalog:[]},gmError="",gmBusy=false,gmWindow=null;
+function modelManagement(){
+ return '<section class="panel gv-models-head"><div><span>GESTÃO INTEGRADA • L2L</span><h2>Gerenciamento de Modelos</h2><p>Visibilidade de produtos por setor • Fundição, Acabamento, Usinagem e Montagem conforme cadastro e pitches do L2L</p></div><form id="gmForm" class="gv-models-filters"><label>Início<input type="datetime-local" id="gmStart" required></label><label>Fim<input type="datetime-local" id="gmEnd" required></label><button type="submit">Consultar L2L</button></form></section>'+
+ '<section class="gv-models-kpis"><article><span>Modelos com movimento</span><strong id="gmCount">—</strong></article><article><span>Setores encontrados</span><strong id="gmAreas">—</strong></article><article><span>Abaixo do plano*</span><strong id="gmAtRisk">—</strong></article><article><span>Modelos sem setor associado</span><strong id="gmUnknown">—</strong></article></section>'+
+ '<section class="panel gv-models-main"><div class="gv-models-toolbar"><div><h2>Produtos por setor</h2><small id="gmStatus">Consultando L2L...</small></div><div class="gv-models-actions"><input id="gmSearch" type="search" placeholder="Pesquisar código ou descrição" aria-label="Pesquisar produto"><select id="gmArea" aria-label="Filtrar setor"><option value="Todos">Todos os setores</option></select><select id="gmSignal" aria-label="Filtrar sinal"><option value="Todos">Todos os sinais</option><option value="Abaixo do plano">Abaixo do plano</option><option value="Dentro do plano">Dentro do plano</option><option value="Sem plano">Sem plano</option></select></div></div>'+
+ '<div class="gv-models-notice"><b>Criticidade:</b> “Abaixo do plano” indica apenas desvio no período consultado, não falta de material nem parada iminente. Para risco real precisamos de estoque validado, demanda da próxima etapa e tempo de reposição. Produtos apenas no catálogo aparecem em “Sem setor associado”.</div><div id="gmResults" class="gv-models-results"><div class="empty-state">Carregando modelos...</div></div></section>';
+}
+function gmDate(value){return value.replace("T"," ")}
+function initModelManagement(){
+ const now=new Date(),begin=new Date(now);
+ begin.setHours(7,0,0,0);if(now<begin)begin.setDate(begin.getDate()-1);
+ const end=new Date(begin);end.setDate(end.getDate()+1);
+ const dateText=d=>[d.getFullYear(),String(d.getMonth()+1).padStart(2,"0"),String(d.getDate()).padStart(2,"0")].join("-")+"T"+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+ const startEl=document.getElementById("gmStart"),endEl=document.getElementById("gmEnd");
+ startEl.value=gmWindow?.start||dateText(begin);endEl.value=gmWindow?.end||dateText(end);
+ document.getElementById("gmForm").addEventListener("submit",e=>{e.preventDefault();refreshModelManagement();});
+ for(const id of ["gmSearch","gmArea","gmSignal"])document.getElementById(id).addEventListener(id==="gmSearch"?"input":"change",renderModelManagement);
+ refreshModelManagement();
+}
+async function refreshModelManagement(){
+ if(gmBusy)return;gmBusy=true;gmError="";
+ const a=document.getElementById("gmStart").value,b=document.getElementById("gmEnd").value;
+ if(!a||!b||new Date(a)>=new Date(b)){gmError="Informe um período válido.";gmBusy=false;renderModelManagement();return;}
+ if(new Date(b)-new Date(a)>24*3600000){gmError="Consulte no máximo 24 horas por vez para evitar registros incompletos.";gmBusy=false;renderModelManagement();return;}
+ gmWindow={start:a,end:b};
+ document.getElementById("gmStatus").textContent="Consultando modelos no L2L...";
+ try{
+  const url="/api/l2l?report=modelmanagement&start="+encodeURIComponent(gmDate(a))+"&end="+encodeURIComponent(gmDate(b));
+  const response=await fetch(url,{cache:"no-store"});const payload=await response.json();
+  if(!response.ok||payload.success===false)throw new Error(payload.error||"Falha na consulta");
+  gmData=payload.data||{pitches:[],catalog:[]};
+ }catch(err){gmError=err.message||"L2L indisponível";gmData={pitches:[],catalog:[]};}
+ finally{gmBusy=false;renderModelManagement();}
+}
+function renderModelManagement(){
+ if(currentPage!=="models")return;
+ const raw=Array.isArray(gmData.pitches)?gmData.pitches:[],catalog=Array.isArray(gmData.catalog)?gmData.catalog:[];
+ const map=new Map();
+ raw.forEach(r=>{
+  const code=String(r.product||"").trim();if(!code)return;
+  const area=String(r.area||"").trim()||"Setor não identificado";
+  const key=JSON.stringify([area,code]);
+  if(!map.has(key))map.set(key,{area,code,description:r.description||"",actual:0,demand:0,scrap:0,lines:new Set(),records:0});
+  const item=map.get(key);
+  item.actual+=n(r.actual);item.demand+=n(r.demand);item.scrap+=n(r.scrap);item.records++;
+  if(r.line)item.lines.add(r.line);
+ });
+ const knownCodes=new Set(raw.map(r=>String(r.product||"").trim().toUpperCase()));
+ catalog.forEach(p=>{
+  const code=String(p.code||"").trim();
+  if(!code||knownCodes.has(code.toUpperCase()))return;
+  const key=JSON.stringify(["Sem setor associado",code]);
+  if(!map.has(key))map.set(key,{area:"Sem setor associado",code,description:p.description||"",actual:0,demand:0,scrap:0,lines:new Set(),records:0});
+ });
+ const all=[...map.values()].map(r=>({...r,signal:r.records===0?"Sem movimento":r.demand<=0?"Sem plano":r.actual<r.demand?"Abaixo do plano":"Dentro do plano"}));
+ const areas=[...new Set(all.map(r=>r.area))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
+ const areaEl=document.getElementById("gmArea"),prior=areaEl.value;
+ areaEl.innerHTML='<option value="Todos">Todos os setores</option>'+areas.map(a=>'<option value="'+stockEsc(a)+'">'+stockEsc(a)+'</option>').join("");
+ areaEl.value=areas.includes(prior)?prior:"Todos";
+ const query=document.getElementById("gmSearch").value.toLowerCase().trim(),signal=document.getElementById("gmSignal").value;
+ const visible=all.filter(r=>(areaEl.value==="Todos"||r.area===areaEl.value)&&(signal==="Todos"||r.signal===signal)&&(!query||[r.code,r.description,...r.lines].join(" ").toLowerCase().includes(query)));
+ const groups=new Map();visible.forEach(r=>{if(!groups.has(r.area))groups.set(r.area,[]);groups.get(r.area).push(r);});
+ const content=[...groups].sort((a,b)=>a[0].localeCompare(b[0],"pt-BR")).map(([area,items])=>{
+  items.sort((a,b)=>(a.signal==="Abaixo do plano"?-1:0)-(b.signal==="Abaixo do plano"?-1:0)||a.code.localeCompare(b.code));
+  return '<div class="gv-models-sector"><header><h3>'+stockEsc(area)+'</h3><span>'+items.length+' modelo(s)</span></header><div class="table-scroll"><table><thead><tr><th>Modelo</th><th>Descrição</th><th>Linha</th><th>Plano</th><th>Real</th><th>Scrap</th><th>Sinal</th></tr></thead><tbody>'+items.map(r=>'<tr><td><b>'+stockEsc(r.code)+'</b></td><td>'+stockEsc(PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||productDescriptions.get(r.code.toUpperCase())||r.description||"Descrição não cadastrada")+'</td><td>'+stockEsc([...r.lines].join(", ")||"—")+'</td><td>'+ (r.records?fmt(r.demand):"—")+'</td><td>'+(r.records?fmt(r.actual):"—")+'</td><td>'+(r.records?fmt(r.scrap):"—")+'</td><td><span class="gv-models-signal '+(r.signal==="Abaixo do plano"?"attention":r.signal==="Dentro do plano"?"ok":"neutral")+'">'+stockEsc(r.signal)+'</span></td></tr>').join("")+'</tbody></table></div></div>';
+ }).join("");
+ document.getElementById("gmResults").innerHTML=gmError?'<div class="empty-state">'+stockEsc(gmError)+'</div>':content||'<div class="empty-state">Nenhum modelo corresponde aos filtros. Confira a janela de produção ou os dados do L2L.</div>';
+ document.getElementById("gmStatus").textContent=gmError?gmError:all.length+' registros de modelo/setor • '+raw.length+' pitches • '+catalog.length+' produtos no catálogo';
+ document.getElementById("gmCount").textContent=fmt(new Set(raw.map(r=>r.product).filter(Boolean)).size);
+ document.getElementById("gmAreas").textContent=fmt(new Set(raw.map(r=>r.area).filter(Boolean)).size);
+ document.getElementById("gmAtRisk").textContent=fmt(all.filter(r=>r.signal==="Abaixo do plano").length);
+ document.getElementById("gmUnknown").textContent=fmt(all.filter(r=>r.area==="Sem setor associado").length);
+}
 function actionsTaken(){return '<section class="panel"><div class="stock-section-head"><div><span>GESTÃO DE MELHORIAS</span><h2>Registro de ações tomadas</h2><p>Área destinada ao acompanhamento das ações realizadas, responsáveis, prazos e resultados.</p></div></div><div class="empty-state">Nenhuma ação cadastrada. A página está preparada para receber os registros da equipe.</div></section>'}
 function shell(p){return '<div class="page"><div class="page-head"><div><h1>'+p.title+'</h1><p>'+p.sub+'</p></div><div class="refresh">● Atualização: automática</div></div>'+p.html+'</div>'}
 function card(label,value,cls=""){return '<div class="card"><div class="label">'+label+'</div><div class="value '+cls+'">'+value+'</div></div>'}
@@ -3864,6 +3939,7 @@ function render(page){
   if(page==="oee")initOee();
   if(page==="heatmap")initHeatmap();
   if(page==="production")initProduction();
+  if(page==="models")initModelManagement();
   if(page==="safety")initSafety();
   applyLiveData(page);
 }
