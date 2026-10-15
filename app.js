@@ -2164,7 +2164,7 @@ function updateStock(){
 
   const pending=document.getElementById("stockUnmatched");
   // Visible build marker and mapping audit help distinguish stale bundles from L2L data issues.
-  const reconcileBuild="2026-10-15 v59";
+  const reconcileBuild="2026-10-15 v60";
   if(pending){
     const items=calculateL2LStock.unmatched||[];
     const merged=new Map();
@@ -2178,6 +2178,17 @@ function updateStock(){
     // Diagnostic signatures reveal text-format mismatches without changing stock numbers.
     const signatures=[...merged.keys()].map(raw=>({raw,compact:String(raw).normalize("NFKC").toUpperCase().replace(/[^A-Z0-9]/g,""),length:String(raw).length}));
     if(signatures.length)console.info("[stock-conciliation] unmatched signatures",signatures);
+    // Read-only diagnostics: inspect the real UTF-16 units and mapping outcome.
+    // Never force a stock deduction based on the displayed label alone.
+    if(signatures.length){
+      const details=signatures.map(s=>{
+        const raw=String(s.raw);
+        const units=Array.from(raw).map(ch=>ch.codePointAt(0).toString(16).toUpperCase().padStart(4,"0")).join(" ");
+        const mapped=stockMachiningOrigin(raw)||"NÃO IDENTIFICADO";
+        return '<tr><td>'+stockEsc(raw)+'</td><td>'+stockEsc(s.compact)+'</td><td>'+stockEsc(mapped)+'</td><td style="font-family:monospace;font-size:11px;overflow-wrap:anywhere">'+stockEsc(units)+'</td></tr>';
+      }).join("");
+      pending.innerHTML+='<details style="margin:8px 10px"><summary style="cursor:pointer;color:#475569;font-weight:600">Diagnóstico técnico de correspondência (v60)</summary><div class="table-scroll"><table><thead><tr><th>Valor recebido</th><th>Identificador normalizado</th><th>Resultado da regra</th><th>Unicode do valor</th></tr></thead><tbody>'+details+'</tbody></table></div></details>';
+    }
     const negative=position.filter(x=>x.wipDifference<0||x.finishedDifference<0);
     if(negative.length)pending.innerHTML+='<p style="padding:10px;color:#b45309">⚠ '+negative.length+' modelo(s) com diferença negativa. Verificar saldo inicial, correspondência e perdas antes de tratar o valor como estoque físico.</p>';
   }
