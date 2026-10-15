@@ -2091,10 +2091,9 @@ function stock(){
     '<div class="filter-context" id="stockContext">Atualização automática a cada 1 minuto.</div>'+
   '</div>'+
   '<div class="cards stock-live-kpis" id="stockCards"></div>'+
-  '<div class="panel"><div class="stock-section-head"><div><span>PLANO × EXECUÇÃO</span><h2>PMP x L2L por processo</h2><p>Comparação de produção planejada e registros reais. Não representa estoque físico.</p></div></div><div id="stockPmpCompare"></div></div>'+
   '<div class="stock-selected-grid" id="stockSelected"></div>'+
-  '<div class="panel"><div class="stock-section-head"><div><span>WIP / INACABADO</span><h2>Variação do Inacabado</h2><p>Fundição − consumo no Acabamento; não é saldo físico sem inventário inicial.</p></div></div><div id="stockInacabado"></div></div>'+
-  '<div class="panel"><div class="stock-section-head"><div><span>PRODUTO ACABADO</span><h2>Variação do Acabado</h2><p>Acabamento − saída identificada; não é saldo físico sem inventário inicial.</p></div></div><div id="stockAcabado"></div></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>WIP / INACABADO</span><h2>Estoque Inacabado</h2><p>Produção da Fundição − consumo registrado no Acabamento.</p></div></div><div id="stockInacabado"></div></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>PRODUTO ACABADO</span><h2>Estoque Acabado</h2><p>Produção do Acabamento − saída identificada no processo seguinte.</p></div></div><div id="stockAcabado"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>DETALHAMENTO POR MODELO</span><h2>Quantidade de cada modelo</h2><p>Visão consolidada de Inacabado, Acabado e Total por modelo no período selecionado.</p></div></div><div id="stockByModel"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>CONCILIAÇÃO</span><h2>Códigos de Usinagem sem correspondência</h2><p>Registros não descontados para evitar baixa no modelo errado.</p></div></div><div id="stockUnmatched"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>CONSOLIDADO</span><h2>Resumo do Estoque</h2><p>Resumo calculado para a data e o modelo selecionados.</p></div></div><div id="stockResumo"></div></div>'+
@@ -2310,14 +2309,14 @@ function stockFilteredPosition(position){
 }
 
 function stockQtyStatus(qty){
-  if(qty<0)return '<span class="stock-live-status zero">Divergência negativa</span>';if(qty===0)return '<span class="stock-live-status zero">Variação zero</span>';
-  return '<span class="stock-live-status ok">Variação positiva</span>';
+  if(qty<=0)return '<span class="stock-live-status zero">Sem saldo</span>';
+  return '<span class="stock-live-status ok">Disponível</span>';
 }
 
 function renderStockTable(rows,type){
   if(!rows.length)return '<div class="empty-state">Nenhum dado encontrado para o modelo/data selecionados.</div>';
   const isWip=type==="inacabado";
-  const qtyKey=isWip?"wipDifference":"finishedDifference";
+  const qtyKey=isWip?"inacabado":"acabado";
   return '<div class="table-scroll"><table class="stock-live-table"><thead><tr><th>Modelo</th>'+
     (isWip?'<th>Produção Fundição</th><th>Consumido no Acabamento</th>':'<th>Produção Acabamento</th><th>Saída processo seguinte</th>')+
     '<th>Quantidade</th><th>Status</th></tr></thead><tbody>'+
@@ -2333,7 +2332,6 @@ async function refreshStockRange(){
   const status=document.getElementById("stockLiveStatus");
   if(status)status.textContent="🟡 Consultando pitches por produto no L2L...";
   try{
-    await ensureProductionPlan();
     const first=stockFilterState.startDate||stockMonthStart();
     const last=stockFilterState.endDate||todayISO();
     const cursor=new Date(first+"T00:00:00"),finish=new Date(last+"T00:00:00");
@@ -2384,30 +2382,15 @@ function renderStockByModel(rows){
     el.innerHTML='<div class="empty-state">Nenhum modelo encontrado para o período selecionado.</div>';
     return;
   }
-  const ordered=[...rows].sort((a,b)=>Math.abs(b.wipDifference)+Math.abs(b.finishedDifference)-Math.abs(a.wipDifference)-Math.abs(a.finishedDifference));
+  const ordered=[...rows].sort((a,b)=>(b.inacabado+b.acabado)-(a.inacabado+a.acabado));
   el.innerHTML='<div class="table-scroll"><table class="stock-by-model-table"><thead><tr><th>Modelo</th><th>Inacabado</th><th>Acabado</th><th>Total</th><th>Fundição</th><th>Acabamento</th><th>Saída</th></tr></thead><tbody>'+
-    ordered.map(x=>'<tr><td><b>'+stockEsc(stockModelDescription(x.model))+'</b></td><td><span class="stock-pill stock-pill-wip">'+fmt(x.wipDifference)+'</span></td><td><span class="stock-pill stock-pill-fg">'+fmt(x.finishedDifference)+'</span></td><td><b class="stock-total-model">'+fmt(x.wipDifference+x.finishedDifference)+'</b></td><td>'+fmt(x.foundry)+'</td><td>'+fmt(x.finishing)+'</td><td>'+fmt(x.downstream)+'</td></tr>').join("")+
+    ordered.map(x=>'<tr><td><b>'+stockEsc(stockModelDescription(x.model))+'</b></td><td><span class="stock-pill stock-pill-wip">'+fmt(x.inacabado)+'</span></td><td><span class="stock-pill stock-pill-fg">'+fmt(x.acabado)+'</span></td><td><b class="stock-total-model">'+fmt(x.inacabado+x.acabado)+'</b></td><td>'+fmt(x.foundry)+'</td><td>'+fmt(x.finishing)+'</td><td>'+fmt(x.downstream)+'</td></tr>').join("")+
     '</tbody></table></div>';
 }
 
-function renderStockPmpCompare(rows){
- const mount=document.getElementById("stockPmpCompare");if(!mount)return;
- if(!stockLoaded){mount.innerHTML='<div class="empty-state">Aguardando dados do L2L.</div>';return;}
- const from=stockFilterState.startDate||stockMonthStart(),to=stockFilterState.endDate||todayISO();
- if(!pmpPlanning.length){mount.innerHTML='<div class="empty-state">Plano PMP não disponível. A produção L2L não será substituída por metas.</div>';return;}
- const processes=[{key:"INJ",name:"Fundição",stage:"foundry"},{key:"ACAB",name:"Acabamento",stage:"finishing"},{key:"USI",name:"Usinagem",stage:"downstream"}];
- mount.innerHTML='<div class="table-scroll"><table class="stock-live-table"><thead><tr><th>Processo</th><th>PMP planejado</th><th>L2L registrado</th><th>Desvio (real − plano)</th></tr></thead><tbody>'+
-  processes.map(p=>{
-   const plan=pmpPlanning.filter(x=>x.day>=from&&x.day<=to&&x.process===p.key).reduce((sum,x)=>sum+n(x.qty),0);
-   const actual=rows.filter(x=>stockStage(x.area)===p.stage).reduce((sum,x)=>sum+n(x.actual),0);
-   const hasPlan=pmpPlanning.some(x=>x.day>=from&&x.day<=to&&x.process===p.key);
-   return '<tr><td>'+p.name+'</td><td>'+(hasPlan?fmt(plan):"N/D")+'</td><td>'+fmt(actual)+'</td><td>'+(hasPlan?fmt(actual-plan):"N/D")+'</td></tr>';
-  }).join("")+'</tbody></table></div><p style="padding:9px;color:#64748b;font-size:12px">O PMP é plano, não saldo inicial. Registros sem identificação de produto não podem compor a conciliação por modelo. Quantidades de peças disponíveis exigem saldo inicial/inventário e movimentos físicos validados.</p>';
-}
 function updateStock(){
   const source=stockLoaded?stockRows:[];
   const position=calculateL2LStock(source);
-  renderStockPmpCompare(source);
   const noModelRows=source.filter(r=>stockStage(r.area)).length;
   const sampleFields=source.find(r=>stockStage(r.area))||source[0]||{};
   const stockFieldHints=Object.keys(sampleFields).slice(0,22).join(", ");
@@ -2475,9 +2458,9 @@ function updateStock(){
 
   const cards=document.getElementById("stockCards");
   if(cards&&!stockLoaded){cards.innerHTML='<div class="empty-state">' +(stockFetchError?"Falha ao buscar estoque do L2L. Nenhum saldo anterior será usado como atual.":"Aguardando dados do L2L...") +'</div>';}else if(cards)cards.innerHTML=
-    card("Variação Inacabado",fmt(visible.reduce((s,x)=>s+x.wipDifference,0)))+
-    card("Variação Acabado",fmt(visible.reduce((s,x)=>s+x.finishedDifference,0)))+
-    card("Variação total",fmt(visible.reduce((s,x)=>s+x.wipDifference+x.finishedDifference,0)))+
+    card("Inacabados",fmt(totalI),totalI>0?"warn":"")+
+    card("Acabados",fmt(totalA),totalA>0?"good":"")+
+    card("Total",fmt(totalI+totalA))+
     card("Produção Fundição",fmt(foundry))+
     card("Produção Acabamento",fmt(finishing));
 
@@ -2490,7 +2473,7 @@ function updateStock(){
       const originHtml='<details style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Conferir lançamentos de Acabamento: '+fmt(originRows.length)+' registros, '+fmt(originQty)+' peças</summary><div class="table-scroll"><table><thead><tr><th>Pitch ID</th><th>Horário</th><th>Linha</th><th>Código L2L</th><th>Descrição L2L</th><th>Quantidade</th></tr></thead><tbody>'+originRows.slice(0,100).map(v=>'<tr><td>'+stockEsc(v.row.id)+'</td><td>'+stockEsc(v.row.start)+'</td><td>'+stockEsc(v.row.line)+'</td><td>'+stockEsc(v.row.product)+'</td><td>'+stockEsc(v.row.product_description)+'</td><td>'+fmt(v.qty)+'</td></tr>').join("")+'</tbody></table></div></details>';
       selected.innerHTML=
         '<article class="stock-model-focus"><div class="stock-model-focus-head"><div><span>MODELO SELECIONADO</span><h2>'+stockEsc(stockModelDescription(x.model))+'</h2></div><span class="stock-live-status ok">L2L</span></div>'+
-        '<div class="stock-model-values"><div><span>Inacabados</span><strong>'+fmt(x.wipDifference)+'</strong><small>Fundição − Acabamento</small></div><div><span>Acabados</span><strong>'+fmt(x.finishedDifference)+'</strong><small>Acabamento − saída</small></div><div><span>Total</span><strong>'+fmt(x.wipDifference+x.finishedDifference)+'</strong><small>Variação calculada</small></div></div>'+originHtml+'</article>';
+        '<div class="stock-model-values"><div><span>Inacabados</span><strong>'+fmt(x.inacabado)+'</strong><small>Fundição − Acabamento</small></div><div><span>Acabados</span><strong>'+fmt(x.acabado)+'</strong><small>Acabamento − saída</small></div><div><span>Total</span><strong>'+fmt(x.inacabado+x.acabado)+'</strong><small>Posição calculada</small></div></div>'+originHtml+'</article>';
     }else selected.innerHTML="";
   }
 
