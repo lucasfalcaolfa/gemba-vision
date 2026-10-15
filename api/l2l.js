@@ -118,6 +118,48 @@ module.exports = async function handler(req, res) {
     }
   }
 
+
+  if (report === "modelmanagement") {
+    const start=String(req.query.start||"").trim(),end=String(req.query.end||"").trim();
+    const valid=/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$/;
+    if(!valid.test(start)||!valid.test(end)||start>=end)return res.status(400).json({success:false,error:"Invalid model-management time window."});
+    try{
+      const site=await resolveNumericSite(start,end);
+      const [lr,ar,pr]=await Promise.all([
+        l2lGet("/api/1.0/lines/",{site,limit:2000}),
+        l2lGet("/api/1.0/areas/",{site,limit:2000}),
+        l2lGet("/api/1.0/productcomponents/",{site,limit:2000})
+      ]);
+      const entries=v=>Array.isArray(v?.data)?v.data:[];
+      const refId=v=>v&&typeof v==="object"?(v.id??v.pk??null):v;
+      const areas=new Map(entries(ar).map(a=>[String(a.id),String(a.name??a.code??"")]));
+      const lines=new Map(entries(lr).map(l=>{
+        const area=areas.get(String(refId(l.area)))||String(l.area?.name??l.area_name??"");
+        return [String(l.id),{name:String(l.name??l.code??""),area}];
+      }));
+      const products=new Map(entries(pr).map(p=>[String(p.id),p]));
+      const catalog=entries(pr).map(p=>({id:p.id,code:String(p.code??p.part_number??p.name??"").trim(),description:String(p.description??p.product_description??p.name??"").trim()}));
+      const payload=await l2lGet("/api/1.0/pitches/",{
+        site,pitch_start__gte:start.replace(" ","T")+":00",
+        pitch_start__lt:end.replace(" ","T")+":00",limit:2000,order_by:"pitch_start"
+      });
+      const raw=entries(payload);
+      if(raw.length>=2000)return res.status(409).json({success:false,error:"Limite de 2000 pitches atingido. Selecione um período menor para não apresentar totais incompletos."});
+      const rows=raw.map(p=>{
+        const id=refId(p.line),line=lines.get(String(id))||{};
+        const prodRef=p.actual_product??p.planned_product;
+        const product=products.get(String(refId(prodRef)))||(typeof prodRef==="object"?prodRef:{});
+        const areaRef=refId(p.area);
+        const area=line.area||areas.get(String(areaRef))||String(p.area?.name??"");
+        return {line:line.name||String(p.line?.name??id??"Sem linha"),area:area||"Setor não identificado",
+          product_id:refId(prodRef),product:String(product.code??product.part_number??product.name??(typeof prodRef==="string"?prodRef:"")).trim(),
+          description:String(product.description??product.product_description??product.name??"").trim(),
+          shift:p.shift,actual:Number(p.actual??0),demand:Number(p.demand??0),scrap:Number(p.scrap??0),start:p.pitch_start};
+      }).filter(p=>p.product);
+      return res.status(200).json({success:true,data:{pitches:rows,catalog},meta:{pitch_count:rows.length,catalog_count:catalog.length,window:{start,end}}});
+    }catch(err){return res.status(err.status||502).json({success:false,error:err.message||"Falha ao consultar modelos do L2L."});}
+  }
+
   if (report === "stockpitches") {
     const start=String(req.query.start||"").trim();
     const end=String(req.query.end||"").trim();
