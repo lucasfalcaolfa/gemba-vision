@@ -124,7 +124,45 @@ function renderModelManagement(){
   const key=JSON.stringify(["Sem setor associado",code]);
   if(!map.has(key))map.set(key,{area:"Sem setor associado",code,description:p.description||"",actual:0,demand:0,scrap:0,lines:new Set(),records:0});
  });
- const all=[...map.values()].map(r=>({...r,family:gmModelFamily(r.code,r.description),signal:r.records===0?"Sem movimento":r.demand<=0?"Sem plano":r.actual<r.demand?"Abaixo do plano":"Dentro do plano"}));
+function pmpProcessOfArea(area){
+ const a=String(area||"").toUpperCase();
+ return /^FND_ACAB$/.test(a)?"ACAB":/^FND$/.test(a)?"INJ":/^USI$/.test(a)?"USI":null;
+}
+function pmpModelOfL2L(code,description){
+ const value=(String(code||"")+" "+String(description||"")).toUpperCase();
+ const rules=[
+  [/31GQ-K620-01H0F|\\bK62H\\b/,"GQ - K62H"],
+  [/31GQ-K1S0-01J3F/,"GQ - K1SJ"],
+  [/31GQ-K1S0-00G0F/,"GQ - K1SJ"],
+  [/31GQ-K310-00A2F|\\bK31A\\b/,"K31A"],
+  [/31GQ-K2K0-00F2F|\\bK2KF\\b/,"K2KF"],
+  [/31GQ-K680-00A0F|\\bK68A\\b/,"K68A"],
+  [/31GQ-K680-01L0F|\\bK68L-BR\\b/,"K68L-BR"],
+  [/31GQ-K680-03N2F|\\bK68N\\b/,"GQ - K68N"],
+  [/31GQ-KVK0-00B3F|\\bKVKB\\b/,"KVKB"],
+  [/31GQ-KVSA-00K0F|\\bKVSA\\b/,"KVSA"],
+  [/17111KVSPJ001F|\\bK2GF\\b/,"NB - K2GF"],
+  [/\\bK2GH\\b/,"NB - K2GH"],
+  [/\\bK3HA\\b/,"NB - K3HA"],
+  [/\\bAP2[- ]?DI\\b/,"AP2 DI"]
+ ];
+ const hits=[...new Set(rules.filter(([rx])=>rx.test(value)).map(([,name])=>name))];
+ return hits.length===1?hits[0]:null;
+}
+function pmpPlanForL2L(row){
+ const process=pmpProcessOfArea(row.area);
+ const model=pmpModelOfL2L(row.code,row.description);
+ if(!process||!model||!pmpPlanning.length||!gmWindow)return null;
+ const from=gmWindow.start.slice(0,10),to=gmWindow.end.slice(0,10);
+ // Only complete calendar days can be compared with a day-level plan.
+ if(!gmWindow.start.endsWith("T00:00")||!gmWindow.end.endsWith("T00:00"))return null;
+ return pmpPlanning.filter(x=>x.day>=from&&x.day<to&&x.process===process&&x.model===model&&x.model!=="TOTAL").reduce((s,x)=>s+x.qty,0);
+}
+ const all=[...map.values()].map(r=>{
+  const pmpDemand=pmpPlanForL2L(r);
+  const demand=pmpDemand===null?r.demand:pmpDemand;
+  return {...r,family:gmModelFamily(r.code,r.description),demand,planSource:pmpDemand===null?"L2L / período incompatível":"PMP outubro",signal:r.records===0?"Sem movimento":demand<=0?"Sem plano":r.actual<demand?"Abaixo do plano":"Dentro do plano"};
+ });
  const areas=[...new Set(all.map(r=>r.area))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
  const areaEl=document.getElementById("gmArea"),prior=areaEl.value;
  areaEl.innerHTML='<option value="Todos">Todos os setores</option>'+areas.map(a=>'<option value="'+stockEsc(a)+'">'+stockEsc(a)+'</option>').join("");
