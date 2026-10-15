@@ -1385,7 +1385,7 @@ function renderProductionDefects(){
  const filtered=productionDefectRows.filter(r=>{
   const area=productionFilterState.area,line=productionFilterState.line,shift=productionFilterState.shift;
   const lineName=String(r.line||"");
-  const matchArea=area==="Todas"||r.area===area||(!r.area&&lineName.toUpperCase().includes(String(area).toUpperCase()));
+  const matchArea=area==="Todas"||String(r.area||"").toUpperCase()===String(area).toUpperCase()||(!r.area&&lineName.toUpperCase().includes(String(area).toUpperCase()));
   const matchLine=line==="Todas"||lineName===line;
   const rs=rowShift(r);
   return matchArea&&matchLine&&(shift==="Todos"||rs===shift);
@@ -1401,7 +1401,7 @@ function renderProductionDefects(){
   groups.get(key).qty+=n(r.scrap);
  });
  const items=[...groups.values()].sort((a,b)=>b.qty-a.qty);
- if(status)status.textContent=productionDefectError||fmt(items.reduce((sum,r)=>sum+r.qty,0))+" peças • "+items.length+" combinações";
+ if(status)status.textContent=productionDefectError||fmt(items.reduce((sum,r)=>sum+r.qty,0))+" peças • "+items.length+" combinações • "+(productionFilterState.shift==="Todos"?"Todos os turnos":shiftDisplay(productionFilterState.shift))+" • "+(productionFilterState.line==="Todas"?"Todas as linhas":productionFilterState.line);
  mount.innerHTML=items.length?
   '<div class="table-scroll"><table class="gv-prod-defects-table"><thead><tr><th>Modelo</th><th>Defeito registrado</th><th>Injetora / Linha</th><th>Turno</th><th>Quantidade</th></tr></thead><tbody>'+
   items.map(r=>'<tr><td><b>'+stockEsc(r.product)+'</b></td><td>'+stockEsc(r.defect)+'</td><td>'+stockEsc(r.line)+'</td><td>'+(r.shift?r.shift+"º Turno":"Não informado")+'</td><td><b>'+fmt(r.qty)+'</b></td></tr>').join("")+
