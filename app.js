@@ -1409,22 +1409,22 @@ function renderProductionDefects(){
   '<div class="empty-state">'+(productionDefectError?stockEsc(productionDefectError):"Nenhum defeito detalhado encontrado para os filtros selecionados.")+'</div>';
 }
 async function fetchProductionShiftPitches(){
- const shift=productionFilterState.shift;
- const startDay=productionFilterState.startDate||todayISO();
- const endDay=productionFilterState.endDate||startDay;
- const windowIsOperational=productionFilterState.start==="07:00"&&productionFilterState.end==="07:00";
- const last=windowIsOperational?startDay:endDay;
- const nextDay=d=>{const x=new Date(d+"T12:00:00");x.setDate(x.getDate()+1);return [x.getFullYear(),String(x.getMonth()+1).padStart(2,"0"),String(x.getDate()).padStart(2,"0")].join("-");};
- const days=[];for(let d=startDay;d<=last&&days.length<32;d=nextDay(d))days.push(d);
- if(days.length===32&&last>days[31])throw new Error("Selecione até 32 dias para consultar pitches por turno.");
- const result=[];
- for(const day of days){
-  const tomorrow=nextDay(day),after=nextDay(tomorrow);
-  const bounds=shift==="1"?[day+" 07:00",day+" 17:00"]:shift==="2"?[day+" 17:00",tomorrow+" 02:00"]:[tomorrow+" 02:00",tomorrow+" 07:00"];
-  const records=await window.L2L.getStockPitches(bounds[0],bounds[1]);
-  result.push(...records.map(p=>({...p,shift,production_source:"pitch",products:[{product_code:p.product,description:p.product_description,actual:p.actual,demand:p.demand}]})));
+ const shift=productionFilterState.shift,first=productionFilterState.startDate||todayISO(),last=productionFilterState.endDate||first;
+ const next=d=>{const x=new Date(d+"T12:00:00");x.setDate(x.getDate()+1);return [x.getFullYear(),String(x.getMonth()+1).padStart(2,"0"),String(x.getDate()).padStart(2,"0")].join("-");};
+ const operating=productionFilterState.start==="07:00"&&productionFilterState.end==="07:00"&&last===next(first),final=operating?first:last;
+ const results=[];let missingDemand=0,missingProduct=0,count=0;
+ for(let date=first;date<=final;date=next(date)){
+  if(++count>31)throw Error("Reduza a consulta por turno para até 31 dias.");
+  const tomorrow=next(date),times=shift==="1"?[date+" 07:00",date+" 17:00"]:shift==="2"?[date+" 17:00",tomorrow+" 02:00"]:[tomorrow+" 02:00",tomorrow+" 07:00"];
+  const pitches=await window.L2L.getStockPitches(times[0],times[1]);
+  for(const p of pitches){
+   if(p.demand==null)missingDemand++;
+   if(!p.product)missingProduct++;
+   results.push({...p,shift_number:shift,demand:p.demand==null?0:p.demand,production_source:"pitch",products:[{product_code:p.product,description:p.product_description,actual:p.actual,demand:p.demand}]});
+  }
  }
- return result;
+ fetchProductionShiftPitches.audit={missingDemand,missingProduct,count:results.length};
+ return results;
 }
 async function refreshProductionRange(){
   if(productionLoading)return;
@@ -1440,6 +1440,7 @@ async function refreshProductionRange(){
     ]);
     if(prodResponse.status!=="fulfilled")throw prodResponse.reason;
     productionRows=prodResponse.value;
+    if(productionFilterState.shift!=="Todos"&&fetchProductionShiftPitches.audit?.missingDemand)l2lError="Demanda não informada em "+fetchProductionShiftPitches.audit.missingDemand+" pitch(es).";
     productionDefectRows=defectResponse.status==="fulfilled"&&Array.isArray(defectResponse.value)?defectResponse.value:[];
     productionDefectError=defectResponse.status==="rejected"?"Detalhamento de scrap indisponível no L2L.":"";
     l2lLastUpdate=new Date();
@@ -1450,6 +1451,7 @@ async function refreshProductionRange(){
     }
   }catch(err){
     l2lError=err.message||"Falha ao consultar L2L";
+    productionRows=[];
     productionRows=[];
     productionDefectRows=[];
     if(currentPage==="production")renderProductionLive();
@@ -1919,6 +1921,7 @@ function renderProductionLive(){
   const sectorName=productionFilterState.area==="Todas"?"Todos os setores":productionFilterState.area;
   const demand=total(rows,"demand");
   const actual=total(rows,"actual");
+  const shiftDemandUnknown=productionFilterState.shift!=="Todos"&&fetchProductionShiftPitches.audit?.missingDemand>0;
   const scrap=total(rows,"scrap");
   const net=Math.max(0,actual-scrap);
   const attainment=demand?actual/demand*100:0;
@@ -1927,8 +1930,8 @@ function renderProductionLive(){
   if(cards){
     cards.innerHTML=
       card("Plano PMP • "+sectorName,productionFilterState.line==="Todas"?fmt(productionPmpPlanRows().reduce((sum,r)=>sum+r.qty,0)):"—")+
-      card("Demanda L2L • "+sectorName,fmt(demand))+
-      card("Produção atual",fmt(actual),actual>=demand&&demand>0?"good":"")+card("Atingimento",fmtPct(attainment),attainment>=100?"good":attainment>=95?"warn":"bad")+
+      card("Demanda L2L • "+sectorName,shiftDemandUnknown?"N/D":fmt(demand))+
+      card("Produção atual",fmt(actual),actual>=demand&&demand>0?"good":"")+card("Atingimento",shiftDemandUnknown?"N/D":fmtPct(attainment),shiftDemandUnknown?"":attainment>=100?"good":attainment>=95?"warn":"bad")+
       productionScrapCard(scrap);
   }
 
