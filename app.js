@@ -2164,7 +2164,7 @@ function updateStock(){
 
   const pending=document.getElementById("stockUnmatched");
   // Visible build marker and mapping audit help distinguish stale bundles from L2L data issues.
-  const reconcileBuild="2026-10-15 v60";
+  const reconcileBuild="2026-10-15 v61";
   if(pending){
     const items=calculateL2LStock.unmatched||[];
     const merged=new Map();
@@ -2190,6 +2190,8 @@ function updateStock(){
       pending.innerHTML+='<details style="margin:8px 10px"><summary style="cursor:pointer;color:#475569;font-weight:600">Diagnóstico técnico de correspondência (v60)</summary><div class="table-scroll"><table><thead><tr><th>Valor recebido</th><th>Identificador normalizado</th><th>Resultado da regra</th><th>Unicode do valor</th></tr></thead><tbody>'+details+'</tbody></table></div></details>';
     }
     const negative=position.filter(x=>x.wipDifference<0||x.finishedDifference<0);
+    const hiddenNegativeQty=position.reduce((sum,x)=>sum+Math.max(0,-x.wipDifference)+Math.max(0,-x.finishedDifference),0);
+    if(hiddenNegativeQty>0)pending.innerHTML+='<p style="padding:10px;color:#b45309">⚠ Diferenças negativas truncadas para zero nos cartões: '+fmt(hiddenNegativeQty)+' peças. Os cartões não são saldos físicos validados.</p>';
     if(negative.length)pending.innerHTML+='<p style="padding:10px;color:#b45309">⚠ '+negative.length+' modelo(s) com diferença negativa. Verificar saldo inicial, correspondência e perdas antes de tratar o valor como estoque físico.</p>';
   }
   if(pending && calculateL2LStock.unidentified?.length){
