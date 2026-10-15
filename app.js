@@ -45,6 +45,13 @@ async function refreshModelManagement(){
  }catch(err){gmError=err.message||"L2L indisponível";gmData={pitches:[],catalog:[]};}
  finally{gmBusy=false;renderModelManagement();}
 }
+// Equivalência de família: variantes usinadas BR/LA usam o K3HA fundido.
+// Não equivale a estoque físico e não soma variantes como peças adicionais.
+function gmModelFamily(code,description=""){
+ const value=(String(code||"")+" "+String(description||"")).toUpperCase();
+ if(/(?:^|[^A-Z0-9])K3HA(?:[\s_-]*(?:BR|LA))?(?=$|[^A-Z0-9])/.test(value)||/1711[01]K3HAB002F/.test(value))return "K3HA";
+ return "";
+}
 function renderModelManagement(){
  if(currentPage!=="models")return;
  const raw=Array.isArray(gmData.pitches)?gmData.pitches:[],catalog=Array.isArray(gmData.catalog)?gmData.catalog:[];
@@ -65,13 +72,13 @@ function renderModelManagement(){
   const key=JSON.stringify(["Sem setor associado",code]);
   if(!map.has(key))map.set(key,{area:"Sem setor associado",code,description:p.description||"",actual:0,demand:0,scrap:0,lines:new Set(),records:0});
  });
- const all=[...map.values()].map(r=>({...r,signal:r.records===0?"Sem movimento":r.demand<=0?"Sem plano":r.actual<r.demand?"Abaixo do plano":"Dentro do plano"}));
+ const all=[...map.values()].map(r=>({...r,family:gmModelFamily(r.code,r.description),signal:r.records===0?"Sem movimento":r.demand<=0?"Sem plano":r.actual<r.demand?"Abaixo do plano":"Dentro do plano"}));
  const areas=[...new Set(all.map(r=>r.area))].sort((a,b)=>a.localeCompare(b,"pt-BR"));
  const areaEl=document.getElementById("gmArea"),prior=areaEl.value;
  areaEl.innerHTML='<option value="Todos">Todos os setores</option>'+areas.map(a=>'<option value="'+stockEsc(a)+'">'+stockEsc(a)+'</option>').join("");
  areaEl.value=areas.includes(prior)?prior:"Todos";
  const query=document.getElementById("gmSearch").value.toLowerCase().trim(),signal=document.getElementById("gmSignal").value;
- const visible=all.filter(r=>(areaEl.value==="Todos"||r.area===areaEl.value)&&(signal==="Todos"||r.signal===signal)&&(!query||[r.code,r.description,...r.lines].join(" ").toLowerCase().includes(query)));
+ const visible=all.filter(r=>(areaEl.value==="Todos"||r.area===areaEl.value)&&(signal==="Todos"||r.signal===signal)&&(!query||[r.code,r.description,r.family,...r.lines].join(" ").toLowerCase().includes(query)));
  const sectorKind=name=>{
    const v=String(name||"").toUpperCase();
    if(/MONT|ASSY|ASSEMB/.test(v))return "Montagem";
@@ -89,13 +96,13 @@ function renderModelManagement(){
  const priorityBox=document.getElementById("gmPriorities");
  if(priorityBox)priorityBox.innerHTML=gmError?'<div class="empty-state">Não foi possível avaliar prioridades sem dados do L2L.</div>':pending.length?
   '<div class="gv-models-priority-list">'+pending.slice(0,15).map((r,i)=>
-  '<article class="gv-models-priority-item"><div class="gv-models-priority-index">'+(i+1)+'</div><div class="gv-models-priority-info"><strong>'+stockEsc(r.desc)+'</strong><span>'+stockEsc(r.code)+' • '+stockEsc(r.area)+' • '+stockEsc([...r.lines].join(", ")||"Linha não identificada")+'</span></div><div class="gv-models-priority-gap"><b>–'+fmt(r.gap)+'</b><small>desvio do plano</small></div><div class="gv-models-priority-next"><b>Verificar abastecimento</b><span>'+stockEsc(r.upstream)+' → '+stockEsc(r.sector||r.area)+'</span><small>Confirmar saldo, necessidade e prazo de entrega</small></div><span class="gv-models-signal attention">Atenção</span></article>').join("")+'</div>'+
+  '<article class="gv-models-priority-item"><div class="gv-models-priority-index">'+(i+1)+'</div><div class="gv-models-priority-info"><strong>'+stockEsc(r.desc)+'</strong><span>'+stockEsc(r.code)+(r.family?' • Família Fundição: '+stockEsc(r.family):'')+' • '+stockEsc(r.area)+' • '+stockEsc([...r.lines].join(", ")||"Linha não identificada")+'</span></div><div class="gv-models-priority-gap"><b>–'+fmt(r.gap)+'</b><small>desvio do plano</small></div><div class="gv-models-priority-next"><b>Verificar abastecimento</b><span>'+stockEsc(r.upstream)+' → '+stockEsc(r.sector||r.area)+'</span><small>Confirmar saldo, necessidade e prazo de entrega</small></div><span class="gv-models-signal attention">Atenção</span></article>').join("")+'</div>'+
   (pending.length>15?'<p class="gv-models-priority-foot">Mostrando 15 de '+pending.length+' desvios. Consulte a tabela completa abaixo.</p>':'')
   :'<div class="gv-models-priority-clear">Nenhum desvio de plano nos registros exibidos. Isso não confirma que os estoques sejam suficientes.</div>';
  const groups=new Map();visible.forEach(r=>{if(!groups.has(r.area))groups.set(r.area,[]);groups.get(r.area).push(r);});
  const content=[...groups].sort((a,b)=>a[0].localeCompare(b[0],"pt-BR")).map(([area,items])=>{
   items.sort((a,b)=>(a.signal==="Abaixo do plano"?-1:0)-(b.signal==="Abaixo do plano"?-1:0)||a.code.localeCompare(b.code));
-  return '<div class="gv-models-sector"><header><h3>'+stockEsc(area)+'</h3><span>'+items.length+' modelo(s)</span></header><div class="table-scroll"><table><thead><tr><th>Modelo</th><th>Descrição</th><th>Linha</th><th>Plano</th><th>Real</th><th>Scrap</th><th>Sinal</th></tr></thead><tbody>'+items.map(r=>'<tr><td><b>'+stockEsc(r.code)+'</b></td><td>'+stockEsc(PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||productDescriptions.get(r.code.toUpperCase())||r.description||"Descrição não cadastrada")+'</td><td>'+stockEsc([...r.lines].join(", ")||"—")+'</td><td>'+ (r.records?fmt(r.demand):"—")+'</td><td>'+(r.records?fmt(r.actual):"—")+'</td><td>'+(r.records?fmt(r.scrap):"—")+'</td><td><span class="gv-models-signal '+(r.signal==="Abaixo do plano"?"attention":r.signal==="Dentro do plano"?"ok":"neutral")+'">'+stockEsc(r.signal)+'</span></td></tr>').join("")+'</tbody></table></div></div>';
+  return '<div class="gv-models-sector"><header><h3>'+stockEsc(area)+'</h3><span>'+items.length+' modelo(s)</span></header><div class="table-scroll"><table><thead><tr><th>Modelo</th><th>Descrição</th><th>Linha</th><th>Plano</th><th>Real</th><th>Scrap</th><th>Sinal</th></tr></thead><tbody>'+items.map(r=>'<tr><td><b>'+stockEsc(r.code)+'</b>'+(r.family?'<small class="gv-models-family">↳ Fundição: '+stockEsc(r.family)+'</small>':'')+'</td><td>'+stockEsc(PRODUCT_DESCRIPTION_OVERRIDES.get(r.code.toUpperCase())||productDescriptions.get(r.code.toUpperCase())||r.description||"Descrição não cadastrada")+'</td><td>'+stockEsc([...r.lines].join(", ")||"—")+'</td><td>'+ (r.records?fmt(r.demand):"—")+'</td><td>'+(r.records?fmt(r.actual):"—")+'</td><td>'+(r.records?fmt(r.scrap):"—")+'</td><td><span class="gv-models-signal '+(r.signal==="Abaixo do plano"?"attention":r.signal==="Dentro do plano"?"ok":"neutral")+'">'+stockEsc(r.signal)+'</span></td></tr>').join("")+'</tbody></table></div></div>';
  }).join("");
  document.getElementById("gmResults").innerHTML=gmError?'<div class="empty-state">'+stockEsc(gmError)+'</div>':content||'<div class="empty-state">Nenhum modelo corresponde aos filtros. Confira a janela de produção ou os dados do L2L.</div>';
  document.getElementById("gmStatus").textContent=gmError?gmError:all.length+' registros de modelo/setor • '+raw.length+' pitches • '+catalog.length+' produtos no catálogo';
