@@ -1992,12 +1992,17 @@ function stockCanonicalModel(value,stage){
 }
 function calculateL2LStock(rows){
   const flow={},unmatched=[],unidentified=[];
+  let approvedMachiningMatched=0,approvedMachiningQty=0;
   rows.forEach(row=>{
     const stage=stockStage(row.area);
     if(!stage)return;
     stockProductRows(row).forEach(p=>{
       if(p.model==="GERAL"||!p.model){unidentified.push({stage,line:row.line||"",qty:n(p.qty)});return;} // Product identity required.
-      const model=stockCanonicalModel(p.model,stage);
+      // Re-check approved machining labels at the final accounting boundary.
+      // Only the four operator-confirmed descriptions/codes are eligible.
+      const approved=stage==="downstream"?stockMachiningOrigin(p.model):null;
+      const model=approved||stockCanonicalModel(p.model,stage);
+      if(approved){approvedMachiningMatched++;approvedMachiningQty+=n(p.qty);}
       if(!model){
         if(stage==="downstream")unmatched.push({code:p.model,qty:n(p.qty),line:row.line||""});
         return;
@@ -2008,6 +2013,8 @@ function calculateL2LStock(rows){
   });
   calculateL2LStock.unmatched=unmatched;
   calculateL2LStock.unidentified=unidentified;
+  calculateL2LStock.approvedMachiningMatched=approvedMachiningMatched;
+  calculateL2LStock.approvedMachiningQty=approvedMachiningQty;
   return Object.values(flow).map(x=>({
     ...x,
     inacabado:Math.max(0,x.foundry-x.finishing),
@@ -2143,6 +2150,8 @@ function updateStock(){
   const downstream=visible.reduce((s,x)=>s+x.downstream,0);
 
   const pending=document.getElementById("stockUnmatched");
+  // Visible build marker and mapping audit help distinguish stale bundles from L2L data issues.
+  const reconcileBuild="2026-10-15 v58";
   if(pending){
     const items=calculateL2LStock.unmatched||[];
     const merged=new Map();
@@ -2152,6 +2161,7 @@ function updateStock(){
         [...merged].sort((a,b)=>a[0].localeCompare(b[0])).map(([code,qty])=>'<tr><td>'+stockEsc(code)+'</td><td>'+fmt(qty)+'</td></tr>').join("")+
         '</tbody></table></div>'
       :'<div class="empty-state">Todos os códigos de Usinagem retornados com identificação foram conciliados no período.</div>';
+    pending.innerHTML+='<p class="stock-reconcile-audit" style="padding:8px 10px;color:#64748b;font-size:12px">Conciliação '+reconcileBuild+' • '+fmt(calculateL2LStock.approvedMachiningMatched||0)+' registros de Usinagem reconhecidos por equivalência aprovada ('+fmt(calculateL2LStock.approvedMachiningQty||0)+' peças).</p>';
     const negative=position.filter(x=>x.wipDifference<0||x.finishedDifference<0);
     if(negative.length)pending.innerHTML+='<p style="padding:10px;color:#b45309">⚠ '+negative.length+' modelo(s) com diferença negativa. Verificar saldo inicial, correspondência e perdas antes de tratar o valor como estoque físico.</p>';
   }
