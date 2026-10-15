@@ -11877,3 +11877,5 @@ body.home-nav-in-topbar .home-executive-hero{
 .gv-models-priority-clear{padding:16px;border-radius:8px;background:#f0f8f4;color:#32654a;font-size:12px}
 @media(max-width:1200px){.gv-models-priority-item{grid-template-columns:28px 1fr 100px;gap:9px}.gv-models-priority-next{grid-column:2 / 4}.gv-models-priority-item>.gv-models-signal{grid-column:1 / 2;grid-row:2}}
 @media(max-width:600px){.gv-models-priority-item{grid-template-columns:28px 1fr}.gv-models-priority-gap{grid-column:2}.gv-models-priority-next{grid-column:2}.gv-models-priority-item>.gv-models-signal{grid-column:2;grid-row:auto;justify-self:start}}
+
+.gv-models-family{display:block;font-size:10px;color:#236b94;margin-top:4px;font-weight:700}
