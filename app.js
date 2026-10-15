@@ -48,13 +48,14 @@ async function importPmpFile(){
  const required=["Data","Processo","Modelo","Quantidade_planejada"];
  try{
   let records=[];
-  if(/\\.csv$/i.test(file.name)){
-   const raw=(await file.text()).replace(/^\\uFEFF/,"").trim().split(/\\r?\\n/);
-   const header=raw.shift().split(/[,;]/).map(x=>x.trim());
-   const sep=header.length>1?",":";";
+  if(/\.csv$/i.test(file.name)){
+   const raw=(await file.text()).replace(/^\uFEFF/,"").trim().split(/\r?\n/);
+   const headerLine=raw.shift();
+   const sep=headerLine.includes(";")?";":",";
+   const header=headerLine.split(sep).map(x=>x.trim());
    if(!required.every(x=>header.includes(x)))throw new Error("CSV precisa de Data, Processo, Modelo e Quantidade_planejada.");
    records=raw.map(line=>{const columns=line.split(sep);return Object.fromEntries(header.map((h,i)=>[h,columns[i]]));});
-  }else if(/\\.xlsx?$/i.test(file.name)){
+  }else if(/\.xlsx?$/i.test(file.name)){
    if(typeof XLSX==="undefined")throw new Error("Leitor Excel indisponível. Exporte a base tratada em CSV.");
    const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true});
    for(const sheet of workbook.SheetNames){
@@ -65,8 +66,8 @@ async function importPmpFile(){
   }else throw new Error("Formato não suportado.");
   const parsed=records.map(r=>{
    const rawDate=String(r.Data||"").trim();
-   const day=/^\\d{4}-\\d{2}-\\d{2}$/.test(rawDate)?rawDate:/^\\d{2}\\/\\d{2}\\/\\d{4}$/.test(rawDate)?rawDate.split("/").reverse().join("-"):"";
-   const qty=Number(String(r.Quantidade_planejada??"").replace(/\\s/g,"").replace(",","."));
+   const day=/^\d{4}-\d{2}-\d{2}$/.test(rawDate)?rawDate:/^\d{2}\/\d{2}\/\d{4}$/.test(rawDate)?rawDate.split("/").reverse().join("-"):"";
+   const qty=Number(String(r.Quantidade_planejada??"").replace(/\s/g,"").replace(",","."));
    return {day,process:String(r.Processo||"").trim().toUpperCase(),model:String(r.Modelo||"").trim().toUpperCase(),machine:String(r.Injetora_origem||"ALL").trim(),qty};
   });
   if(!parsed.length||parsed.some(r=>!r.day||!["INJ","ACAB","USI"].includes(r.process)||!r.model||!Number.isFinite(r.qty)||r.qty<0))throw new Error("Linhas inválidas: revise datas, processos, modelos e quantidades.");
