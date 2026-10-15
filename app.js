@@ -26,7 +26,7 @@ async function initPmpPlanning(){
  try{
   const response=await fetch("/data/fnd-pmp-2026-10.csv",{cache:"no-store"});
   if(!response.ok)throw new Error("Arquivo do plano indisponível");
-  const rows=(await response.text()).trim().replace(/^\\uFEFF/,"").split(/\\r?\\n/);
+  const rows=(await response.text()).trim().replace(/^\uFEFF/,"").split(/\r?\n/);
   const fields=rows.shift().split(",");
   const index=name=>fields.indexOf(name);
   pmpPlanning=rows.map(line=>{
