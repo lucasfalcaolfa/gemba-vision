@@ -15,7 +15,7 @@ let gmData={pitches:[],catalog:[]},gmError="",gmBusy=false,gmWindow=null;
 function modelManagement(){
  return '<section class="panel gv-models-head"><div><span>GESTÃO INTEGRADA • L2L</span><h2>Gerenciamento de Modelos</h2><p>Visibilidade de produtos por setor • Fundição, Acabamento, Usinagem e Montagem conforme cadastro e pitches do L2L</p></div><form id="gmForm" class="gv-models-filters"><label>Início<input type="datetime-local" id="gmStart" required></label><label>Fim<input type="datetime-local" id="gmEnd" required></label><button type="submit">Consultar L2L</button></form></section>'+
  '<section class="gv-models-kpis"><article><span>Modelos com movimento</span><strong id="gmCount">—</strong></article><article><span>Setores encontrados</span><strong id="gmAreas">—</strong></article><article><span>Desvios para avaliar</span><strong id="gmAtRisk">—</strong></article><article><span>Modelos sem setor associado</span><strong id="gmUnknown">—</strong></article></section>'+
- '<section class="panel" id="pmpPanel" style="margin-top:16px"><div class="gv-models-toolbar"><div><span>PLANO OFICIAL DA PLANILHA • OUTUBRO 2026</span><h2>Plano de Produção — Fundição</h2><small id="pmpStatus">Carregando base de 449 registros...</small></div></div><div class="gv-models-actions" style="display:flex;flex-wrap:wrap;gap:10px;margin:12px 0"><label>De <input id="pmpFrom" type="date" value="2026-10-01"></label><label>Até <input id="pmpTo" type="date" value="2026-10-31"></label><label>Processo <select id="pmpProcess"><option value="Todos">Todos</option><option value="INJ">Fundição / Injeção</option><option value="ACAB">Acabamento</option><option value="USI">Usinagem</option></select></label><label>Modelo <select id="pmpModel"><option value="Todos">Todos</option></select></label></div><div id="pmpSummary"></div><div class="table-scroll" id="pmpRows"></div><p style="font-size:12px;color:#64748b;margin-top:12px"><b>Atenção:</b> fonte FND_PMP_2026_10.xlsx / AL_PLAN. Quantidades programadas, não produção real. Identificações da planilha ainda não são códigos homologados no L2L; dados não alteram estoque ou indicadores de produção realizada.</p></section>'+ 
+ '<section class="panel" id="pmpPanel" style="margin-top:16px"><div class="gv-models-toolbar"><div><span>PLANO OFICIAL DA PLANILHA • OUTUBRO 2026</span><h2>Plano de Produção — Fundição</h2><small id="pmpStatus">Carregando base de 449 registros...</small></div></div><div class="gv-models-actions" style="display:flex;flex-wrap:wrap;gap:10px;margin:12px 0"><label>De <input id="pmpFrom" type="date" value="2026-10-01"></label><label>Até <input id="pmpTo" type="date" value="2026-10-31"></label><label>Processo <select id="pmpProcess"><option value="Todos">Todos</option><option value="INJ">Fundição / Injeção</option><option value="ACAB">Acabamento</option><option value="USI">Usinagem</option></select></label><label>Modelo <select id="pmpModel"><option value="Todos">Todos</option></select></label></div><div style="border:1px solid #cbd5e1;border-radius:10px;padding:12px;margin:10px 0"><strong>Importar novo plano de produção</strong><p style="font-size:12px">CSV ou Excel (.xlsx) no formato da base: Data, Processo, Modelo, Injetora_origem, Quantidade_planejada. A importação vale para esta sessão e não modifica o L2L nem os outros usuários.</p><input id="pmpUpload" type="file" accept=".csv,.xlsx,.xls" aria-label="Selecionar arquivo do plano"><button type="button" id="pmpApplyUpload">Validar e aplicar nesta sessão</button><small id="pmpUploadStatus" style="display:block;margin-top:8px">Nenhum arquivo importado.</small></div><div id="pmpSummary"></div><div class="table-scroll" id="pmpRows"></div><p style="font-size:12px;color:#64748b;margin-top:12px"><b>Atenção:</b> fonte FND_PMP_2026_10.xlsx / AL_PLAN. Quantidades programadas, não produção real. Identificações da planilha ainda não são códigos homologados no L2L; dados não alteram estoque ou indicadores de produção realizada.</p></section>'+ 
 '<section class="panel gv-models-main"><div class="gv-models-toolbar"><div><h2>Produtos por setor</h2><small id="gmStatus">Consultando L2L...</small></div><div class="gv-models-actions"><input id="gmSearch" type="search" placeholder="Pesquisar código ou descrição" aria-label="Pesquisar produto"><select id="gmArea" aria-label="Filtrar setor"><option value="Todos">Todos os setores</option></select><select id="gmSignal" aria-label="Filtrar sinal"><option value="Todos">Todos os sinais</option><option value="Abaixo do plano">Abaixo do plano</option><option value="Dentro do plano">Dentro do plano</option><option value="Sem plano">Sem plano</option></select></div></div>'+
  '<div class="gv-models-priority"><div class="gv-models-priority-heading"><div><span>01 • ONDE AGIR PRIMEIRO</span><h2>Prioridades de abastecimento</h2><p>Itens que exigem confirmação com o setor consumidor antes de mudar a programação.</p></div></div><div id="gmPriorities"></div></div><div class="gv-models-notice"><b>Criticidade:</b> O quadro de prioridades usa a diferença Plano − Real do próprio setor no período consultado; “Abaixo do plano” indica desvio, não falta de material nem parada iminente. Para risco real precisamos de estoque validado, demanda da próxima etapa e tempo de reposição. Produtos apenas no catálogo aparecem em “Sem setor associado”. O PMP representa todo outubro; os valores do L2L são da janela consultada (até 24h).</div><div id="gmResults" class="gv-models-results"><div class="empty-state">Carregando modelos...</div></div><details class="gv-models-unassigned" id="gmUnassigned"><summary>Sem setor associado <span id="gmUnassignedCount">0 modelos</span></summary><p>Produtos cadastrados no L2L sem movimentação vinculada a um setor no período consultado.</p><div id="gmUnassignedResults"></div></details></section>';
 }
@@ -36,9 +36,49 @@ async function initPmpPlanning(){
   const modelSelect=document.getElementById("pmpModel");
   [...new Set(pmpPlanning.filter(r=>r.model!=="TOTAL").map(r=>r.model))].sort().forEach(model=>{const option=document.createElement("option");option.value=model;option.textContent=model;modelSelect.appendChild(option);});
   for(const id of ["pmpFrom","pmpTo","pmpProcess","pmpModel"])document.getElementById(id).addEventListener("change",renderPmpPlanning);
+  document.getElementById("pmpApplyUpload").addEventListener("click",importPmpFile);
   renderPmpPlanning();
   renderModelManagement();
  }catch(e){status.textContent="Não foi possível abrir a base: "+e.message;}
+}
+async function importPmpFile(){
+ const file=document.getElementById("pmpUpload").files[0],status=document.getElementById("pmpUploadStatus");
+ if(!file){status.textContent="Selecione um arquivo.";return;}
+ if(file.size>8*1024*1024){status.textContent="Arquivo maior que 8 MB.";return;}
+ const required=["Data","Processo","Modelo","Quantidade_planejada"];
+ try{
+  let records=[];
+  if(/\\.csv$/i.test(file.name)){
+   const raw=(await file.text()).replace(/^\\uFEFF/,"").trim().split(/\\r?\\n/);
+   const header=raw.shift().split(/[,;]/).map(x=>x.trim());
+   const sep=header.length>1?",":";";
+   if(!required.every(x=>header.includes(x)))throw new Error("CSV precisa de Data, Processo, Modelo e Quantidade_planejada.");
+   records=raw.map(line=>{const columns=line.split(sep);return Object.fromEntries(header.map((h,i)=>[h,columns[i]]));});
+  }else if(/\\.xlsx?$/i.test(file.name)){
+   if(typeof XLSX==="undefined")throw new Error("Leitor Excel indisponível. Exporte a base tratada em CSV.");
+   const workbook=XLSX.read(await file.arrayBuffer(),{type:"array",cellDates:true});
+   for(const sheet of workbook.SheetNames){
+    const rows=XLSX.utils.sheet_to_json(workbook.Sheets[sheet],{defval:"",raw:false});
+    if(rows.length&&required.every(k=>Object.prototype.hasOwnProperty.call(rows[0],k))){records=rows;break;}
+   }
+   if(!records.length)throw new Error("Não encontrei aba no formato de base tratada. Exporte as colunas Data, Processo, Modelo e Quantidade_planejada.");
+  }else throw new Error("Formato não suportado.");
+  const parsed=records.map(r=>{
+   const rawDate=String(r.Data||"").trim();
+   const day=/^\\d{4}-\\d{2}-\\d{2}$/.test(rawDate)?rawDate:/^\\d{2}\\/\\d{2}\\/\\d{4}$/.test(rawDate)?rawDate.split("/").reverse().join("-"):"";
+   const qty=Number(String(r.Quantidade_planejada??"").replace(/\\s/g,"").replace(",","."));
+   return {day,process:String(r.Processo||"").trim().toUpperCase(),model:String(r.Modelo||"").trim().toUpperCase(),machine:String(r.Injetora_origem||"ALL").trim(),qty};
+  });
+  if(!parsed.length||parsed.some(r=>!r.day||!["INJ","ACAB","USI"].includes(r.process)||!r.model||!Number.isFinite(r.qty)||r.qty<0))throw new Error("Linhas inválidas: revise datas, processos, modelos e quantidades.");
+  const duplicate=new Set();
+  for(const r of parsed){const key=[r.day,r.process,r.model,r.machine].join("|");if(duplicate.has(key))throw new Error("Chave repetida (data/processo/modelo/máquina): "+key);duplicate.add(key);}
+  pmpPlanning=parsed.filter(r=>r.model!=="TOTAL");
+  const select=document.getElementById("pmpModel");select.innerHTML='<option value="Todos">Todos</option>';
+  [...new Set(pmpPlanning.map(r=>r.model))].sort().forEach(m=>{const o=document.createElement("option");o.value=m;o.textContent=m;select.appendChild(o);});
+  const dates=pmpPlanning.map(r=>r.day).sort();document.getElementById("pmpFrom").value=dates[0];document.getElementById("pmpTo").value=dates[dates.length-1];
+  status.textContent="Aplicado nesta sessão: "+file.name+" • "+pmpPlanning.length+" registros válidos. Não enviado ao servidor.";
+  renderPmpPlanning();renderModelManagement();
+ }catch(e){status.textContent="Importação não aplicada: "+e.message;}
 }
 function renderPmpPlanning(){
  const el=document.getElementById("pmpPanel");if(!el)return;
