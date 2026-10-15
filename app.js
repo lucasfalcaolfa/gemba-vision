@@ -1437,12 +1437,12 @@ async function refreshProductionRange(){
     const end=(productionFilterState.endDate||productionFilterState.startDate||todayISO())+" "+(productionFilterState.end||"23:59");
     const [prodResponse,defectResponse]=await Promise.allSettled([
       getProductionRowsForSelectedShift(),
-      window.L2L.getScrapDetailsWindow(start,end)
+      productionFilterState.shift==="Todos"?window.L2L.getScrapDetailsWindow(start,end):Promise.resolve([])
     ]);
     if(prodResponse.status!=="fulfilled")throw prodResponse.reason;
     productionRows=prodResponse.value;
     productionDefectRows=defectResponse.status==="fulfilled"&&Array.isArray(defectResponse.value)?defectResponse.value:[];
-    productionDefectError=defectResponse.status==="rejected"?"Detalhamento de scrap indisponível no L2L.":"";
+    productionDefectError=productionFilterState.shift!=="Todos"?"Defeitos detalhados por turno indisponíveis nesta consulta; o total de NG vem do resumo do L2L.":defectResponse.status==="rejected"?"Detalhamento de scrap indisponível no L2L.":"";
     l2lLastUpdate=new Date();
     l2lError="";
     if(currentPage==="production"){
