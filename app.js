@@ -1940,9 +1940,9 @@ const STOCK_USI_CONFIRMED=new Map([
  ["K1SJ INP USI","17111K1SJA005F"]
 ]);
 function stockMachiningCode(value){
- const raw=String(value??"").trim().toUpperCase().replace(/[–—]/g,"-").replace(/\\s+/g," ");
+ const raw=String(value??"").trim().toUpperCase().replace(/[–—]/g,"-").replace(/\s+/g," ");
  if(STOCK_USI_CONFIRMED.has(raw))return raw;
- const m=raw.match(/\\b(?:31GQ|41NN|17111|17100|17110|11PD|11VE|1050)[-A-Z0-9]{6,}\\b/);
+ const m=raw.match(/\b(?:31GQ|41NN|17111|17100|17110|11PD|11VE|1050)[-A-Z0-9]{6,}\b/);
  return m?m[0]:"";
 }
 // Product-family reconciliation supplied by production-code list.
