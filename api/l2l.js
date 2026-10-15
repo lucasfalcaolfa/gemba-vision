@@ -201,7 +201,7 @@ module.exports = async function handler(req, res) {
           area:meta.area||"",start:p.pitch_start,end:p.pitch_end,
           product:productCode(productRef),product_id:refId(productRef),
           product_description:String((productRef&&typeof productRef==="object"?productRef:products.get(String(refId(productRef))))?.description??(productRef&&typeof productRef==="object"?productRef:products.get(String(refId(productRef))))?.name??"").trim(),
-          actual:Number(p.actual??0),demand:Number(p.demand??0),scrap:Number(p.scrap??0)};
+          actual:Number(p.actual??0),scrap:Number(p.scrap??0)};
       }).filter(p=>p.start&&p.line&&/^(?:FND|FND_ACAB|USI)$/i.test(p.area));
       return res.status(200).json({success:true,data:rows,meta:{source:"L2L pitches",count:rows.length,raw_count:raw.length}});
     }catch(err){
