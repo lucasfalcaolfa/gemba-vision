@@ -2628,12 +2628,11 @@ function quality(){
  return '<div class="gv-quality-live">'+
  '<div class="gv-quality-toolbar"><div><b>Qualidade da Fundição • L2L</b><small id="qualityWindow">Consultando janela operacional...</small></div><span id="qualityDataStatus">Aguardando dados</span></div>'+
  '<form class="gv-quality-filter" id="qualityDateFilter"><label>Data inicial<input type="date" id="qualityStartDate" required></label><label>Hora inicial<input type="time" id="qualityStartTime" required></label><label>Data final<input type="date" id="qualityEndDate" required></label><label>Hora final<input type="time" id="qualityEndTime" required></label><button type="submit" id="qualityApply">Consultar L2L</button><button type="button" id="qualityReset">Dia operacional</button></form>'+
- '<section class="panel gv-quality-history"><div><strong>Histórico por dia operacional</strong><p>Escolha a data para consultar os registros entre 07:00 e 07:00 do dia seguinte.</p></div><div class="gv-quality-history-actions"><input id="qualityHistoryDate" type="date" aria-label="Data do histórico"><button id="qualityHistoryApply" type="button">Ver histórico</button></div></section>'+
- '<div id="qualityHistorySummary" class="panel gv-quality-history-result" aria-live="polite">Selecione um dia para consultar o histórico.</div>'+
  '<div id="qualityLiveKpis" class="gv-quality-kpis"><div class="empty-state">Consultando indicadores do L2L...</div></div>'+
  '<section class="panel gv-quality-audit" id="qualityDataAudit" aria-live="polite">Conferindo consistência do L2L...</section>'+
  '<section id="qualityDetail" class="panel gv-quality-detail" hidden></section>'+
- '<div class="gv-quality-grid">'+
+'<section class="panel gv-quality-drilldown"><div class="gv-quality-title"><h2>Investigação do período</h2><small>Detalhes dos registros da consulta atual</small></div><div id="qualityHistoryBreakdown"></div></section>'+
+  '<div class="gv-quality-grid">'+
  '<section class="panel"><div class="gv-quality-title"><h2>Pareto de defeitos</h2><small>Quantidades registradas no L2L</small></div><div id="qualityPareto"><div class="empty-state">Carregando...</div></div></section>'+
  '<section class="panel"><div class="gv-quality-title"><h2>Não qualidade por linha</h2><small>Scrap / produção real</small></div><div id="qualityByLine"><div class="empty-state">Carregando...</div></div></section>'+
  '</div><p class="gv-quality-disclaimer">PPM e Scrap são calculados com o campo actual do L2L como denominador. A classificação desse campo (boas ou totais) precisa ser validada antes de usar as taxas como indicador oficial. Custos e retrabalho exigem registros específicos.</p>'+
@@ -2651,20 +2650,6 @@ function qualitySetForm(){
 }
 function initQuality(){
  qualitySetForm();
- const histDate=document.getElementById("qualityHistoryDate");
- if(histDate){histDate.value=(qualityRange||qualityDefaultRange()).start.slice(0,10);histDate.max=localIsoDate(new Date());}
- const histButton=document.getElementById("qualityHistoryApply");
- if(histButton)histButton.addEventListener("click",async()=>{
-   const day=histDate?.value;
-   if(!day)return;
-   const start=new Date(day+"T07:00:00");
-   const end=new Date(start);end.setDate(end.getDate()+1);
-   const pad=x=>String(x).padStart(2,"0");
-   const next=[end.getFullYear(),pad(end.getMonth()+1),pad(end.getDate())].join("-");
-   qualityRange={start:day+" 07:00",end:next+" 07:00"};
-   qualitySetForm();
-   await refreshQualityWindow();
- });
  const form=document.getElementById("qualityDateFilter");
  if(form)form.addEventListener("submit",async e=>{
   e.preventDefault();
@@ -2730,7 +2715,9 @@ function renderQualityL2L(){
    card("Peças produzidas",rows.length?fmt(actual):"—","Produção real L2L"),
    card("PPM estimado",ppm===null?"—":fmt(ppm),"Base: actual L2L","warn"),
    card("Retrabalho","—","Sem registro específico"),
-   card("Custo NQ","—","Sem custo unitário validado")
+   card("Custo NQ","—","Sem custo unitário validado"),
+   card("Linhas analisadas",rows.length?fmt(groupedByLine(rows).length):"—","Linhas no período L2L"),
+   card("Registros de defeito",fmt(homeDefectRows(qualityScrapRows).length),"Ocorrências detalhadas retornadas")
  ].join("");
  const detail=document.getElementById("qualityDetail");
  kpis.querySelectorAll("[data-quality-kpi]").forEach(button=>button.addEventListener("click",()=>{
@@ -2751,27 +2738,17 @@ function renderQualityL2L(){
   detail.hidden=false;
   detail.scrollIntoView({block:"nearest",behavior:"smooth"});
  }));
- const history=document.getElementById("qualityHistorySummary");
- if(history){
-   if(qualityLoading)history.textContent="Consultando histórico do L2L...";
-   else if(qualityError&&rows.length===0)history.textContent=qualityError;
-   else{
-     const byLineHistory=groupedByLine(rows).sort((a,b)=>a.line.localeCompare(b.line,"pt-BR"));
-     const day=range.start.slice(0,10).split("-").reverse().join("/");
-     const detailedCount=homeDefectRows(qualityScrapRows).length;
-     history.innerHTML='<div class="gv-quality-history-head"><div><strong>Histórico operacional de '+stockEsc(day)+'</strong><small>'+stockEsc(range.start)+' → '+stockEsc(range.end)+'</small></div><span>Fonte: L2L</span></div>'+
-     '<div class="gv-quality-history-stats"><span><b>'+fmt(actual)+'</b>Produção real</span><span><b>'+fmt(scrap)+'</b>NG total</span><span><b>'+fmt(byLineHistory.length)+'</b>Linhas</span><span><b>'+fmt(detailedCount)+'</b>Registros de defeito</span></div>'+
-     '<details><summary>Consultar histórico por linha</summary><div class="table-scroll"><table><thead><tr><th>Linha</th><th>Real</th><th>NG</th><th>Demanda</th></tr></thead><tbody>'+
-     byLineHistory.map(x=>'<tr><td>'+stockEsc(x.line)+'</td><td>'+fmt(x.actual)+'</td><td>'+fmt(x.scrap)+'</td><td>'+fmt(x.demand)+'</td></tr>').join("")+
-     '</tbody></table></div></details>'+
-     '<details><summary>Produção por produto e linha (pitches)</summary><div class="table-scroll"><table><thead><tr><th>Linha</th><th>Código do produto</th><th>Produção real</th><th>NG</th><th>Horário</th></tr></thead><tbody>'+
-     (Array.isArray(qualityContext?.pitches)?qualityContext.pitches:[]).filter(p=>isFndArea(p.area)||/INJETORA|FND_ACAB/i.test(String(p.line||""))).map(p=>'<tr><td>'+stockEsc(p.line||"Não identificado")+'</td><td>'+stockEsc(p.product||"Sem código")+'</td><td>'+fmt(p.actual)+'</td><td>'+fmt(p.scrap)+'</td><td>'+stockEsc(p.start||"Sem horário")+'</td></tr>').join("")+
-     '</tbody></table></div><p>Produção por pitch disponível na consulta complementar, que pode ser parcial ou possuir agrupamento diferente do resumo diário.</p></details>'+
-     '<details><summary>Histórico de defeitos por tipo</summary><div class="table-scroll"><table><thead><tr><th>Defeito</th><th>Quantidade NG</th><th>Linhas relacionadas</th><th>Modelos relacionados</th></tr></thead><tbody>'+
-     defects.map(d=>'<tr><td>'+stockEsc(d.defect)+'</td><td>'+fmt(d.qty)+'</td><td>'+stockEsc(d.lines.join(", ")||"Não informado")+'</td><td>'+stockEsc(d.models.join(", ")||"Não informado")+'</td></tr>').join("")+
-     '</tbody></table></div><p>Lista baseada nos registros de defeito disponíveis no L2L. Pode não explicar todo o NG do resumo.</p></details>'+
-     '<p>Histórico obtido na consulta atual; registros posteriores podem ser corrigidos no L2L. Os totais não constituem um fechamento imutável.</p>';
-   }
+ const breakdown=document.getElementById("qualityHistoryBreakdown");
+ if(breakdown){
+   const byLineHistory=groupedByLine(rows).sort((a,b)=>a.line.localeCompare(b.line,"pt-BR"));
+   const pitchRows=(Array.isArray(qualityContext?.pitches)?qualityContext.pitches:[]).filter(p=>isFndArea(p.area)||/INJETORA|FND_ACAB/i.test(String(p.line||"")));
+   breakdown.innerHTML='<details><summary>Produção e NG por linha ('+fmt(byLineHistory.length)+')</summary><div class="table-scroll"><table><thead><tr><th>Linha</th><th>Produção</th><th>NG</th><th>Demanda</th></tr></thead><tbody>'+
+     byLineHistory.map(g=>'<tr><td>'+stockEsc(g.line)+'</td><td>'+fmt(g.actual)+'</td><td>'+fmt(g.scrap)+'</td><td>'+fmt(g.demand)+'</td></tr>').join("")+'</tbody></table></div></details>'+
+     '<details><summary>Apontamentos por produto e horário ('+fmt(pitchRows.length)+')</summary><div class="table-scroll"><table><thead><tr><th>Horário</th><th>Linha</th><th>Produto</th><th>Real</th><th>NG</th></tr></thead><tbody>'+
+     pitchRows.map(p=>'<tr><td>'+stockEsc(p.start||"N/D")+'</td><td>'+stockEsc(p.line||"N/D")+'</td><td>'+stockEsc(p.product||"Sem código")+'</td><td>'+fmt(p.actual)+'</td><td>'+fmt(p.scrap)+'</td></tr>').join("")+'</tbody></table></div></details>'+
+     '<details><summary>Defeitos registrados por tipo ('+fmt(defects.length)+')</summary><div class="table-scroll"><table><thead><tr><th>Defeito</th><th>Quantidade</th><th>Linhas</th><th>Modelos</th></tr></thead><tbody>'+
+     defects.map(d=>'<tr><td>'+stockEsc(d.defect)+'</td><td>'+fmt(d.qty)+'</td><td>'+stockEsc(d.lines.join(", ")||"N/D")+'</td><td>'+stockEsc(d.models.join(", ")||"N/D")+'</td></tr>').join("")+'</tbody></table></div></details>'+
+     '<p class="gv-quality-disclaimer">Histórico da janela selecionada nos filtros acima. Os registros podem sofrer correções posteriores no L2L. As consultas por pitch podem ser parciais.</p>';
  }
  const pareto=document.getElementById("qualityPareto");
  // Summary production rows are authoritative for the day's scrap quantity,
