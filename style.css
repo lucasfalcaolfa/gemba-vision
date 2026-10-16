@@ -12016,3 +12016,15 @@ body{background:var(--exec-bg);color:var(--exec-ink);-webkit-font-smoothing:anti
 .gv-quality-detail h3{margin:0 0 10px}
 .gv-quality-detail p{margin:8px 0;color:#405a6d}
 .gv-quality-kpi em{display:block;font-size:10px;font-style:normal;color:#2c719e;margin-top:5px}
+
+
+/* Qualidade: histórico integrado aos indicadores, sem painel duplicado */
+.gv-quality-drilldown{margin:16px 0;padding:18px 20px}
+.gv-quality-drilldown details{border:1px solid #e0e8ee;border-radius:10px;margin:10px 0;background:#fbfdff;overflow:hidden}
+.gv-quality-drilldown summary{cursor:pointer;padding:13px 16px;color:#173c58;font-size:12px;font-weight:750}
+.gv-quality-drilldown details[open] summary{border-bottom:1px solid #e0e8ee;background:#f2f7fb}
+.gv-quality-drilldown .table-scroll{margin:8px 10px 14px}
+.gv-quality-drilldown .gv-quality-disclaimer{padding:8px 0;font-size:11px;color:#62798a}
+.gv-quality-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:1100px){.gv-quality-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:580px){.gv-quality-kpis{grid-template-columns:1fr}}
