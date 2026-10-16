@@ -2703,7 +2703,7 @@ function renderQualityL2L(){
  if(windowLabel)windowLabel.textContent=range.start+" → "+range.end;
  const status=document.getElementById("qualityDataStatus");
  if(status)status.textContent=qualityLoading?"Consultando L2L...":(qualityError|| (rows.length?"Consulta concluída":"Sem produção identificada"));
- const card=(label,value,detail,cls="")=>'<article class="gv-quality-kpi '+cls+'"><span>'+label+'</span><strong>'+value+'</strong><small>'+detail+'</small></article>';
+ const card=(label,value,detail,cls="")=>'<button type="button" class="gv-quality-kpi '+cls+'" data-quality-kpi="'+label+'"><span>'+label+'</span><strong>'+value+'</strong><small>'+detail+'</small><em>Ver detalhes</em></button>';
  kpis.innerHTML=[
    card("Qualidade",qualityPct===null?"—":fmtPct(qualityPct),"Peças boas / produção","good"),
    card("Scrap",scrapPct===null?"—":fmtPct(scrapPct),fmt(scrap)+" peças rejeitadas","bad"),
