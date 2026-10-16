@@ -2713,9 +2713,6 @@ function renderQualityL2L(){
    card("Qualidade estimada",qualityPct===null?"—":fmtPct(qualityPct),"Calculada com actual L2L","good"),
    card("Scrap",scrapPct===null?"—":fmtPct(scrapPct),fmt(scrap)+" peças rejeitadas","bad"),
    card("Peças produzidas",rows.length?fmt(actual):"—","Produção real L2L"),
-   card("PPM estimado",ppm===null?"—":fmt(ppm),"Base: actual L2L","warn"),
-   card("Retrabalho","—","Sem registro específico"),
-   card("Custo NQ","—","Sem custo unitário validado"),
    card("Linhas analisadas",rows.length?fmt(groupedByLine(rows).length):"—","Linhas no período L2L"),
    card("Registros de defeito",fmt(homeDefectRows(qualityScrapRows).length),"Ocorrências detalhadas retornadas")
  ].join("");
