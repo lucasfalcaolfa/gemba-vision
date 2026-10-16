@@ -11945,3 +11945,12 @@ body{background:var(--exec-bg);color:var(--exec-ink);-webkit-font-smoothing:anti
 #content .empty-state{border-radius:10px;line-height:1.6}
 @media(max-width:900px){#content table thead th{font-size:10px}#content table td,#content table th{padding:9px 10px}}
 @media(prefers-reduced-motion:reduce){#content button,.sidebar .nav{transition:none}}
+
+
+/* Painel executivo: prioridades da Usinagem */
+.gm-priority-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0 20px}
+.gm-priority-kpi{min-width:0;min-height:106px;box-sizing:border-box;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;gap:12px;padding:15px 17px;border:1px solid #dbe5eb;border-radius:12px;background:#f8fafc}
+.gm-priority-kpi-label{display:block;width:100%;font-size:11px;line-height:1.45;letter-spacing:.035em;text-transform:uppercase;font-weight:750;color:#657c8d;white-space:normal;overflow-wrap:anywhere}
+.gm-priority-kpi-value{position:static;display:block;font-size:30px;line-height:1.1;font-weight:800;color:#12344d;font-variant-numeric:tabular-nums}
+@media(max-width:750px){.gm-priority-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.gm-priority-kpis{grid-template-columns:1fr}.gm-priority-kpi{min-height:85px}}
