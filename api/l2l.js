@@ -586,6 +586,51 @@ module.exports = async function handler(req, res) {
     }
   }
 
+  // Auditoria somente leitura: não altera números recebidos do L2L.
+  if (report === "integrity") {
+    const start=String(req.query.start||"").trim();
+    const end=String(req.query.end||"").trim();
+    const valid=/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}$/;
+    if(!valid.test(start)||!valid.test(end)||start>=end){
+      return res.status(400).json({success:false,error:"Informe start e end válidos no formato YYYY-MM-DD HH:mm."});
+    }
+    if(Date.parse(end.replace(" ","T"))-Date.parse(start.replace(" ","T"))>24*3600000){
+      return res.status(400).json({success:false,error:"A auditoria permite janelas de no máximo 24 horas."});
+    }
+    try {
+      const payload=await l2lGet("/api/1.0/reporting/production/daily_summary_data_by_line/",{
+        site:siteCode,start,end,show_shifts:"true",show_products:"false"
+      });
+      if(payload?.success===false)throw new Error(payload.error||"L2L reportou falha.");
+      if(!Array.isArray(payload?.data))throw new Error("L2L não retornou o campo data como lista.");
+      const issues=[],byLine=new Map(),seen=new Map();
+      for(const [index,row] of payload.data.entries()){
+        const line=String(row.line??row.linecode??row.line_name??"").trim();
+        const area=String(row.area??row.areacode??"").trim();
+        const actual=Number(row.actual),demand=Number(row.demand),scrap=Number(row.scrap);
+        if(!line){issues.push({type:"linha_sem_identificacao",record:index});continue;}
+        const key=line.toUpperCase();
+        if(!byLine.has(key))byLine.set(key,{line,area,records:0,actual:0,demand:0,scrap:0,invalid:0});
+        const summary=byLine.get(key);summary.records++;
+        if([actual,demand,scrap].some(v=>!Number.isFinite(v)||v<0)){
+          summary.invalid++;issues.push({type:"quantidade_invalida",line,record:index});continue;
+        }
+        summary.actual+=actual;summary.demand+=demand;summary.scrap+=scrap;
+        const signature=JSON.stringify([line,area,row.shift??null,row.product??row.product_id??null,actual,demand,scrap]);
+        if(seen.has(signature)){
+          issues.push({type:"registro_identico_possivel_duplicacao",line,record:index,first_record:seen.get(signature)});
+        }else seen.set(signature,index);
+      }
+      return res.status(200).json({success:true,window:{start,end},source:"L2L daily_summary_data_by_line",
+        summary:{records:payload.data.length,lines:byLine.size,issues:issues.length},
+        lines:[...byLine.values()].sort((a,b)=>a.line.localeCompare(b.line)),
+        issues:issues.slice(0,200),issues_truncated:issues.length>200,
+        notes:["Linhas iguais não são automaticamente duplicatas sem IDs de pitch.",
+          "O campo actual pode ter semântica específica no L2L; confirme boas/brutas com o Portal do Operador.",
+          "Esta consulta não atesta saldos físicos nem compara pitches ou refugo detalhado."]});
+    }catch(err){return res.status(err.status||502).json({success:false,error:err.message||"Falha na auditoria L2L."});}
+  }
+
   const allowedReports = {
     daily: "/api/1.0/reporting/production/daily_summary_data_by_line/",
     oee: "/api/1.0/reporting/production/oee_sites/",
@@ -642,13 +687,15 @@ module.exports = async function handler(req, res) {
       payload = { success: false, error: "Invalid JSON returned by L2L." };
     }
 
-    if (!response.ok) {
-      return res.status(response.status).json({
+    if (!response.ok || payload.success === false) {
+      return res.status(response.ok ? 502 : response.status).json({
         success: false,
         error: payload.error || "L2L request failed.",
       });
     }
-
+    if (!Array.isArray(payload.data)) {
+      return res.status(502).json({success:false,error:"L2L retornou uma resposta sem lista de dados. A contagem foi rejeitada."});
+    }
     return res.status(200).json(payload);
   } catch (error) {
     return res.status(502).json({
