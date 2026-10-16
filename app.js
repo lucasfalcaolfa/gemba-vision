@@ -2127,11 +2127,12 @@ function stock(){
     '<div class="filter-context" id="stockContext">Atualização automática a cada 1 minuto.</div>'+
   '</div>'+
   '<div class="cards stock-live-kpis" id="stockCards"></div>'+
+  '<div class="panel" role="status" aria-live="polite" style="padding:12px 16px;margin-top:10px"><div id="stockAuditSummary">Auditoria aguardando atualização do L2L.</div></div>'+
 
   '<div class="stock-selected-grid" id="stockSelected"></div>'+
-  '<div class="panel"><div class="stock-section-head"><div><span>WIP / INACABADO</span><h2>Estoque Inacabado</h2><p>Produção da Fundição − consumo registrado no Acabamento.</p></div></div><div id="stockInacabado"></div></div>'+
-  '<div class="panel"><div class="stock-section-head"><div><span>PRODUTO ACABADO</span><h2>Estoque Acabado</h2><p>Produção do Acabamento − saída identificada no processo seguinte.</p></div></div><div id="stockAcabado"></div></div>'+
-  '<div class="panel"><div class="stock-section-head"><div><span>DETALHAMENTO POR MODELO</span><h2>Quantidade de cada modelo</h2><p>Visão consolidada de Inacabado, Acabado e Total por modelo no período selecionado.</p></div></div><div id="stockByModel"></div></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>WIP / INACABADO</span><h2>Inacabado estimado</h2><p>Fundição − produção concluída no Acabamento. Não equivale a retirada física de peças.</p></div></div><div id="stockInacabado"></div></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>PRODUTO ACABADO</span><h2>Acabado estimado</h2><p>Acabamento − produção conciliada da Usinagem. A produção da Usinagem não mede diretamente a retirada do estoque.</p></div></div><div id="stockAcabado"></div></div>'+
+  '<div class="panel"><div class="stock-section-head"><div><span>DETALHAMENTO POR MODELO</span><h2>Movimentações por modelo</h2><p>Valores estimados conforme os pitches do L2L; sem inventário físico confirmado.</p></div></div><div id="stockByModel"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>CONCILIAÇÃO</span><h2>Códigos de Usinagem sem correspondência</h2><p>Registros não descontados para evitar baixa no modelo errado.</p></div></div><div id="stockUnmatched"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>CONSOLIDADO</span><h2>Resumo do Estoque</h2><p>Resumo calculado para a data e o modelo selecionados.</p></div></div><div id="stockResumo"></div></div>'+
   '<div class="stock-calculation-note"><strong>Atualização:</strong> o painel consulta novamente o L2L a cada <b>1 minuto</b>. Saldos estimados por produção: Inacabado = Injetora − Acabamento; Acabado = Acabamento − Usinagem conciliada. Não são estoque físico confirmado. Códigos sem correspondência não são descontados.</div>';
@@ -2330,7 +2331,7 @@ function stockModelDescription(code){
 function populateStockModels(position){
   const select=document.getElementById("stockModel");
   if(!select)return;
-  const models=position.map(x=>x.model).filter(Boolean);
+  const models=[...new Set(position.map(x=>x.model).filter(Boolean))].sort((a,b)=>stockModelDescription(a).localeCompare(stockModelDescription(b),"pt-BR"));
   select.innerHTML='<option value="Todos">Todos os modelos</option>'+models.map(m=>'<option value="'+stockEsc(m)+'">'+stockEsc(stockModelDescription(m))+'</option>').join("");
   if(models.includes(stockFilterState.model))select.value=stockFilterState.model;
   else{
@@ -2346,8 +2347,8 @@ function stockFilteredPosition(position){
 }
 
 function stockQtyStatus(qty){
-  if(qty<=0)return '<span class="stock-live-status zero">Sem saldo</span>';
-  return '<span class="stock-live-status ok">Disponível</span>';
+  if(qty<=0)return '<span class="stock-live-status zero">Sem saldo teórico</span>';
+  return '<span class="stock-live-status ok">Saldo estimado</span>';
 }
 
 function renderStockTable(rows,type){
@@ -2440,12 +2441,20 @@ function updateStock(){
   populateStockModels(position);
   const visible=stockFilteredPosition(position);
 
+  const unbalanced=visible.filter(x=>x.wipDifference<0||x.finishedDifference<0);
+  const hiddenNegative=visible.reduce((s,x)=>s+Math.max(0,-x.wipDifference)+Math.max(0,-x.finishedDifference),0);
   const totalI=visible.reduce((s,x)=>s+x.inacabado,0);
   const totalA=visible.reduce((s,x)=>s+x.acabado,0);
   const foundry=visible.reduce((s,x)=>s+x.foundry,0);
   const finishing=visible.reduce((s,x)=>s+x.finishing,0);
   const downstream=visible.reduce((s,x)=>s+x.downstream,0);
 
+  const auditSummary=document.getElementById("stockAuditSummary");
+  if(auditSummary){
+    const unknown=calculateL2LStock.unidentified||[];
+    const unmatched=calculateL2LStock.unmatched||[];
+    auditSummary.innerHTML='<strong>Auditoria de confiabilidade:</strong> '+fmt(visible.length)+' código(s) visível(is) • '+fmt(unbalanced.length)+' com diferença negativa • '+fmt(hiddenNegative)+' peças negativas truncadas nos indicadores • '+fmt(unknown.length)+' pitch(es) sem código reconhecido • '+fmt(unmatched.length)+' apontamento(s) de Usinagem não conciliados. <strong>Os valores são estimativas de fluxo, não saldo físico.</strong>';
+  }
   const pending=document.getElementById("stockUnmatched");
   // Visible build marker and mapping audit help distinguish stale bundles from L2L data issues.
   const reconcileBuild="2026-10-15 v62";
