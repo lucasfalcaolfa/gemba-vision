@@ -2633,7 +2633,7 @@ function quality(){
  '<div class="gv-quality-grid">'+
  '<section class="panel"><div class="gv-quality-title"><h2>Pareto de defeitos</h2><small>Quantidades registradas no L2L</small></div><div id="qualityPareto"><div class="empty-state">Carregando...</div></div></section>'+
  '<section class="panel"><div class="gv-quality-title"><h2>Não qualidade por linha</h2><small>Scrap / produção real</small></div><div id="qualityByLine"><div class="empty-state">Carregando...</div></div></section>'+
- '</div><p class="gv-quality-disclaimer">PPM = peças rejeitadas ÷ peças produzidas × 1.000.000. Custos e retrabalho dependem de registros específicos no L2L e não são estimados.</p>'+
+ '</div><p class="gv-quality-disclaimer">PPM e Scrap são calculados com o campo actual do L2L como denominador. A classificação desse campo (boas ou totais) precisa ser validada antes de usar as taxas como indicador oficial. Custos e retrabalho exigem registros específicos.</p>'+
  '</div>';
 }
 let qualityRange=null,qualityRows=[],qualityScrapRows=[],qualityContext={pitches:[]},qualityLoading=false,qualityError="";
@@ -2669,6 +2669,7 @@ async function refreshQualityWindow(){
  if(qualityLoading)return;
  qualityLoading=true;qualityError="";
  const range=qualityRange||qualityDefaultRange();
+ const priorDetail=document.getElementById("qualityDetail");if(priorDetail){priorDetail.hidden=true;priorDetail.innerHTML="";}
  renderQualityL2L();
  try{
   const [prod,scrap,context]=await Promise.allSettled([
