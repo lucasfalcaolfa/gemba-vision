@@ -2763,6 +2763,34 @@ function renderQualityL2L(){
   const rate=n(g.actual)>0?n(g.scrap)/n(g.actual)*100:0;
   return '<div class="gv-quality-line"><div><b>'+stockEsc(g.line)+'</b><strong>'+fmt(g.scrap)+' rejeitos</strong></div><div class="gv-quality-track"><i style="width:'+Math.max(0,Math.min(100,rate*10))+'%"></i></div><small>'+fmtPct(rate)+' scrap · '+fmt(g.actual)+' produzidas</small></div>';
  }).join("")+'</div>':'<div class="empty-state">Sem linhas da Fundição na consulta.</div>';
+
+ const detailBox=document.getElementById("qualityDetail");
+ if(detailBox){
+  if(pareto)pareto.querySelectorAll(".gv-quality-row").forEach((element,index)=>{
+   element.tabIndex=0;element.setAttribute("role","button");element.setAttribute("aria-label","Detalhar defeito");
+   const open=()=>{
+    const chosen=groupsForPareto[index];if(!chosen)return;
+    const events=homeDefectRows(qualityScrapRows).filter(x=>String(x.defect||"Sem descrição").trim().toUpperCase()===chosen.defect.toUpperCase());
+    detailBox.innerHTML='<h3>Defeito: '+stockEsc(chosen.defect)+'</h3><p>'+fmt(chosen.qty)+' peças. '+fmt(events.length)+' ocorrência(s) detalhada(s) no L2L.</p>'+
+    '<div class="table-scroll"><table><thead><tr><th>Linha</th><th>Produto</th><th>Rejeitos</th><th>Data</th></tr></thead><tbody>'+
+    events.map(x=>'<tr><td>'+stockEsc(x.line)+'</td><td>'+stockEsc(x.product)+'</td><td>'+fmt(x.scrap)+'</td><td>'+stockEsc(x.date||"—")+'</td></tr>').join("")+'</tbody></table></div>';
+    detailBox.hidden=false;detailBox.scrollIntoView({block:"nearest",behavior:"smooth"});
+   };
+   element.addEventListener("click",open);element.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();open();}});
+  });
+  if(byLine)byLine.querySelectorAll(".gv-quality-line").forEach((element,index)=>{
+   element.tabIndex=0;element.setAttribute("role","button");element.setAttribute("aria-label","Detalhar linha");
+   const open=()=>{
+    const g=groups[index];if(!g)return;
+    detailBox.innerHTML='<h3>'+stockEsc(g.line)+'</h3><p>Real: '+fmt(g.actual)+' • Scrap: '+fmt(g.scrap)+' • '+fmt(g.rows.length)+' registro(s) na fonte consolidada.</p>'+
+    '<div class="table-scroll"><table><thead><tr><th>Área</th><th>Real</th><th>Rejeitos</th></tr></thead><tbody>'+
+    g.rows.map(x=>'<tr><td>'+stockEsc(x.area)+'</td><td>'+fmt(x.actual)+'</td><td>'+fmt(x.scrap)+'</td></tr>').join("")+'</tbody></table></div>';
+    detailBox.hidden=false;detailBox.scrollIntoView({block:"nearest",behavior:"smooth"});
+   };
+   element.addEventListener("click",open);element.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();open();}});
+  });
+ }
+
 }
 
 
