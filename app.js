@@ -2825,9 +2825,15 @@ function renderQualityL2L(){
    const open=()=>{
     const chosen=groupsForPareto[index];if(!chosen)return;
     const events=homeDefectRows(qualityScrapRows).filter(x=>String(x.defect||"Sem descrição").trim().toUpperCase()===chosen.defect.toUpperCase());
-    detailBox.innerHTML='<h3>Defeito: '+stockEsc(chosen.defect)+'</h3><p>'+fmt(chosen.qty)+' peças. '+fmt(events.length)+' ocorrência(s) detalhada(s) no L2L.</p>'+
-    '<div class="table-scroll"><table><thead><tr><th>Linha</th><th>Produto</th><th>Rejeitos</th><th>Data</th></tr></thead><tbody>'+
-    events.map(x=>'<tr><td>'+stockEsc(x.line)+'</td><td>'+stockEsc(x.product)+'</td><td>'+fmt(x.scrap)+'</td><td>'+stockEsc(x.date||"—")+'</td></tr>').join("")+'</tbody></table></div>';
+    const matching=defects.find(d=>String(d.defect).toUpperCase()===chosen.defect.toUpperCase());
+    const causes=matching?.causes||[];
+    const issue=chosen.defect==="Sem detalhamento no L2L";
+    detailBox.innerHTML='<h3>Defeito: '+stockEsc(chosen.defect)+'</h3>'+
+    '<p><b>'+fmt(chosen.qty)+' rejeitos</b> • '+fmt(events.length)+' apontamento(s) identificados • Período: '+stockEsc(range.start)+' até '+stockEsc(range.end)+'</p>'+
+    (issue?'<p>Este volume não possui classificação individual na consulta de detalhes do L2L. Não é possível atribuir causa, produto ou horário sem registro de origem.</p>':'')+
+    '<p><b>Causas / contramedidas registradas:</b> '+(causes.length?causes.map(stockEsc).join(' • '):'Não informadas no L2L')+'</p>'+
+    '<div class="table-scroll"><table><thead><tr><th>Linha</th><th>Produto</th><th>Rejeitos</th><th>Data e hora</th><th>Causa declarada</th></tr></thead><tbody>'+
+    events.map(x=>'<tr><td>'+stockEsc(x.line||"—")+'</td><td>'+stockEsc(x.product||"Não identificado")+'</td><td>'+fmt(x.scrap)+'</td><td>'+stockEsc(x.date||"—")+'</td><td>'+stockEsc(x.cause||"Não informada")+'</td></tr>').join("")+'</tbody></table></div>';
     detailBox.hidden=false;detailBox.scrollIntoView({block:"nearest",behavior:"smooth"});
    };
    element.addEventListener("click",open);element.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();open();}});
