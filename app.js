@@ -2764,6 +2764,12 @@ function renderQualityL2L(){
      '<details><summary>Consultar histórico por linha</summary><div class="table-scroll"><table><thead><tr><th>Linha</th><th>Real</th><th>NG</th><th>Demanda</th></tr></thead><tbody>'+
      byLineHistory.map(x=>'<tr><td>'+stockEsc(x.line)+'</td><td>'+fmt(x.actual)+'</td><td>'+fmt(x.scrap)+'</td><td>'+fmt(x.demand)+'</td></tr>').join("")+
      '</tbody></table></div></details>'+
+     '<details><summary>Produção por produto e linha (pitches)</summary><div class="table-scroll"><table><thead><tr><th>Linha</th><th>Código do produto</th><th>Produção real</th><th>NG</th><th>Horário</th></tr></thead><tbody>'+
+     (Array.isArray(qualityContext?.pitches)?qualityContext.pitches:[]).filter(p=>isFndArea(p.area)||/INJETORA|FND_ACAB/i.test(String(p.line||""))).map(p=>'<tr><td>'+stockEsc(p.line||"Não identificado")+'</td><td>'+stockEsc(p.product||"Sem código")+'</td><td>'+fmt(p.actual)+'</td><td>'+fmt(p.scrap)+'</td><td>'+stockEsc(p.start||"Sem horário")+'</td></tr>').join("")+
+     '</tbody></table></div><p>Produção por pitch disponível na consulta complementar, que pode ser parcial ou possuir agrupamento diferente do resumo diário.</p></details>'+
+     '<details><summary>Histórico de defeitos por tipo</summary><div class="table-scroll"><table><thead><tr><th>Defeito</th><th>Quantidade NG</th><th>Linhas relacionadas</th><th>Modelos relacionados</th></tr></thead><tbody>'+
+     defects.map(d=>'<tr><td>'+stockEsc(d.defect)+'</td><td>'+fmt(d.qty)+'</td><td>'+stockEsc(d.lines.join(", ")||"Não informado")+'</td><td>'+stockEsc(d.models.join(", ")||"Não informado")+'</td></tr>').join("")+
+     '</tbody></table></div><p>Lista baseada nos registros de defeito disponíveis no L2L. Pode não explicar todo o NG do resumo.</p></details>'+
      '<p>Histórico obtido na consulta atual; registros posteriores podem ser corrigidos no L2L. Os totais não constituem um fechamento imutável.</p>';
    }
  }
