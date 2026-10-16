@@ -2445,9 +2445,27 @@ function renderStockByModel(rows){
     return;
   }
   const ordered=[...rows].sort((a,b)=>(b.inacabado+b.acabado)-(a.inacabado+a.acabado));
-  el.innerHTML='<div class="table-scroll"><table class="stock-by-model-table"><thead><tr><th>Modelo</th><th>Inacabado</th><th>Acabado</th><th>Total</th><th>Fundição</th><th>Acabamento</th><th>Saída</th></tr></thead><tbody>'+
-    ordered.map(x=>'<tr><td><b>'+stockEsc(stockModelDescription(x.model))+'</b></td><td><span class="stock-pill stock-pill-wip">'+fmt(x.inacabado)+'</span></td><td><span class="stock-pill stock-pill-fg">'+fmt(x.acabado)+'</span></td><td><b class="stock-total-model">'+fmt(x.inacabado+x.acabado)+'</b></td><td>'+fmt(x.foundry)+'</td><td>'+fmt(x.finishing)+'</td><td>'+fmt(x.downstream)+'</td></tr>').join("")+
+  el.innerHTML='<p class="gv-interaction-hint">Selecione um modelo na tabela para visualizar o fluxo entre Fundição, Acabamento e Usinagem.</p><div id="stockModelDrill" class="gv-drill-panel" hidden></div><div class="table-scroll"><table class="stock-by-model-table"<thead><tr><th>Modelo</th><th>Inacabado</th><th>Acabado</th><th>Total</th><th>Fundição</th><th>Acabamento</th><th>Saída</th></tr></thead><tbody>'+
+    ordered.map((x,i)=>'<tr tabindex="0" role="button" aria-label="Detalhar '+stockEsc(stockModelDescription(x.model))+'" data-stock-row="'+i+'"><td><b>'+stockEsc(stockModelDescription(x.model))+'</b></td><td><span class="stock-pill stock-pill-wip">'+fmt(x.inacabado)+'</span></td><td><span class="stock-pill stock-pill-fg">'+fmt(x.acabado)+'</span></td><td><b class="stock-total-model">'+fmt(x.inacabado+x.acabado)+'</b></td><td>'+fmt(x.foundry)+'</td><td>'+fmt(x.finishing)+'</td><td>'+fmt(x.downstream)+'</td></tr>').join("")+
     '</tbody></table></div>';
+  const detail=el.querySelector("#stockModelDrill");
+  el.querySelectorAll("[data-stock-row]").forEach(tr=>{
+    const open=()=>{
+      const row=ordered[Number(tr.dataset.stockRow)];
+      if(!row||!detail)return;
+      const base=Math.max(1,row.foundry,row.finishing,row.downstream);
+      const stages=[["Fundição",row.foundry],["Acabamento concluído",row.finishing],["Usinagem concluída",row.downstream]];
+      detail.innerHTML='<div class="gv-drill-head"><div><small>DETALHAMENTO DO MODELO</small><h3>'+stockEsc(stockModelDescription(row.model))+'</h3><p>Código L2L: '+stockEsc(row.model)+'</p></div><button type="button" class="gv-drill-close" aria-label="Fechar detalhes">Fechar ×</button></div>'+
+        '<div class="gv-drill-metrics"><span>Inacabado estimado <b>'+fmt(row.inacabado)+'</b></span><span>Acabado estimado <b>'+fmt(row.acabado)+'</b></span><span>Diferença líquida <b>'+fmt(row.wipDifference)+'</b></span></div>'+
+        stages.map(([label,value])=>'<div class="gv-drill-bar"><span>'+label+'</span><div><i style="width:'+Math.min(100,100*value/base)+'%"></i></div><b>'+fmt(value)+'</b></div>').join("")+
+        '<p class="gv-drill-note">Dados acumulados do período selecionado no L2L. Produção concluída não representa retirada física; o saldo não é inventário confirmado.</p>';
+      detail.hidden=false;
+      detail.querySelector(".gv-drill-close").addEventListener("click",()=>{detail.hidden=true;tr.focus();});
+      detail.scrollIntoView({behavior:"smooth",block:"nearest"});
+    };
+    tr.addEventListener("click",open);
+    tr.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();open();}});
+  });
 }
 
 function updateStock(){
