@@ -263,7 +263,10 @@ function renderModelManagement(){
  const machiningLines=new Set(machiningItems.map(x=>x.line));
  const machiningHtml=gmError?'<div class="empty-state">A consulta não foi concluída. Sem classificação de prioridade.</div>':
  !machiningRows.length?'<div class="empty-state">O L2L não retornou apontamentos identificados como Usinagem nesta janela. Não é possível confirmar prioridades de abastecimento.</div>':
- '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px"><span><b>'+fmt(machiningLines.size)+'</b> linhas de Usinagem</span><span><b>'+fmt(machiningItems.length)+'</b> códigos por linha</span><span><b>'+fmt(machiningItems.filter(x=>x.gap>0).length)+'</b> desvios a investigar</span></div>'+
+ '<div class="gm-priority-kpis" aria-label="Resumo de prioridades da Usinagem">'+
+ '<div class="gm-priority-kpi"><span class="gm-priority-kpi-label">Linhas da Usinagem</span><strong class="gm-priority-kpi-value">'+fmt(machiningLines.size)+'</strong></div>'+
+ '<div class="gm-priority-kpi"><span class="gm-priority-kpi-label">Códigos por linha</span><strong class="gm-priority-kpi-value">'+fmt(machiningItems.length)+'</strong></div>'+
+ '<div class="gm-priority-kpi"><span class="gm-priority-kpi-label">Desvios a investigar</span><strong class="gm-priority-kpi-value">'+fmt(machiningItems.filter(x=>x.gap>0).length)+'</strong></div></div>'+
  '<div class="table-scroll"><table><thead><tr><th>Linha da Usinagem</th><th>Produto / código L2L</th><th>Real apontado</th><th>Demanda L2L</th><th>Diferença</th><th>Avaliação</th></tr></thead><tbody>'+
  machiningItems.map(x=>'<tr><td>'+stockEsc(x.line)+'</td><td><b>'+stockEsc(gmPriorityProductLabel({...x,area:"USI"}))+'</b><small style="display:block">'+stockEsc(x.code)+'</small></td><td>'+fmt(x.actual)+'</td><td>'+fmt(x.demand)+'</td><td>'+fmt(x.actual-x.demand)+'</td><td>'+(x.demand<=0?'Sem demanda informada':x.gap>0?'Abaixo do plano — verificar abastecimento':'Dentro/acima do plano')+'</td></tr>').join("")+'</tbody></table></div>'+
  '<p style="font-size:12px;color:#64748b;padding-top:10px">Fonte: pitches do L2L por linha e código, na janela consultada. Demanda é a meta do L2L, não consumo futuro. Desvio não comprova falta de peças. Validar estoque físico, programação, paradas e tempo de reposição antes de priorizar a Fundição.</p>';
