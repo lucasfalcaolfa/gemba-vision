@@ -11954,3 +11954,17 @@ body{background:var(--exec-bg);color:var(--exec-ink);-webkit-font-smoothing:anti
 .gm-priority-kpi-value{position:static;display:block;font-size:30px;line-height:1.1;font-weight:800;color:#12344d;font-variant-numeric:tabular-nums}
 @media(max-width:750px){.gm-priority-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:480px){.gm-priority-kpis{grid-template-columns:1fr}.gm-priority-kpi{min-height:85px}}
+
+
+/* Drill-down executivo de Qualidade */
+.gv-quality-kpi{font:inherit;text-align:left;cursor:pointer;min-width:0}
+.gv-quality-kpi>em{display:block;margin-top:9px;color:#31769d;font-size:10px;font-style:normal;font-weight:750}
+.gv-quality-kpi:hover{box-shadow:0 6px 20px rgba(17,65,93,.12);transform:translateY(-1px)}
+.gv-quality-kpi:focus-visible,.gv-quality-row:focus-visible,.gv-quality-line:focus-visible{outline:3px solid rgba(32,117,173,.4);outline-offset:2px}
+.gv-quality-row[role="button"],.gv-quality-line[role="button"]{cursor:pointer;border-radius:7px}
+.gv-quality-row[role="button"]:hover,.gv-quality-line[role="button"]:hover{background:#f0f7fc}
+.gv-quality-detail{margin:12px 0 16px;padding:18px 20px}
+.gv-quality-detail[hidden]{display:none}
+.gv-quality-detail h3{margin:0 0 8px;color:#12344d}
+.gv-quality-detail p{font-size:12px;color:#5c7180}
+.gv-quality-detail .table-scroll{margin-top:12px}
