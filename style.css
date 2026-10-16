@@ -11893,3 +11893,25 @@ body.home-nav-in-topbar .home-executive-hero{
 .gv-models-unassigned-table td{padding:10px;border-top:1px solid #e4edf4;color:#294a62}
 
 .gv-models-review{display:block;font-size:10px;color:#9b6507;margin-top:5px;font-weight:700;max-width:270px}
+
+
+/* Estoque: resumo limpo e responsivo */
+.stock-live-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0 12px}
+.stock-live-kpis>.stock-kpi-feature,.stock-live-kpis>.stock-kpi-secondary{min-width:0}
+.stock-live-kpis>.stock-kpi-feature{position:relative}
+.stock-kpi-feature>.card,.stock-kpi-secondary>.card{height:100%;box-sizing:border-box}
+.stock-kpi-feature>small{display:block;margin:6px 4px 0;color:#6b7e8c;font-size:11px;font-weight:600}
+.stock-kpi-secondary{grid-column:span 1}
+.stock-insight-panel{background:#fff;border:1px solid #dce6ee;border-radius:13px;padding:16px 18px;margin:0 0 16px;box-shadow:0 3px 12px rgba(18,49,72,.035)}
+.stock-insight-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.stock-insight-title strong{font-size:13px;color:#12344d}
+.stock-insight-title span{font-size:10px;letter-spacing:.3px;color:#738897}
+.stock-audit-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.stock-audit-metrics span{border:1px solid #e6edf2;border-radius:9px;background:#f8fafc;padding:9px 10px;color:#526779;font-size:10px;line-height:1.5}
+.stock-audit-metrics b{display:block;font-size:19px;color:#173a55;line-height:1.15}
+.stock-audit-warning{margin:12px 0 0;padding:9px 11px;background:#fff9ed;color:#9b640d;border-radius:8px;font-size:11px}
+.stock-audit-disclaimer{font-size:11px;color:#748796;margin:11px 0 0;line-height:1.5}
+.stock-filter-panel{box-shadow:0 5px 18px rgba(15,48,71,.04)}
+.stock-filter-head h2{font-size:19px}
+@media (max-width:1050px){.stock-live-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.stock-audit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.stock-live-kpis{grid-template-columns:1fr}.stock-audit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.stock-filter-head{flex-wrap:wrap}.stock-insight-panel{padding:12px}}
