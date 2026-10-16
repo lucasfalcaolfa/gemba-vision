@@ -3914,7 +3914,9 @@ function renderHomeYesterday(){
 
   const prod=document.getElementById("homeYesterdayProduction");
   if(prod){
-    const maxValue=Math.max(1,...groups.map(g=>Math.max(n(g.actual),n(g.demand))));
+    const rawMax=Math.max(1,...groups.map(g=>Math.max(n(g.actual),n(g.demand))));
+    const tickStep=Math.max(1,Math.ceil(rawMax/4/500)*500);
+    const maxValue=tickStep*4;
     const bars=groups.map(g=>{
       const real=Math.max(0,n(g.actual)),plan=Math.max(0,n(g.demand));
       const realHeight=Math.min(100,real/maxValue*100),planHeight=Math.min(100,plan/maxValue*100);
@@ -3926,7 +3928,7 @@ function renderHomeYesterday(){
     }).join("");
     prod.innerHTML=groups.length?
       '<div class="gv-column-chart-header"><span>Produção por linha • Real x Plano</span><div><i class="real"></i> Real <i class="plan"></i> Plano</div></div>'+
-      '<div class="gv-column-chart">'+bars+'</div>'+
+      '<div class="gv-column-plot"><div class="gv-column-axis" aria-hidden="true">'+[4,3,2,1,0].map(i=>'<span>'+fmt(i*tickStep)+'</span>').join("")+'</div><div class="gv-column-chart">'+bars+'</div></div>'+
       '<div class="gv-column-chart-footer">Atendimento: <b>'+fmtPct(attainment)+'</b> · Desvio: <b>'+(actual-demand>=0?'+':'')+fmt(actual-demand)+' peças</b></div>'
       :'<div class="empty-state">Sem produção por linha para o período.</div>';
   }
