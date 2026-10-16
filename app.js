@@ -3914,18 +3914,21 @@ function renderHomeYesterday(){
 
   const prod=document.getElementById("homeYesterdayProduction");
   if(prod){
-    const pct=Math.max(0,Math.min(100,attainment));
-    const gap=actual-demand;
-    prod.innerHTML=
-      '<div class="home-production-focus">'+
-        '<div class="home-prod-main"><span>Atingimento do plano</span><strong class="'+(attainment>=100?"good":attainment>=95?"warn":"bad")+'">'+fmtPct(attainment)+'</strong><small>'+(gap>=0?"+":"")+fmt(gap)+' peças em relação à demanda</small></div>'+
-        '<div class="home-production-insight">'+
-          '<span>Situação</span>'+
-          '<strong>'+(attainment>=100?"Meta atingida":attainment>=95?"Próximo da meta":"Abaixo da meta")+'</strong>'+
-          '<small>Referência operacional: 95% ou mais.</small>'+
-        '</div>'+
-      '</div>'+
-      '<div class="home-prod-progress"><div class="home-prod-progress-head"><span>Progresso contra demanda</span><b>'+fmtPct(attainment)+'</b></div><div class="home-prod-track"><i style="width:'+pct+'%"></i><em style="left:95%"></em></div><div class="home-prod-scale"><span>0%</span><span>Meta 95%</span><span>100%</span></div></div>';
+    const maxValue=Math.max(1,...groups.map(g=>Math.max(n(g.actual),n(g.demand))));
+    const bars=groups.map(g=>{
+      const real=Math.max(0,n(g.actual)),plan=Math.max(0,n(g.demand));
+      const realHeight=Math.min(100,real/maxValue*100),planHeight=Math.min(100,plan/maxValue*100);
+      return '<div class="gv-column-group">'+
+        '<div class="gv-column-bars" role="img" aria-label="'+stockEsc(g.line)+': real '+fmt(real)+'; plano '+fmt(plan)+'">'+
+          '<div class="gv-column-bar real" style="height:'+realHeight.toFixed(2)+'%" title="Real: '+fmt(real)+'"></div>'+
+          '<div class="gv-column-bar plan" style="height:'+planHeight.toFixed(2)+'%" title="Plano: '+fmt(plan)+'"></div>'+
+        '</div><strong>'+stockEsc(g.line)+'</strong><small>'+fmt(real)+' / '+fmt(plan)+'</small></div>';
+    }).join("");
+    prod.innerHTML=groups.length?
+      '<div class="gv-column-chart-header"><span>Produção por linha • Real x Plano</span><div><i class="real"></i> Real <i class="plan"></i> Plano</div></div>'+
+      '<div class="gv-column-chart">'+bars+'</div>'+
+      '<div class="gv-column-chart-footer">Atendimento: <b>'+fmtPct(attainment)+'</b> · Desvio: <b>'+(actual-demand>=0?'+':'')+fmt(actual-demand)+' peças</b></div>'
+      :'<div class="empty-state">Sem produção por linha para o período.</div>';
   }
 
   const models=document.getElementById("homeYesterdayModels");
