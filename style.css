@@ -12120,3 +12120,33 @@ body{background:var(--bi-canvas)}
 .gv-column-bar.plan{background:#9fbcd3}
 .home-production-panel,#homeYesterdayProduction{height:auto!important;min-height:0!important}
 @media(max-width:650px){.gv-column-plot{grid-template-columns:39px minmax(0,1fr);gap:4px}.gv-column-bars,.gv-column-axis{height:145px!important}.gv-column-chart{gap:5px}.gv-column-bar{width:min(42%,27px)}}
+
+
+/* Correção final: Plano x Realizado em colunas, sem altura ociosa */
+@media(min-width:901px){
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard{
+   height:auto!important;min-height:0!important;max-height:none!important;
+   grid-template-rows:auto auto auto auto auto!important;
+   align-items:start!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-production{
+   height:auto!important;min-height:0!important;align-self:start!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-production>.panel{
+   flex:none!important;height:auto!important;min-height:0!important;max-height:none!important;
+   overflow:visible!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-production .gv-column-bars,
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-production .gv-column-axis{
+   height:205px!important;
+ }
+ body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-production #homeYesterdayProduction{
+   height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;
+ }
+}
+#homeYesterdayProduction .gv-column-plot{min-height:0}
+#homeYesterdayProduction .gv-column-group{min-height:0}
+#homeYesterdayProduction .gv-column-bars{position:relative}
+#homeYesterdayProduction .gv-column-bars::before{content:"";position:absolute;inset:0;pointer-events:none;border-top:1px solid #dce6ed}
+#homeYesterdayProduction .gv-column-bar{position:relative;z-index:1}
+@media(max-width:900px){body:has(.gv-executive-dashboard) #content .gv-executive-dashboard{height:auto!important;max-height:none!important}#home-production{height:auto!important}}
