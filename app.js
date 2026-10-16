@@ -2072,6 +2072,42 @@ const STOCK_STAGE={
   downstream:/^USI(?:$|[ _])/i
 };
 
+let stockOpeningRows = [];
+let stockOpeningError = "";
+async function fetchOpeningBalance(){
+  try {
+    const response = await fetch("/data/estoque-inacabado-fechamento-2026-09-30.csv");
+    if(!response.ok) throw new Error("Saldo inicial indisponível");
+    stockOpeningRows = (await response.text()).trim().split(/\r?\n/).slice(1).map(line=>{
+      const values=line.split(";");
+      return {date:values[0],model:values[1],qty:Number(values[2])};
+    }).filter(x=>x.date==="2026-09-30"&&x.model&&Number.isFinite(x.qty));
+    if(!stockOpeningRows.length)throw new Error("Saldo inicial vazio");
+    stockOpeningError="";
+  }catch(e){
+    stockOpeningRows=[];
+    stockOpeningError=e.message;
+  }
+}
+function openingBalanceTotal(){
+  return stockOpeningRows.reduce((sum,x)=>sum+x.qty,0);
+}
+function renderOpeningBalance(position){
+ const target=document.getElementById("stockOpeningBalance");
+ if(!target)return;
+ if(!stockOpeningRows.length){
+   target.textContent="Abertura indisponível: "+(stockOpeningError||"nenhuma linha válida");
+   return;
+ }
+ const opening=openingBalanceTotal();
+ const movement=position.reduce((sum,x)=>sum+x.wipDifference,0);
+ const negative=stockOpeningRows.filter(x=>x.qty<0).length;
+ target.innerHTML="<p><b>Saldo teórico acumulado: "+fmt(opening+movement)+" peças</b> = abertura "+fmt(opening)+" + movimentação líquida "+fmt(movement)+".</p>"+
+ "<p>Abertura fixa em 01/10/2026, proveniente do fechamento de 30/09. "+negative+" modelos com saldo inicial negativo devem ser conciliados. Este total NÃO representa estoque físico disponível; Acabamento é descontado pela produção concluída.</p>"+
+ '<div class="table-scroll"><table><thead><tr><th>Modelo da planilha</th><th>Abertura teórica</th></tr></thead><tbody>'+
+ stockOpeningRows.map(x=>"<tr><td>"+stockEsc(x.model)+"</td><td>"+fmt(x.qty)+"</td></tr>").join("")+"</tbody></table></div>"+
+ "<p>A correspondência entre os modelos da planilha e os códigos do L2L ainda exige validação individual. O total acima é global e não distribui automaticamente a abertura por código.</p>";
+}
 let stockRows=[];
 let stockLoading=false;
 let stockLoaded=false;
@@ -2091,6 +2127,7 @@ function stock(){
     '<div class="filter-context" id="stockContext">Atualização automática a cada 1 minuto.</div>'+
   '</div>'+
   '<div class="cards stock-live-kpis" id="stockCards"></div>'+
+  '<div class="panel"><h2>Saldo inicial de 01/10/2026 — Inacabado teórico</h2><div id="stockOpeningBalance">Aguardando consulta...</div></div>'+
   '<div class="stock-selected-grid" id="stockSelected"></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>WIP / INACABADO</span><h2>Estoque Inacabado</h2><p>Produção da Fundição − consumo registrado no Acabamento.</p></div></div><div id="stockInacabado"></div></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>PRODUTO ACABADO</span><h2>Estoque Acabado</h2><p>Produção do Acabamento − saída identificada no processo seguinte.</p></div></div><div id="stockAcabado"></div></div>'+
@@ -2332,8 +2369,9 @@ async function refreshStockRange(){
   const status=document.getElementById("stockLiveStatus");
   if(status)status.textContent="🟡 Consultando pitches por produto no L2L...";
   try{
-    const first=stockFilterState.startDate||stockMonthStart();
+    const first="2026-10-01";
     const last=stockFilterState.endDate||todayISO();
+    await fetchOpeningBalance();
     const cursor=new Date(first+"T00:00:00"),finish=new Date(last+"T00:00:00");
     if(!Number.isFinite(cursor.getTime())||!Number.isFinite(finish.getTime())||cursor>finish)throw new Error("Período inválido.");
     const pad=v=>String(v).padStart(2,"0");
@@ -2400,6 +2438,7 @@ function updateStock(){
     ?(noModelRows?"O L2L retornou "+noModelRows+" pitches, mas nenhum modelo identificável. Campos: "+stockFieldHints:"O L2L não retornou pitches das três etapas no período.")
     :"";
 
+  renderOpeningBalance(position);
   populateStockModels(position);
   const visible=stockFilteredPosition(position);
 
@@ -2458,7 +2497,7 @@ function updateStock(){
 
   const cards=document.getElementById("stockCards");
   if(cards&&!stockLoaded){cards.innerHTML='<div class="empty-state">' +(stockFetchError?"Falha ao buscar estoque do L2L. Nenhum saldo anterior será usado como atual.":"Aguardando dados do L2L...") +'</div>';}else if(cards)cards.innerHTML=
-    card("Inacabados",fmt(totalI),totalI>0?"warn":"")+
+    card("Inacabado teórico acumulado",stockOpeningRows.length?fmt(openingBalanceTotal()+position.reduce((s,x)=>s+x.wipDifference,0)):"N/D","warn")+
     card("Acabados",fmt(totalA),totalA>0?"good":"")+
     card("Total",fmt(totalI+totalA))+
     card("Produção Fundição",fmt(foundry))+
