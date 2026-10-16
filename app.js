@@ -2628,6 +2628,8 @@ function quality(){
  return '<div class="gv-quality-live">'+
  '<div class="gv-quality-toolbar"><div><b>Qualidade da Fundição • L2L</b><small id="qualityWindow">Consultando janela operacional...</small></div><span id="qualityDataStatus">Aguardando dados</span></div>'+
  '<form class="gv-quality-filter" id="qualityDateFilter"><label>Data inicial<input type="date" id="qualityStartDate" required></label><label>Hora inicial<input type="time" id="qualityStartTime" required></label><label>Data final<input type="date" id="qualityEndDate" required></label><label>Hora final<input type="time" id="qualityEndTime" required></label><button type="submit" id="qualityApply">Consultar L2L</button><button type="button" id="qualityReset">Dia operacional</button></form>'+
+ '<section class="panel gv-quality-history"><div><strong>Histórico por dia operacional</strong><p>Escolha a data para consultar os registros entre 07:00 e 07:00 do dia seguinte.</p></div><div class="gv-quality-history-actions"><input id="qualityHistoryDate" type="date" aria-label="Data do histórico"><button id="qualityHistoryApply" type="button">Ver histórico</button></div></section>'+
+ '<div id="qualityHistorySummary" class="panel gv-quality-history-result" aria-live="polite">Selecione um dia para consultar o histórico.</div>'+
  '<div id="qualityLiveKpis" class="gv-quality-kpis"><div class="empty-state">Consultando indicadores do L2L...</div></div>'+
  '<section class="panel gv-quality-audit" id="qualityDataAudit" aria-live="polite">Conferindo consistência do L2L...</section>'+
  '<section id="qualityDetail" class="panel gv-quality-detail" hidden></section>'+
@@ -2649,6 +2651,20 @@ function qualitySetForm(){
 }
 function initQuality(){
  qualitySetForm();
+ const histDate=document.getElementById("qualityHistoryDate");
+ if(histDate){histDate.value=(qualityRange||qualityDefaultRange()).start.slice(0,10);histDate.max=localIsoDate(new Date());}
+ const histButton=document.getElementById("qualityHistoryApply");
+ if(histButton)histButton.addEventListener("click",async()=>{
+   const day=histDate?.value;
+   if(!day)return;
+   const start=new Date(day+"T07:00:00");
+   const end=new Date(start);end.setDate(end.getDate()+1);
+   const pad=x=>String(x).padStart(2,"0");
+   const next=[end.getFullYear(),pad(end.getMonth()+1),pad(end.getDate())].join("-");
+   qualityRange={start:day+" 07:00",end:next+" 07:00"};
+   qualitySetForm();
+   await refreshQualityWindow();
+ });
  const form=document.getElementById("qualityDateFilter");
  if(form)form.addEventListener("submit",async e=>{
   e.preventDefault();
@@ -2735,6 +2751,22 @@ function renderQualityL2L(){
   detail.hidden=false;
   detail.scrollIntoView({block:"nearest",behavior:"smooth"});
  }));
+ const history=document.getElementById("qualityHistorySummary");
+ if(history){
+   if(qualityLoading)history.textContent="Consultando histórico do L2L...";
+   else if(qualityError&&rows.length===0)history.textContent=qualityError;
+   else{
+     const byLineHistory=groupedByLine(rows).sort((a,b)=>a.line.localeCompare(b.line,"pt-BR"));
+     const day=range.start.slice(0,10).split("-").reverse().join("/");
+     const detailedCount=homeDefectRows(qualityScrapRows).length;
+     history.innerHTML='<div class="gv-quality-history-head"><div><strong>Histórico operacional de '+stockEsc(day)+'</strong><small>'+stockEsc(range.start)+' → '+stockEsc(range.end)+'</small></div><span>Fonte: L2L</span></div>'+
+     '<div class="gv-quality-history-stats"><span><b>'+fmt(actual)+'</b>Produção real</span><span><b>'+fmt(scrap)+'</b>NG total</span><span><b>'+fmt(byLineHistory.length)+'</b>Linhas</span><span><b>'+fmt(detailedCount)+'</b>Registros de defeito</span></div>'+
+     '<details><summary>Consultar histórico por linha</summary><div class="table-scroll"><table><thead><tr><th>Linha</th><th>Real</th><th>NG</th><th>Demanda</th></tr></thead><tbody>'+
+     byLineHistory.map(x=>'<tr><td>'+stockEsc(x.line)+'</td><td>'+fmt(x.actual)+'</td><td>'+fmt(x.scrap)+'</td><td>'+fmt(x.demand)+'</td></tr>').join("")+
+     '</tbody></table></div></details>'+
+     '<p>Histórico obtido na consulta atual; registros posteriores podem ser corrigidos no L2L. Os totais não constituem um fechamento imutável.</p>';
+   }
+ }
  const pareto=document.getElementById("qualityPareto");
  // Summary production rows are authoritative for the day's scrap quantity,
  // even when no product or defect was entered in L2L.
