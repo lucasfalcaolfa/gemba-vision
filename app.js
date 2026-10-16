@@ -2693,6 +2693,7 @@ function renderQualityL2L(){
  const rows=homeFndRows(qualityRows);
  const defects=homeDefectSummary(qualityScrapRows,qualityContext?.pitches||[]);
  const actual=total(rows,"actual"),scrap=total(rows,"scrap");
+ // Indicadores usam 'actual' como denominador; validar significado no cadastro L2L.
  const scrapPct=actual>0?scrap/actual*100:null;
  const qualityPct=actual>0?(actual-scrap)/actual*100:null;
  const ppm=actual>0?scrap/actual*1000000:null;
