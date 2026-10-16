@@ -12108,3 +12108,15 @@ body{background:var(--bi-canvas)}
 .gv-column-chart-footer{margin-top:12px;padding-top:9px;border-top:1px solid #e4edf3;font-size:11px;color:#587387}
 @media(min-width:1600px) and (min-height:850px){body:has(.gv-executive-dashboard) #content .gv-executive-dashboard>#home-production{align-self:stretch!important}body:has(.gv-executive-dashboard) .gv-column-bars{height:clamp(65px,11vh,120px)}}
 @media(max-width:650px){.gv-column-chart{gap:6px}.gv-column-bars{height:120px;gap:4px}.gv-column-group strong{font-size:9px}.gv-column-group small{font-size:9px}}
+
+
+/* Plano x realizado: colunas verticais com eixo e escala */
+.gv-column-plot{display:grid;grid-template-columns:55px minmax(0,1fr);gap:10px;align-items:start}
+.gv-column-axis{height:170px;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;padding:0 4px 0 0;box-sizing:border-box;color:#647e90;font:600 10px/1.1 inherit;font-variant-numeric:tabular-nums}
+.gv-column-chart{position:relative;align-items:start!important;gap:14px;min-height:0!important}
+.gv-column-group{position:relative;z-index:1}
+.gv-column-bars{height:170px!important;background:repeating-linear-gradient(to top,transparent 0,transparent calc(25% - 1px),#dce6ed 25%)!important;border-bottom:1px solid #b6cbd8;box-sizing:border-box}
+.gv-column-bar.real{background:#e9544c}
+.gv-column-bar.plan{background:#9fbcd3}
+.home-production-panel,#homeYesterdayProduction{height:auto!important;min-height:0!important}
+@media(max-width:650px){.gv-column-plot{grid-template-columns:39px minmax(0,1fr);gap:4px}.gv-column-bars,.gv-column-axis{height:145px!important}.gv-column-chart{gap:5px}.gv-column-bar{width:min(42%,27px)}}
