@@ -3443,11 +3443,35 @@ function renderHomeEvents(){
 }
 
 function homeProcessMetrics(rows,process,defectRows){
-  const processRows=(Array.isArray(rows)?rows:[]).filter(r=>homeProcessFromLine(r.line)===process);
-  const processGroups=sortOeeCardsByLine(groupedByLine(processRows));
-  const demand=total(processRows,"demand");
-  const actual=total(processRows,"actual");
-  const scrap=total(processRows,"scrap");
+  const processRows=(Array.isArray(rows)?rows:[]).filter(r=>homeProcessFromLine(r.line)===process).filter(r=>process!=="injecao"||/^INJETORA\s+AL[1-4]$/i.test(String(r.line||"").trim()));
+  // Audita registros do resumo: linhas agregadas e detalhadas simultaneamente
+  // não podem ser somadas como se fossem eventos de produção independentes.
+  const byLine=new Map();
+  for(const row of processRows){
+    const key=String(row.line||"").trim().toUpperCase();
+    if(!byLine.has(key))byLine.set(key,[]);
+    byLine.get(key).push(row);
+  }
+  const verifiedRows=[];
+  const ambiguous=[];
+  for(const [line,items] of byLine){
+    if(items.length===1){verifiedRows.push(items[0]);continue;}
+    const signatures=new Set();
+    for(const item of items){
+      const signature=JSON.stringify([item.line,item.shift??null,item.product??item.product_id??null,item.actual,item.demand,item.scrap]);
+      if(signatures.has(signature))continue;
+      signatures.add(signature);
+      verifiedRows.push(item);
+    }
+    if(verifiedRows.filter(r=>String(r.line||"").trim().toUpperCase()===line).length>1){
+      ambiguous.push(line);
+    }
+  }
+  homeProcessMetrics.audit={duplicateRows:processRows.length-verifiedRows.length,ambiguous};
+  const processGroups=sortOeeCardsByLine(groupedByLine(verifiedRows));
+  const demand=total(verifiedRows,"demand");
+  const actual=total(verifiedRows,"actual");
+  const scrap=total(verifiedRows,"scrap");
   const net=Math.max(0,actual-scrap);
   const attainment=demand?actual/demand*100:0;
   const avgOee=processGroups.length?processGroups.reduce((s,g)=>s+n(g.oee),0)/processGroups.length:0;
@@ -3456,7 +3480,7 @@ function homeProcessMetrics(rows,process,defectRows){
     homeYesterdayContext?.pitches||[]
   );
   const defectQty=defects.reduce((s,x)=>s+x.qty,0);
-  return {rows:processRows,groups:processGroups,demand,actual,scrap,net,attainment,avgOee,defects,defectQty};
+  return {rows:verifiedRows,groups:processGroups,demand,actual,scrap,net,attainment,avgOee,defects,defectQty,audit:homeProcessMetrics.audit};
 }
 
 function homeProcessKpis(title,subtitle,metrics,processClass){
@@ -3686,6 +3710,13 @@ function renderHomeYesterday(){
   const defects=metrics.defects;
   const defectQty=metrics.defectQty;
 
+  const auditNode=document.getElementById("homeProductionAudit");
+  if(auditNode){
+    const audit=metrics.audit||{duplicateRows:0,ambiguous:[]};
+    auditNode.textContent=audit.duplicateRows||audit.ambiguous.length
+      ?"Auditoria L2L: "+audit.duplicateRows+" registro(s) idêntico(s) desconsiderado(s); "+audit.ambiguous.length+" linha(s) com registros múltiplos que exigem conferência de pitch."
+      :"Auditoria L2L: sem linhas duplicadas exatamente iguais no resumo.";
+  }
   const products=homeProductSummary(homeYesterdayProductRows);
   const shiftProducts=homeShiftProductGroups(homeYesterdayContext?.pitches||[],process);
   const bestMachine=groups.length?[...groups].sort((a,b)=>b.oee-a.oee)[0]:null;
@@ -3694,7 +3725,7 @@ function renderHomeYesterday(){
   homeCurrentDefects=defects;
 
   const status=document.getElementById("homeYesterdayStatus");
-  if(status)status.textContent=liveStamp()+" • "+processLabel+" • "+dateLabel+" 07:00 → "+endLabel+" 07:00";
+  if(status)status.textContent=liveStamp()+" • "+processLabel+" • "+dateLabel+" 07:00 → "+endLabel+" 07:00"+(metrics.audit?.duplicateRows?" • "+metrics.audit.duplicateRows+" duplicata(s) ignorada(s)":"");
 
   const kpis=document.getElementById("homeYesterdayKpis");
   if(kpis)kpis.innerHTML=homeProcessKpis(
