@@ -11968,3 +11968,22 @@ body{background:var(--exec-bg);color:var(--exec-ink);-webkit-font-smoothing:anti
 .gv-quality-detail h3{margin:0 0 8px;color:#12344d}
 .gv-quality-detail p{font-size:12px;color:#5c7180}
 .gv-quality-detail .table-scroll{margin-top:12px}
+
+
+/* Qualidade: detalhes de auditoria acessíveis e rastreáveis */
+.gv-quality-kpi{cursor:pointer;text-align:left;font:inherit}
+.gv-quality-kpi em{display:block;font-style:normal;font-size:10px;color:#326b94;font-weight:700;margin-top:8px}
+.gv-quality-kpi:hover{box-shadow:0 6px 22px rgba(18,57,83,.13);transform:translateY(-1px)}
+.gv-quality-kpi:focus-visible,.gv-quality-row:focus-visible,.gv-quality-line:focus-visible{outline:3px solid rgba(23,116,178,.4);outline-offset:3px}
+.gv-quality-detail,.gv-quality-audit{margin:14px 0;padding:16px 18px}
+.gv-quality-detail h3{margin:0 0 8px}
+.gv-quality-detail p{margin:6px 0 12px}
+.gv-quality-audit{background:#f7fafc;border:1px solid #d8e5ee;color:#34536a;border-radius:13px}
+.gv-quality-audit strong{font-size:12px}
+.gv-quality-audit p{font-size:12px;margin:8px 0}
+.gv-quality-audit ul{margin:8px 0;padding-left:22px;color:#a65a12;font-size:12px}
+.gv-quality-audit small{color:#687e8e;font-size:11px}
+.gv-quality-row,.gv-quality-line{cursor:pointer;border-radius:7px}
+.gv-quality-row:hover,.gv-quality-line:hover{background:#f3f8fb}
+.gv-quality-detail .table-scroll{max-height:380px;overflow:auto}
+@media(prefers-reduced-motion:reduce){.gv-quality-kpi:hover{transform:none}}
