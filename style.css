@@ -12005,3 +12005,14 @@ body{background:var(--exec-bg);color:var(--exec-ink);-webkit-font-smoothing:anti
 .gv-quality-history-result summary{cursor:pointer;font-weight:750;font-size:12px;margin:10px 0}
 .gv-quality-history-result p{font-size:11px;color:#75899a;margin:10px 0 0}
 @media(max-width:760px){.gv-quality-history{align-items:flex-start;flex-direction:column}.gv-quality-history-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* Quality interactive audit */
+.gv-quality-kpi{cursor:pointer;text-align:left}
+.gv-quality-kpi:hover,.gv-quality-row[role="button"]:hover,.gv-quality-line[role="button"]:hover{box-shadow:0 6px 18px rgba(12,50,77,.1);background:#f5f9fc}
+.gv-quality-row[role="button"],.gv-quality-line[role="button"]{cursor:pointer;border-radius:8px;transition:background-color .15s ease}
+.gv-quality-row[role="button"]:focus-visible,.gv-quality-line[role="button"]:focus-visible,.gv-quality-kpi:focus-visible{outline:3px solid #5493c3;outline-offset:2px}
+.gv-quality-detail{margin:14px 0;padding:18px;border-left:4px solid #2486b9}
+.gv-quality-detail h3{margin:0 0 10px}
+.gv-quality-detail p{margin:8px 0;color:#405a6d}
+.gv-quality-kpi em{display:block;font-size:10px;font-style:normal;color:#2c719e;margin-top:5px}
