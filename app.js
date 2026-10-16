@@ -2629,6 +2629,7 @@ function quality(){
  '<div class="gv-quality-toolbar"><div><b>Qualidade da Fundição • L2L</b><small id="qualityWindow">Consultando janela operacional...</small></div><span id="qualityDataStatus">Aguardando dados</span></div>'+
  '<form class="gv-quality-filter" id="qualityDateFilter"><label>Data inicial<input type="date" id="qualityStartDate" required></label><label>Hora inicial<input type="time" id="qualityStartTime" required></label><label>Data final<input type="date" id="qualityEndDate" required></label><label>Hora final<input type="time" id="qualityEndTime" required></label><button type="submit" id="qualityApply">Consultar L2L</button><button type="button" id="qualityReset">Dia operacional</button></form>'+
  '<div id="qualityLiveKpis" class="gv-quality-kpis"><div class="empty-state">Consultando indicadores do L2L...</div></div>'+
+ '<section class="panel gv-quality-audit" id="qualityDataAudit" aria-live="polite">Conferindo consistência do L2L...</section>'+
  '<section id="qualityDetail" class="panel gv-quality-detail" hidden></section>'+
  '<div class="gv-quality-grid">'+
  '<section class="panel"><div class="gv-quality-title"><h2>Pareto de defeitos</h2><small>Quantidades registradas no L2L</small></div><div id="qualityPareto"><div class="empty-state">Carregando...</div></div></section>'+
@@ -2702,14 +2703,16 @@ function renderQualityL2L(){
  const range=qualityRange||qualityDefaultRange();
  const windowLabel=document.getElementById("qualityWindow");
  if(windowLabel)windowLabel.textContent=range.start+" → "+range.end;
+ const previousDetail=document.getElementById("qualityDetail");
+ if(previousDetail){previousDetail.hidden=true;previousDetail.innerHTML="";}
  const status=document.getElementById("qualityDataStatus");
  if(status)status.textContent=qualityLoading?"Consultando L2L...":(qualityError|| (rows.length?"Consulta concluída":"Sem produção identificada"));
  const card=(label,value,detail,cls="")=>'<button type="button" class="gv-quality-kpi '+cls+'" data-quality-kpi="'+label+'"><span>'+label+'</span><strong>'+value+'</strong><small>'+detail+'</small><em>Ver detalhes</em></button>';
  kpis.innerHTML=[
-   card("Qualidade",qualityPct===null?"—":fmtPct(qualityPct),"Peças boas / produção","good"),
+   card("Qualidade estimada",qualityPct===null?"—":fmtPct(qualityPct),"Calculada com actual L2L","good"),
    card("Scrap",scrapPct===null?"—":fmtPct(scrapPct),fmt(scrap)+" peças rejeitadas","bad"),
    card("Peças produzidas",rows.length?fmt(actual):"—","Produção real L2L"),
-   card("PPM",ppm===null?"—":fmt(ppm),"Rejeitos por milhão","warn"),
+   card("PPM estimado",ppm===null?"—":fmt(ppm),"Base: actual L2L","warn"),
    card("Retrabalho","—","Sem registro específico"),
    card("Custo NQ","—","Sem custo unitário validado")
  ].join("");
@@ -2719,10 +2722,10 @@ function renderQualityL2L(){
   const label=button.dataset.qualityKpi;
   const breakdown=groupedByLine(rows).sort((a,b)=>b.scrap-a.scrap);
   const explanation={
-    "Qualidade":"(Produção real − Scrap) / Produção real × 100",
+    "Qualidade estimada":"(Produção real − Scrap) / Produção real × 100",
     "Scrap":"Scrap / Produção real × 100",
     "Peças produzidas":"Soma de actual por linha da Fundição",
-    "PPM":"Scrap / Produção real × 1.000.000",
+    "PPM estimado":"Scrap / Produção real × 1.000.000",
     "Retrabalho":"Não informado em campo específico pelo L2L",
     "Custo NQ":"Sem custo unitário homologado"
   };
@@ -2749,7 +2752,7 @@ function renderQualityL2L(){
  ).reduce((a,r)=>a+n(r.scrap),0);
  if(pareto){
   pareto.innerHTML=groupsForPareto.length?
-   '<div class="gv-quality-pareto">'+groupsForPareto.slice(0,7).map((d,i)=>
+   '<div class="gv-quality-pareto">'+groupsForPareto.map((d,i)=>
     '<div class="gv-quality-row"><span title="'+stockEsc(d.defect)+'">'+(i+1)+'. '+stockEsc(d.defect)+'</span><div class="gv-quality-track"><i style="width:'+(100*d.qty/max).toFixed(2)+'%"></i></div><b>'+fmt(d.qty)+'</b><small>'+fmt(chartTotal?d.qty/chartTotal*100:0,1)+'%</small></div>'
    ).join("")+'</div>':'<div class="empty-state">Nenhum rejeito registrado no período.</div>';
   pareto.innerHTML+='<small class="gv-quality-note">Scrap total do período: '+fmt(scrap)+' peças'+
@@ -2757,6 +2760,18 @@ function renderQualityL2L(){
     (noModel>0?' · '+fmt(noModel)+' rejeitos detalhados sem modelo informado':'')+
     (overDetailed?' · Atenção: detalhes ('+fmt(sumDefects)+') excedem o resumo; verificar duplicidade.':'')+
     '</small>';
+ }
+ const audit=document.getElementById("qualityDataAudit");
+ if(audit){
+  const problems=[];
+  if(overDetailed)problems.push("Detalhes de rejeitos excedem o resumo em "+fmt(sumDefects-scrap)+" peças.");
+  if(unclassified>0)problems.push(fmt(unclassified)+" rejeitos sem classificação de defeito.");
+  if(rows.some(r=>n(r.actual)<0||n(r.scrap)<0))problems.push("Há registros com quantidades negativas na origem.");
+  if(rows.some(r=>n(r.scrap)>n(r.actual)))problems.push("Há linhas em que scrap excede actual; verificar o significado dos campos.");
+  if(qualityError)problems.push(qualityError);
+  audit.innerHTML='<strong>Conferência de dados do L2L</strong><p>Resumo: '+fmt(scrap)+' rejeitos • Detalhes: '+fmt(sumDefects)+' • Sem descrição: '+fmt(unclassified)+' • '+fmt(rows.length)+' registro(s) consolidados.</p>'+
+  (problems.length?'<ul>'+problems.map(x=>'<li>'+stockEsc(x)+'</li>').join("")+'</ul>':'<p>Sem divergência quantitativa evidente entre resumo e detalhamento consultados.</p>')+
+  '<small>Não é inventário físico. Percentuais e PPM dependem da definição do campo actual no L2L.</small>';
  }
  const byLine=document.getElementById("qualityByLine");
  const groups=groupedByLine(rows).sort((a,b)=>n(b.scrap)-n(a.scrap));
