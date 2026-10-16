@@ -2712,6 +2712,25 @@ function renderQualityL2L(){
    card("Retrabalho","—","Sem registro específico"),
    card("Custo NQ","—","Sem custo unitário validado")
  ].join("");
+ const detail=document.getElementById("qualityDetail");
+ kpis.querySelectorAll("[data-quality-kpi]").forEach(button=>button.addEventListener("click",()=>{
+  if(!detail)return;
+  const label=button.dataset.qualityKpi;
+  const breakdown=groupedByLine(rows).sort((a,b)=>b.scrap-a.scrap);
+  const explanation={
+    "Qualidade":"(Produção real − Scrap) / Produção real × 100",
+    "Scrap":"Scrap / Produção real × 100",
+    "Peças produzidas":"Soma de actual por linha da Fundição",
+    "PPM":"Scrap / Produção real × 1.000.000",
+    "Retrabalho":"Não informado em campo específico pelo L2L",
+    "Custo NQ":"Sem custo unitário homologado"
+  };
+  detail.innerHTML='<h3>'+stockEsc(label)+' — Detalhamento por linha</h3><p><b>Cálculo:</b> '+stockEsc(explanation[label]||"Não disponível")+'</p><p>Período: '+stockEsc(range.start)+' até '+stockEsc(range.end)+'. Fonte: relatório de produção L2L. O campo actual deve ser confirmado como produção total ou boa antes de validar o PPM.</p>'+
+    '<div class="table-scroll"><table><thead><tr><th>Linha</th><th>Real</th><th>Scrap</th><th>Taxa informativa</th></tr></thead><tbody>'+
+    breakdown.map(g=>'<tr><td>'+stockEsc(g.line)+'</td><td>'+fmt(g.actual)+'</td><td>'+fmt(g.scrap)+'</td><td>'+(g.actual>0?fmt(g.scrap/g.actual*100,2)+'%':"—")+'</td></tr>').join("")+'</tbody></table></div>';
+  detail.hidden=false;
+  detail.scrollIntoView({block:"nearest",behavior:"smooth"});
+ }));
  const pareto=document.getElementById("qualityPareto");
  // Summary production rows are authoritative for the day's scrap quantity,
  // even when no product or defect was entered in L2L.
