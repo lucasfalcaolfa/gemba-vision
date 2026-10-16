@@ -11915,3 +11915,33 @@ body.home-nav-in-topbar .home-executive-hero{
 .stock-filter-head h2{font-size:19px}
 @media (max-width:1050px){.stock-live-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.stock-audit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:640px){.stock-live-kpis{grid-template-columns:1fr}.stock-audit-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.stock-filter-head{flex-wrap:wrap}.stock-insight-panel{padding:12px}}
+
+
+/* Executive design system – consistent across every Gemba Vision view */
+:root{--exec-navy:#0b2d45;--exec-ink:#173449;--exec-muted:#62798a;--exec-border:#dbe5eb;--exec-bg:#f2f6f9;--exec-focus:#247ab8}
+body{background:var(--exec-bg);color:var(--exec-ink);-webkit-font-smoothing:antialiased}
+#content{min-width:0}
+#content>.panel,#content>section.panel,#content .panel{border-color:var(--exec-border);border-radius:14px;box-shadow:0 4px 16px rgba(18,47,71,.045)}
+#content h1,#content h2,#content h3{letter-spacing:-.025em;line-height:1.25}
+#content h1{font-size:clamp(22px,2.1vw,29px)}
+#content h2{color:var(--exec-navy)}
+#content p{line-height:1.55}
+#content .card,#content article{min-width:0}
+#content table{border-collapse:separate;border-spacing:0;width:100%;font-variant-numeric:tabular-nums}
+#content table thead th{background:#eef4f8;color:#38566b;font-size:11px;font-weight:800;letter-spacing:.015em;text-align:left;white-space:normal}
+#content table td,#content table th{padding:10px 12px;border-bottom:1px solid #e7edf1;vertical-align:middle}
+#content table tbody tr:hover{background:#f5f9fc}
+#content .table-scroll{overflow-x:auto;overscroll-behavior-x:contain;border-radius:10px}
+#content button,#content select,#content input{font-family:inherit}
+#content button{cursor:pointer;transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease}
+#content button:focus-visible,#content input:focus-visible,#content select:focus-visible,.sidebar .nav:focus-visible{outline:3px solid rgba(36,122,184,.35);outline-offset:2px}
+#content input,#content select{max-width:100%}
+#content input[type="date"],#content input[type="datetime-local"],#content select{min-height:38px}
+.sidebar .nav{transition:background-color .15s ease,color .15s ease,border-color .15s ease}
+.sidebar .nav:not(.active):hover{background:rgba(255,255,255,.075)}
+.sidebar .nav.active{box-shadow:inset 3px 0 0 rgba(255,255,255,.65)}
+.side-footer{border-top:1px solid rgba(255,255,255,.11)}
+.stock-insight-panel,.gv-models-priority-item,.gv-models-sector{box-shadow:0 4px 16px rgba(18,47,71,.04)}
+#content .empty-state{border-radius:10px;line-height:1.6}
+@media(max-width:900px){#content table thead th{font-size:10px}#content table td,#content table th{padding:9px 10px}}
+@media(prefers-reduced-motion:reduce){#content button,.sidebar .nav{transition:none}}
