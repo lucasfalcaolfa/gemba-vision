@@ -4060,7 +4060,7 @@ function renderHomePowerBiSummary(){
  const process=homeProcessFilter,m=homeProcessMetrics(homeFndRows(homeYesterdayRows),process,homeYesterdayScrapRows),gs=m.groups,esc=stockEsc;
  const mx=Math.max(1,...gs.map(g=>g.demand));
  const prod=document.getElementById("homeYesterdayProduction");
- if(prod)prod.innerHTML='<div class="gv-legend">■ Real &nbsp; <span>■ Plano</span></div><div class="gv-pbi-bars">'+gs.map(g=>'<div class="gv-pbi-bar"><b>'+esc(g.line)+'</b><div><i style="width:'+Math.min(100,g.actual/mx*100)+'%"></i><em style="width:'+Math.min(100,g.demand/mx*100)+'%"></em></div><span>'+fmt(g.actual)+' / '+fmt(g.demand)+'</span></div>').join("")+'</div><div class="gv-pbi-footer">Atendimento: <b>'+fmtPct(m.attainment)+'</b> · Desvio: '+fmt(m.actual-m.demand)+' peças</div>';
+ // Production chart is rendered by renderHomeYesterday with vertical columns; do not overwrite it.
  const shifts=homeShiftProductGroups(homeYesterdayContext?.pitches||[],process);
  renderHomeShiftTabs(shifts);
  const oee=document.getElementById("homeYesterdayOee");
