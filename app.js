@@ -2138,17 +2138,17 @@ const stockFilterState={startDate:"",endDate:"",model:"Todos"};
 
 function stock(){
   return '<div class="panel stock-filter-panel">'+
-    '<div class="stock-filter-head"><div><span>CONTROLE EM TEMPO REAL</span><h2>Estoque da Fundição</h2><p>Selecione a data e o modelo para consultar a posição calculada com os dados do L2L.</p></div><div class="stock-live-badge" id="stockLiveStatus">🟡 L2L: carregando...</div></div>'+
+    '<div class="stock-filter-head"><div><span>CONTROLE EM TEMPO REAL</span><h2>Estoque da Fundição</h2><p>Acompanhe a produção por período e selecione um modelo para visualizar os saldos estimados.</p></div><div class="stock-live-badge" id="stockLiveStatus">🟡 L2L: carregando...</div></div>'+
     '<div class="stock-filter-grid stock-filter-grid-range">'+
       '<label>Data inicial<input id="stockStartDate" type="date"></label>'+
       '<label>Data final<input id="stockEndDate" type="date"></label>'+
       '<label>Modelo<select id="stockModel"><option value="Todos">Todos os modelos</option></select></label>'+
-      '<button type="button" id="stockReset" class="stock-filter-reset">↺ 1º do mês até hoje</button>'+
+      '<button type="button" id="stockReset" class="stock-filter-reset">↺ Restaurar período</button>'+
     '</div>'+
     '<div class="filter-context" id="stockContext">Atualização automática a cada 1 minuto.</div>'+
   '</div>'+
   '<div class="cards stock-live-kpis" id="stockCards"></div>'+
-  '<div class="panel" role="status" aria-live="polite" style="padding:12px 16px;margin-top:10px"><div id="stockAuditSummary">Auditoria aguardando atualização do L2L.</div></div>'+
+  '<div class="stock-insight-panel"><div class="stock-insight-title"><strong>Confiabilidade dos dados</strong><span>Conciliação L2L</span></div><div id="stockAuditSummary">Aguardando consulta...</div></div>'+
 
   '<div class="stock-selected-grid" id="stockSelected"></div>'+
   '<div class="panel"><div class="stock-section-head"><div><span>WIP / INACABADO</span><h2>Inacabado estimado</h2><p>Fundição − produção concluída no Acabamento. Não equivale a retirada física de peças.</p></div></div><div id="stockInacabado"></div></div>'+
@@ -2474,7 +2474,13 @@ function updateStock(){
   if(auditSummary){
     const unknown=calculateL2LStock.unidentified||[];
     const unmatched=calculateL2LStock.unmatched||[];
-    auditSummary.innerHTML='<strong>Auditoria de confiabilidade:</strong> '+fmt(visible.length)+' código(s) visível(is) • '+fmt(unbalanced.length)+' com diferença negativa • '+fmt(hiddenNegative)+' peças negativas truncadas nos indicadores • '+fmt(unknown.length)+' pitch(es) sem código reconhecido • '+fmt(unmatched.length)+' apontamento(s) de Usinagem não conciliados. <strong>Os valores são estimativas de fluxo, não saldo físico.</strong>';
+    auditSummary.innerHTML='<div class="stock-audit-metrics">'+
+      '<span><b>'+fmt(visible.length)+'</b> modelos/códigos</span>'+
+      '<span><b>'+fmt(unbalanced.length)+'</b> diferenças negativas</span>'+
+      '<span><b>'+fmt(unknown.length)+'</b> apontamentos sem código</span>'+
+      '<span><b>'+fmt(unmatched.length)+'</b> saídas sem conciliação</span></div>'+
+      (hiddenNegative?'<p class="stock-audit-warning">Atenção: '+fmt(hiddenNegative)+' peças de diferenças negativas foram zeradas nos indicadores.</p>':'')+
+      '<p class="stock-audit-disclaimer">Valores calculados a partir da produção registrada no L2L; não representam inventário físico validado.</p>';
   }
   const pending=document.getElementById("stockUnmatched");
   // Visible build marker and mapping audit help distinguish stale bundles from L2L data issues.
@@ -2525,11 +2531,11 @@ function updateStock(){
 
   const cards=document.getElementById("stockCards");
   if(cards&&!stockLoaded){cards.innerHTML='<div class="empty-state">' +(stockFetchError?"Falha ao buscar estoque do L2L. Nenhum saldo anterior será usado como atual.":"Aguardando dados do L2L...") +'</div>';}else if(cards)cards.innerHTML=
-    card("Inacabado estimado",fmt(totalI),totalI>0?"warn":"")+
-    card("Acabado estimado",fmt(totalA),totalA>0?"good":"")+
-    card("Total estimado",fmt(totalI+totalA))+
-    card("Produção Fundição",fmt(foundry))+
-    card("Produção Acabamento",fmt(finishing));
+    '<div class="stock-kpi-feature">'+card("Inacabado estimado",fmt(totalI),totalI>0?"warn":"")+'<small>Fundição − Acabamento</small></div>'+
+    '<div class="stock-kpi-feature">'+card("Acabado estimado",fmt(totalA),totalA>0?"good":"")+'<small>Acabamento − Usinagem conciliada</small></div>'+
+    '<div class="stock-kpi-feature">'+card("Total estimado",fmt(totalI+totalA))+'<small>Soma dos saldos estimados</small></div>'+
+    '<div class="stock-kpi-secondary">'+card("Produção Fundição",fmt(foundry))+'</div>'+
+    '<div class="stock-kpi-secondary">'+card("Produção Acabamento",fmt(finishing))+'</div>';
 
   const selected=document.getElementById("stockSelected");
   if(selected){
