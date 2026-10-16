@@ -12086,3 +12086,28 @@ body{background:var(--bi-canvas)}
 .gv-quality-kpi:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(13,47,73,.1)}
 @media(max-width:680px){.gv-drill-metrics{grid-template-columns:1fr}.gv-drill-bar{grid-template-columns:1fr 1.7fr 58px;gap:7px}.gv-drill-panel{padding:12px}}
 @media(prefers-reduced-motion:reduce){#content,.gv-drill-panel{animation:none}.gv-drill-bar i,.gv-quality-kpi,.gv-quality-row,.gv-quality-line{transition:none}}
+
+
+/* Visão Geral — executive Power BI-inspired desktop canvas */
+.gv-executive-dashboard{--bi-ink:#15354d;--bi-stroke:#dce7ee;--bi-muted:#657e90;display:flex;flex-direction:column;gap:13px}
+.gv-executive-dashboard .home-executive-hero{border-radius:16px;border:1px solid var(--bi-stroke);background:linear-gradient(110deg,#fff 0%,#f0f7fb 100%);box-shadow:0 8px 28px rgba(18,55,80,.055)}
+.gv-executive-dashboard .home-block{min-width:0;margin:0}
+.gv-executive-dashboard .home-block-title{display:flex;justify-content:space-between;align-items:end;gap:10px;margin:0 0 8px}
+.gv-executive-dashboard .home-block-title h2{font-size:16px;letter-spacing:-.025em;color:var(--bi-ink)}
+.gv-executive-dashboard .home-block-title p{font-size:11px;color:var(--bi-muted)}
+.gv-executive-dashboard .home-yesterday-kpis{margin-top:0}
+.gv-executive-dashboard .home-exec-kpi{border:1px solid var(--bi-stroke);border-radius:13px;background:white;min-width:0;overflow:hidden;box-shadow:0 4px 15px rgba(15,54,80,.05)}
+.gv-executive-dashboard .home-exec-kpi strong{font-variant-numeric:tabular-nums;letter-spacing:-.035em}
+.gv-executive-dashboard .home-bi-workspace{display:grid;grid-template-columns:minmax(0,1.14fr) minmax(0,.86fr);gap:14px;align-items:start}
+.gv-executive-dashboard .home-bi-workspace>.home-block{min-width:0}
+.gv-executive-dashboard #home-production{grid-column:1}
+.gv-executive-dashboard #home-flow{grid-column:2}
+.gv-executive-dashboard #home-efficiency{grid-column:1/-1}
+.gv-executive-dashboard #home-quality{grid-column:1}
+.gv-executive-dashboard #home-events{grid-column:2}
+.gv-executive-dashboard .home-bi-workspace .panel{background:#fff;border:1px solid var(--bi-stroke);border-radius:14px;box-shadow:0 4px 15px rgba(15,54,80,.045);min-width:0}
+.gv-executive-dashboard .home-bi-workspace .home-wide-panel,.gv-executive-dashboard .home-bi-workspace .home-focus-panel{height:100%;box-sizing:border-box}
+.gv-executive-dashboard .home-bi-workspace table{font-size:12px}
+.gv-executive-dashboard .home-process-switch button{border-radius:10px}
+@media(max-width:1160px){.gv-executive-dashboard .home-bi-workspace{grid-template-columns:1fr}.gv-executive-dashboard #home-production,.gv-executive-dashboard #home-flow,.gv-executive-dashboard #home-efficiency,.gv-executive-dashboard #home-quality,.gv-executive-dashboard #home-events{grid-column:1}}
+@media(max-width:680px){.gv-executive-dashboard .home-block-title{align-items:start;flex-direction:column;gap:2px}.gv-executive-dashboard .home-executive-hero{padding:14px}.gv-executive-dashboard .home-bi-workspace{gap:10px}}
