@@ -12028,3 +12028,34 @@ body{background:var(--exec-bg);color:var(--exec-ink);-webkit-font-smoothing:anti
 .gv-quality-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media(max-width:1100px){.gv-quality-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:580px){.gv-quality-kpis{grid-template-columns:1fr}}
+
+
+/* Dashboard executivo inspirado na organização visual do Power BI */
+:root{--bi-canvas:#edf2f7;--bi-surface:#fff;--bi-border:#d8e3ec;--bi-ink:#12344f;--bi-sub:#597289;--bi-accent:#17639a}
+body{background:var(--bi-canvas)}
+#content{background:transparent}
+#content .panel,#content .gv-quality-toolbar,#content .gv-quality-kpi,#content .stock-insight-panel{background:var(--bi-surface);border:1px solid var(--bi-border);border-radius:14px;box-shadow:0 3px 12px rgba(18,52,79,.055)}
+#content .gv-quality-live{display:flex;flex-direction:column;gap:14px}
+#content .gv-quality-toolbar{padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+#content .gv-quality-filter{background:#fff;border:1px solid var(--bi-border);border-radius:14px;padding:14px;box-shadow:0 3px 12px rgba(18,52,79,.04)}
+#content .gv-quality-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+#content .gv-quality-kpi{position:relative;min-width:0;min-height:125px;box-sizing:border-box;padding:17px 18px;display:flex;flex-direction:column;align-items:flex-start;gap:8px;justify-content:space-between;overflow:visible}
+#content .gv-quality-kpi>span{position:static;max-width:100%;font-size:11px;line-height:1.4;font-weight:800;letter-spacing:.05em;text-transform:uppercase;white-space:normal;overflow-wrap:anywhere;color:var(--bi-sub)}
+#content .gv-quality-kpi>strong{position:static;font-size:clamp(25px,2.2vw,36px);line-height:1.12;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--bi-ink)}
+#content .gv-quality-kpi>small{font-size:11px;line-height:1.45;color:var(--bi-sub);white-space:normal}
+#content .gv-quality-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:14px;align-items:start}
+#content .gv-quality-grid>.panel{min-width:0;height:100%;box-sizing:border-box}
+#content .gv-quality-drilldown{order:4}
+#content .gv-quality-grid{order:3}
+#content .gv-quality-audit{order:2}
+#content .gv-quality-detail:not([hidden]){order:3;border-left:4px solid var(--bi-accent)}
+#content .gv-quality-disclaimer{order:5}
+#content .gv-quality-row,#content .gv-quality-line{padding-block:9px;border-bottom:1px solid #ecf1f5}
+#content .gv-quality-row:last-child,#content .gv-quality-line:last-child{border-bottom:0}
+#content details{border-bottom:1px solid #e5edf3;padding:7px 0}
+#content details>summary{cursor:pointer;font-weight:700;color:var(--bi-ink);padding:7px 4px}
+#content details[open]>summary{color:var(--bi-accent);margin-bottom:10px}
+#content .gv-quality-kpi[role="button"],#content .gv-quality-row[role="button"],#content .gv-quality-line[role="button"]{cursor:pointer}
+#content .gv-quality-kpi:focus-visible,#content .gv-quality-row:focus-visible,#content .gv-quality-line:focus-visible{outline:3px solid rgba(23,99,154,.28);outline-offset:2px}
+@media(max-width:1150px){#content .gv-quality-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}#content .gv-quality-grid{grid-template-columns:1fr}}
+@media(max-width:620px){#content .gv-quality-kpis{grid-template-columns:1fr}#content .gv-quality-toolbar{flex-wrap:wrap}#content .gv-quality-filter{padding:10px}}
