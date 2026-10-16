@@ -2629,6 +2629,7 @@ function quality(){
  '<div class="gv-quality-toolbar"><div><b>Qualidade da Fundição • L2L</b><small id="qualityWindow">Consultando janela operacional...</small></div><span id="qualityDataStatus">Aguardando dados</span></div>'+
  '<form class="gv-quality-filter" id="qualityDateFilter"><label>Data inicial<input type="date" id="qualityStartDate" required></label><label>Hora inicial<input type="time" id="qualityStartTime" required></label><label>Data final<input type="date" id="qualityEndDate" required></label><label>Hora final<input type="time" id="qualityEndTime" required></label><button type="submit" id="qualityApply">Consultar L2L</button><button type="button" id="qualityReset">Dia operacional</button></form>'+
  '<div id="qualityLiveKpis" class="gv-quality-kpis"><div class="empty-state">Consultando indicadores do L2L...</div></div>'+
+ '<section id="qualityDetail" class="panel gv-quality-detail" hidden></section>'+
  '<div class="gv-quality-grid">'+
  '<section class="panel"><div class="gv-quality-title"><h2>Pareto de defeitos</h2><small>Quantidades registradas no L2L</small></div><div id="qualityPareto"><div class="empty-state">Carregando...</div></div></section>'+
  '<section class="panel"><div class="gv-quality-title"><h2>Não qualidade por linha</h2><small>Scrap / produção real</small></div><div id="qualityByLine"><div class="empty-state">Carregando...</div></div></section>'+
